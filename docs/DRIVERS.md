@@ -2,6 +2,8 @@
 
 The **boot EFI** and the **peripheral-test EFI** serve different purposes. Tahoe booted on the test Surface with the minimal kernel stack plus the custom RTC0 ACPI fix. The additional drivers below are **available for testing**, not confirmation that each feature works.
 
+**Full driver download:** `py -3 scripts/prepare_full_driver_pack.py --source C:/path/to/personal/EFI --out SL4-Driver-Pack` downloads all optional EFI candidates **plus the verified 95 MB WhateverXe Graphics 0.4.4 macOS installer** and the optional Surface IPTSDaemon. Keep the source EFI private and unchanged. See [graphics acceleration](GRAPHICS-ACCELERATION.md). The package contents are candidates; no single working all-drivers EFI for Surface Laptop 4 + Tahoe has yet been demonstrated.
+
 ## Known-boot components
 
 | Component | Version | Status |
@@ -37,6 +39,9 @@ The following are copied to `EFI-peripherals/EFI/OC/Kexts`, with matching **disa
 | [VoodooPS2Controller](https://github.com/acidanthera/VoodooPS2/releases/tag/2.3.7) | 2.3.7 | PS/2 keyboard/trackpad | Surface Laptop 4 uses a different input architecture; no support proven |
 | [VoodooI2C / VoodooI2CHID](https://github.com/VoodooI2C/VoodooI2C/releases/tag/v2.9.1) | 2.9.1 | I²C input | Only suitable if hardware ACPI matches; may conflict with BigSurface |
 | [BigSurface](https://github.com/Xiashangning/BigSurface/releases/tag/v6.5) | 6.5 | Surface SAM input, touch, battery | **Not verified for Laptop 4 or Tahoe**. Requires matching Surface SSDT and possible daemon. Not safe to enable blindly |
+| [NVMeFix](https://github.com/acidanthera/NVMeFix/releases/tag/1.1.3) | 1.1.3 | NVMe power behavior | Candidate only; **do not enable on Samsung PM991 without a measured compatibility test** |
+| [RestrictEvents](https://github.com/acidanthera/RestrictEvents/releases/tag/1.1.6) | 1.1.6 | Optional macOS compatibility patches | Not necessary for proven boot; staged disabled |
+| [IPTSDaemon](https://github.com/Xiashangning/IPTSDaemon/releases/tag/v1.4) | 1.4 | Surface touchscreen/stylus user-space helper | Downloaded as a separate ZIP; requires compatible SAM and touch drivers, unqualified for Tahoe |
 
 The official BigSurface README specifically lists earlier Surface models and instructs users to remove VoodooI2C and SMCBatteryManager before using BigSurface. **Do not enable BigSurface and VoodooI2C simultaneously.** Do not assume the 2023 BigSurface release loads on Tahoe 26.
 
@@ -58,7 +63,7 @@ py -3 scripts/add_optional_drivers.py --source EFI-output/EFI --out EFI-bluetoot
 
 ## Graphics and input status
 
-- **Iris Xe 96 EU:** boots to GUI with WhateverXe and `-wex-noaccel`; this is **not** Metal acceleration. The companion [WhateverXe Graphics](https://github.com/b00t0x/WhateverXe-Graphics) package modifies the installed system; install only after saving a recoverable working macOS state. Acceleration remains unverified.
+- **Iris Xe 96 EU:** boots to GUI with WhateverXe and `-wex-noaccel`; this is **not** Metal acceleration and is a likely reason for slow UI rendering. The complete pack fetches [WhateverXe Graphics 0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4), a **macOS /Library installer** that cannot be enabled simply by adding EFI kexts. Read the [safe acceleration plan](GRAPHICS-ACCELERATION.md). Acceleration remains unverified on this Surface.
 - **Built-in keyboard / trackpad / touchscreen:** unverified. The Surface Laptop 4 uses Surface Aggregator Module (SAM) devices, and an off-the-shelf VoodooPS2/VoodooI2C kext is unlikely to make all input devices functional. Test with **external USB keyboard and mouse**; request or develop a Laptop 4-specific SAM/ACPI solution if BigSurface fails.
 - **Wi-Fi / Bluetooth:** unverified in installed Tahoe; the optional archive includes experiment candidates. Avoid treating third-party alpha release notes as hardware confirmation.
 - **Battery, brightness, sleep, cameras, audio:** unverified.
