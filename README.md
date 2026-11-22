@@ -8,7 +8,7 @@ OpenCore configuration and installation tools for **Microsoft Surface Laptop 4 (
 
 **Hardware:** Core i7-1185G7 · Intel Iris Xe 96 EU (`8086:9A49`) · 16 GB RAM · Samsung PM991.
 
-**Working:** Tahoe 26.7.1, Metal 2 (1536 MB VRAM), 2496×1664 HiDPI internal display, external 2560×1440 DisplayPort monitor, Intel AX201 Wi-Fi, internal SSD boot and Windows dual boot.
+**Working on the tested SL4 Intel:** Tahoe 26.7.1, Metal 2 (1536 MB VRAM), 2496×1664 HiDPI internal display, external 2560×1440 DisplayPort monitor, Intel AX201 Wi-Fi, **built-in keyboard and trackpad with the Tiger Lake BigSurface stack**, internal SSD boot and Windows dual boot. Touchpad tap-to-click and gestures improved with the user preference script below. Not independently validated on other machines.
 
 ## Quick Start
 
@@ -76,6 +76,20 @@ system_profiler SPDisplaysDataType
 
 Expected: **Intel Iris Xe · Metal 2 · 1536 MB VRAM**. The resulting boot arguments are `npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt`.
 
+## Built-in keyboard and trackpad — tested on Surface Laptop 4 Intel
+
+**New hardware result (2026-11-22):** the owner confirmed the built-in keyboard and Surface touchpad working in macOS Tahoe with **VoodooGPIO 1.2.0**, **VoodooSerial 1.2** (Tiger Lake UART `8086:A0A8`), **BigSurface 1.2.0**, **BigSurfaceHIDDriver 1.0.0**, and **VoodooInput 1.1.3**. The input stack requires the existing OEM `MSHW0084` Surface Serial Hub. Do **not** inject Surface Laptop 5 `SSDT-SAM` on SL4: the original `SSH` is already exposed.
+
+For **new installations**, finish the standard OpenCore/macOS/Metal steps, then **install the five input kexts using the guarded instructions** in [Keyboard and trackpad setup](docs/INPUT-KEYBOARD-TRACKPAD.md). This step is **not yet automatically included** in the generic fresh-EFI builder: a generated EFI has not been independently boot-validated with these drivers. Keep an external keyboard/mouse and an EFI rollback until tested.
+
+For Apple-like tapping and secondary click, and to disable unwanted **Look Up**, run **as the normal macOS user, without `sudo`**, once BigSurface is loaded:
+
+```bash
+curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/main/scripts/configure_surface_trackpad.sh" -o "$HOME/Downloads/configure_surface_trackpad.sh" && sh "$HOME/Downloads/configure_surface_trackpad.sh"
+```
+
+The owner confirmed these preference changes improved the trackpad on the tested laptop. Genuine Apple Force Touch haptics are not provided by the Surface hardware.
+
 ## Fresh installation
 
 Generate a personal OpenCore EFI with [GenSMBIOS](https://github.com/corpnewt/GenSMBIOS) (`MacBookPro16,2`) and [`scripts/build_efi.py`](scripts/build_efi.py) using `--dvmt-60`. Follow the [installation procedure](docs/LEGACY-FIRST-BOOT.md), then complete the graphics steps above. Keep your serial, MLB, UUID and ROM private.
@@ -86,7 +100,7 @@ Generate a personal OpenCore EFI with [GenSMBIOS](https://github.com/corpnewt/Ge
 | --- | --- |
 | Intel Iris Xe / Metal 2 / dual displays | Working |
 | Intel AX201 Wi-Fi | Working |
-| Built-in keyboard and trackpad | In progress |
+| Built-in keyboard and trackpad | **Working on tested SL4 Intel** with Tiger Lake UART A0A8 BigSurface + GPIO + HID; [setup](docs/INPUT-KEYBOARD-TRACKPAD.md) |
 | Audio, brightness control, browser video playback | In progress |
 | Bluetooth, sleep/wake and full dock support | In progress |
 
