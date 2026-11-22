@@ -1,0 +1,48 @@
+name: Experimental Surface Laptop 4 keyboard / trackpad drivers
+
+on:
+  push:
+    branches:
+      - experimental/sl4-sam-keyboard-trackpad
+    paths:
+      - 'experiments/sl4-input/**'
+      - '.github/workflows/sl4-sam-experimental.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: BigSurface UART A0A8 / Tiger Lake GPIO
+    runs-on: macos-15-intel
+    timeout-minutes: 35
+    env:
+      BSWORK: ${{ runner.temp }}/bigsurface-sl4
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Verify Python script syntax
+        run: python3 -m py_compile experiments/sl4-input/build-bigsurface-sl4.py
+      - name: Compile BigSurface stack on Intel macOS
+        run: python3 experiments/sl4-input/build-bigsurface-sl4.py
+      - name: Verify five kext bundles and Tiger Lake UART identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find "$BSWORK/out" -maxdepth 1 -type d -name '*.kext' | wc -l | tr -d ' ')" = 5
+          /usr/libexec/PlistBuddy -c 'Print :IOKitPersonalities:VoodooUARTController:IOPCIMatch' "$BSWORK/out/VoodooSerial.kext/Contents/Info.plist" | grep -qi '0xa0a88086'
+          /usr/libexec/PlistBuddy -c 'Print :IOKitPersonalities:VoodooGPIOTigerLakeLP:IONameMatch' "$BSWORK/out/VoodooGPIO.kext/Contents/Info.plist" | grep -Eq 'INT34C5|INTC1055'
+          for kext in "$BSWORK/out"/*.kext; do test -f "$kext/Contents/Info.plist"; done
+      - name: Package experimental kexts
+        shell: bash
+        run: |
+          cd "$BSWORK"
+          /usr/bin/zip -qyr "$RUNNER_TEMP/SL4-BigSurface-EXPERIMENTAL.zip" out
+      - name: Attach experimental binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: SL4-BigSurface-EXPERIMENTAL
+          path: ${{ runner.temp }}/SL4-BigSurface-EXPERIMENTAL.zip
+          if-no-files-found: error
+          retention-days: 14
