@@ -57,6 +57,9 @@ def preflight(root, cfg):
 
 def write_config(root, before, after, backup_root, validator, label):
     require(backup_root is not None, "--backup-dir on C: is required for writes")
+    require(validator is not None, "--ocvalidate is REQUIRED before modifying OpenCore")
+    validator = Path(os.path.abspath(os.fspath(validator)))
+    require(validator.is_file(), "ocvalidate.exe not found")
     backup_root = Path(os.path.abspath(os.fspath(backup_root)))
     require(backup_root.anchor.lower() != root.anchor.lower(), "Backups must be on a separate drive from the ESP")
     backup_root.mkdir(parents=True, exist_ok=True)
@@ -67,13 +70,10 @@ def write_config(root, before, after, backup_root, validator, label):
     try:
         temp.write_bytes(after)
         plistlib.loads(temp.read_bytes())
-        if validator:
-            cmd = [str(validator), str(temp)]
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            print(result.stdout, result.stderr)
-            require(result.returncode == 0, "ocvalidate failed; existing EFI unchanged")
-        else:
-            print("WARNING: ocvalidate not supplied; matching OpenCore 1.0.8 is strongly recommended.")
+        cmd = [str(validator), str(temp)]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(result.stdout, result.stderr)
+        require(result.returncode == 0, "ocvalidate failed; existing EFI unchanged")
         require(cfg.read_bytes() == before, "config.plist changed during preparation")
         backup = backup_root / ("SL4-XE-" + label + "-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
         backup.mkdir(exist_ok=False)
@@ -120,6 +120,9 @@ def main():
     print("SIP Data: 0x" + sip.hex())
     print("Graphics: ", "NO ACCEL (-wex-noaccel)" if DISABLE_FLAG in flags else "ACCEL FLAG NOT DISABLED")
     print("Required boot flags:", {a: (a in flags) for a in REQUIRED_ARGS})
+    deletion = cfg["NVRAM"].setdefault("Delete", {}).setdefault(APPLE_GUID, [])
+    require(isinstance(deletion, list), "NVRAM/Delete Apple GUID must be an array")
+    print("NVRAM/Delete applies boot-args + csr-active-config:", all(x in deletion for x in ("boot-args", "csr-active-config")))
     if args.mode == "inspect":
         print("INSPECT OK: no changes")
         return
@@ -135,8 +138,14 @@ def main():
             if arg not in new_flags:
                 new_flags.append(arg)
                 print("ADD boot-arg:", arg)
+        for key in ("boot-args", "csr-active-config"):
+            if key not in deletion:
+                deletion.append(key)
+                print("ADD NVRAM/Delete key:", key)
         print("PRESERVED: -wex-noaccel (until Graphics pkg has been installed into Tahoe)")
     else:
+        require(all(x in deletion for x in ("boot-args", "csr-active-config")),
+                "NVRAM/Delete missing flags required to overwrite persisted variables; rerun --mode prepare")
         require(sip == SIP_WEX, "SIP must be Data 03080000; run --mode prepare first and reboot")
         require(all(x in flags for x in REQUIRED_ARGS), "Required WEX boot arguments missing; run --mode prepare")
         require(DISABLE_FLAG in flags, "Already enabled, no -wex-noaccel flag found")
