@@ -2,7 +2,7 @@
 
 # Surface Laptop 4 — macOS Tahoe
 
-I booted **macOS Tahoe on an Intel Surface Laptop 4** alongside Windows 11. This repository contains the OpenCore configuration, the Surface-specific RTC fix, and a builder that downloads the pinned boot drivers.
+Working **macOS Tahoe on an Intel Surface Laptop 4** alongside Windows 11. This repository contains the OpenCore configuration, the Surface-specific RTC fix, and a builder that downloads the pinned boot drivers.
 
 ![OpenCore](https://img.shields.io/badge/OpenCore-1.0.8-426ba4) ![macOS](https://img.shields.io/badge/macOS-Tahoe-665fae) ![Boot](https://img.shields.io/badge/Status-Tahoe_boots-24866c)
 
