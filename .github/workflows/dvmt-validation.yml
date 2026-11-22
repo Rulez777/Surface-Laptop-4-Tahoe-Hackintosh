@@ -1,0 +1,36 @@
+name: Validate Surface DVMT profile
+
+on:
+  push:
+    paths:
+      - 'scripts/dvmt60.py'
+      - 'scripts/xe_acceleration.py'
+      - 'scripts/build_efi.py'
+      - 'tests/test_dvmt60.py'
+      - '.github/workflows/dvmt-validation.yml'
+  pull_request:
+    paths:
+      - 'scripts/dvmt60.py'
+      - 'scripts/xe_acceleration.py'
+      - 'scripts/build_efi.py'
+      - 'tests/test_dvmt60.py'
+      - '.github/workflows/dvmt-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dvmt-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check scripts compile
+        run: python -m py_compile scripts/dvmt60.py scripts/xe_acceleration.py scripts/build_efi.py
+      - name: Run isolated DVMT profile tests
+        run: python -m unittest discover -s tests -p 'test_dvmt60.py' -v
