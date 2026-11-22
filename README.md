@@ -2,20 +2,19 @@
 
 # Surface Laptop 4 — macOS Tahoe
 
-OpenCore configuration and drivers for the **Microsoft Surface Laptop 4 Intel (13.5-inch)**. Tested on **macOS Tahoe 26.7.1**, with **Metal 2** acceleration and **Windows 11 dual boot** from the internal SSD.
+A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5-inch)**. macOS Tahoe 26.7.1 runs from the internal SSD alongside Windows 11, with Metal 2 graphics, built-in input, audio and screen brightness.
 
-## Hardware
+## Tested hardware
 
-| Component | Tested configuration |
+| Component | Configuration |
 | --- | --- |
-| CPU | Intel Core i7-1185G7 (Tiger Lake) |
-| GPU | Intel Iris Xe 96 EU (`8086:9A49`) |
-| RAM | 16 GB |
-| SSD | Samsung PM991 |
-| Wi-Fi / Bluetooth | Intel AX201 |
+| Model | Surface Laptop 4 Intel, 13.5-inch |
+| CPU / GPU | Core i7-1185G7 / Intel Iris Xe 96 EU (`8086:9A49`) |
+| RAM / SSD | 16 GB / Samsung PM991 |
+| Wireless | Intel AX201 |
 | Audio | Intel HDA `8086:A0C8`, Realtek ALC274 |
 | Display | 2496 × 1664, HiDPI |
-| Bootloader | OpenCore 1.0.8 |
+| Bootloader / macOS | OpenCore 1.0.8 / Tahoe 26.7.1 |
 
 ## Hardware support
 
@@ -24,26 +23,27 @@ OpenCore configuration and drivers for the **Microsoft Surface Laptop 4 Intel (1
 | macOS Tahoe / internal SSD boot | **Working** |
 | Windows 11 dual boot | **Working** |
 | Intel Iris Xe / Metal 2 | **Working** |
-| Internal HiDPI and external DisplayPort displays | **Working** |
+| Internal HiDPI and external DisplayPort | **Working** |
+| **Internal display brightness controls** | **Working** |
 | Intel AX201 Wi-Fi / Bluetooth | **Working** |
-| Built-in speakers | **Working** |
-| Built-in microphone | **Working** |
-| Keyboard, trackpad and multitouch | **Working** |
+| Built-in speakers / microphone | **Working** |
+| Keyboard / trackpad / multitouch | **Working** |
 | Battery percentage | **Working** |
 | CPU temperature / automatic fan / performance profiles | **Working** |
 | Surface Dock | **Working** |
-| Internal display brightness controls | In progress |
 | Sleep / wake | In progress |
 
-All working results are based on the tested Surface Laptop 4 Intel. Untested audio jacks and other hardware variants are not implied.
+Verified on one Surface Laptop 4 Intel. Other models, headphone jack and untested hardware are not certified.
 
-## Installation
+## Installation — reproduce the tested setup
 
-**Requirements:** Surface Laptop 4 Intel, bootable macOS Tahoe, internal OpenCore EFI, Windows 11 administrator access for GPU setup, and Python 3. No USB drive is required for the existing-install workflow. For initial installation, see [first boot](docs/LEGACY-FIRST-BOOT.md) and [internal dual boot](docs/INTERNAL-BOOT.md).
+This is the **existing-install workflow**: macOS Tahoe and OpenCore must already boot. Windows 11 is retained; no USB drive is used. For a new installation, follow [first boot](docs/LEGACY-FIRST-BOOT.md) and [internal SSD dual boot](docs/INTERNAL-BOOT.md) first.
 
-### Graphics: Metal 2
+**Before starting:** confirm access to Windows Boot Manager, back up your working `EFI/OC`, and have an external keyboard/mouse available until the Surface input drivers work. Check the EFI partition identifier with `diskutil list` on macOS; below it is `disk0s1`. Stop if a command reports an error.
 
-In **Windows PowerShell (Administrator)**, clone the repository and mount the internal EFI:
+### 1. Graphics — Metal 2
+
+In **Windows PowerShell (Administrator)**:
 
 ```powershell
 git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git "$HOME\Downloads\SL4-Tahoe-Git"
@@ -53,13 +53,13 @@ py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode prepare 
 mountvol S: /D
 ```
 
-Copy `SL4-FULL-DRIVERS/macOS-Installers/WhateverXe-Graphics-0.4.4.pkg` to macOS Downloads using the Windows partition. Install in **macOS Terminal**:
+Copy `SL4-FULL-DRIVERS/macOS-Installers/WhateverXe-Graphics-0.4.4.pkg` from Windows to macOS Downloads using the internal Windows partition. In **macOS Terminal**:
 
 ```bash
 sudo installer -pkg "$HOME/Downloads/WhateverXe-Graphics-0.4.4.pkg" -target /
 ```
 
-Back in **Windows PowerShell (Administrator)**, enable hardware acceleration:
+Return to **Windows PowerShell (Administrator)**:
 
 ```powershell
 mountvol S: /S
@@ -67,49 +67,62 @@ py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode enable -
 mountvol S: /D
 ```
 
-The tested GPU configuration uses 60 MB DVMT (`WhateverXePhysicalGGC=0xFEC1`), WhateverXe 0.8.3 and [WhateverXe Graphics 0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4). See [validated graphics configuration](docs/VALIDATED-METAL-SL4.md).
+Restart into macOS and verify `system_profiler SPDisplaysDataType` reports **Metal 2**. The tested profile uses WhateverXe 0.8.3, WhateverXe Graphics 0.4.4 and **60 MB DVMT**. [Technical details](docs/VALIDATED-METAL-SL4.md).
 
-### Audio: speakers and microphone
+### 2. Built-in keyboard, trackpad and battery
 
-The tested audio stack is **Lilu 1.7.2 → AppleALC 1.9.8 → SimpleHDA 1.0.2**, with **ALC274 layout 35**. SimpleHDA restores the AppleHDA functionality removed from macOS Tahoe.
+Follow the [tested Tiger Lake BigSurface installation](docs/INPUT-KEYBOARD-TRACKPAD.md). It builds and installs five drivers: VoodooGPIO, VoodooSerial, VoodooInput, BigSurface and BigSurfaceHIDDriver. **Do not enable the generic conflicting VoodooI2C/SMCBatteryManager candidates.**
 
-In **macOS Terminal**, clone the repository if needed and install audio:
-
-```bash
-git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git "$HOME/Downloads/SL4-Tahoe-Git"
-sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_audio_macos.py" apply --esp disk0s1
-```
-
-Verify the EFI device identifier with `diskutil list` and change `--esp` if necessary. The installer verifies the `8086:A0C8` controller, downloads **SimpleHDA 1.0.2** with a pinned SHA-256 checksum, backs up the current `EFI/OC`, installs the kext and updates `config.plist`. It preserves `EFI/Microsoft`, boot order and all existing partitions. Restart macOS to activate the driver.
-
-Verify both devices with:
-
-```bash
-system_profiler SPAudioDataType
-```
-
-Rollback to the backed-up OpenCore configuration:
-
-```bash
-sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_audio_macos.py" rollback --esp disk0s1
-```
-
-Backups are saved under `~/Downloads/SL4-AUDIO-BACKUPS` and, when space permits, as a separate `EFI/OC-SL4-AUDIO-BACKUP-*` directory for Windows-only recovery. The script refuses to overwrite an existing SimpleHDA installation.
-
-### Keyboard, trackpad and battery
-
-Use the tested **BigSurface Tiger Lake** driver stack. The generic optional-driver pack does not automatically enable it.
-
-[Installation guide](docs/INPUT-KEYBOARD-TRACKPAD.md) · [SL4 input driver build](experiments/sl4-input/README.md)
-
-For Apple-style trackpad preferences:
+After the input drivers work, set Apple-style trackpad preferences in macOS Terminal:
 
 ```bash
 curl -fL "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/main/scripts/configure_surface_trackpad.sh" -o "$HOME/Downloads/configure_surface_trackpad.sh" && sh "$HOME/Downloads/configure_surface_trackpad.sh"
 ```
 
+### 3. Speakers, microphone and brightness
+
+In **macOS Terminal**, download the current repository (skip the clone if it already exists):
+
+```bash
+git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git "$HOME/Downloads/SL4-Tahoe-Git"
+```
+
+If previously cloned, use `git -C "$HOME/Downloads/SL4-Tahoe-Git" pull --ff-only` instead.
+
+Install **audio** and **brightness**, one command at a time:
+
+```bash
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_audio_macos.py" apply --esp disk0s1
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_brightness_macos.py" apply --esp disk0s1
+```
+
+Restart macOS. Both changes are stored in OpenCore and persist across reboots; no startup service is needed.
+
+The audio installer pins **SimpleHDA 1.0.2**, works with Lilu 1.7.2 and AppleALC 1.9.8, and selects **ALC274 layout 35**. The brightness installer enables the existing `SSDT-PNLF` and uses **UID 19**, the tested WhateverXe backlight profile; it changes only the UID, ACPI checksum and, if necessary, the OpenCore ACPI enable flag. Both installers verify prerequisites and create full `EFI/OC` backups, including a Windows-accessible copy on the EFI partition. They do not edit `EFI/Microsoft`.
+
+### 4. Verify
+
+In macOS Terminal:
+
+```bash
+system_profiler SPDisplaysDataType
+system_profiler SPAudioDataType
+ioreg -p IOACPIPlane -r -n PNLF -l -w0
+```
+
+Check **System Settings → Displays → Brightness**, play sound, record from the built-in microphone and test keyboard/trackpad gestures.
+
+**Rollback** individual post-install changes (then restart):
+
+```bash
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_brightness_macos.py" rollback --esp disk0s1
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_audio_macos.py" rollback --esp disk0s1
+```
+
+Backups are saved in `~/Downloads/SL4-BRIGHTNESS-BACKUPS` and `~/Downloads/SL4-AUDIO-BACKUPS`. If macOS no longer boots, use Windows Boot Manager to restore the pre-change `EFI/OC` copy from the internal EFI; do not format the ESP.
+
 ## Documentation
 
-[Driver status](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [Performance](docs/FULL-PERFORMANCE.md) · [Internal boot](docs/INTERNAL-BOOT.md) · [EFI safety](docs/SAFETY.md)
+[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
 
-Never publish your personalized OpenCore `PlatformInfo` identifiers (serial number, MLB, SystemUUID or ROM). Back up the known-good EFI before changing drivers. This is a community project, not affiliated with Microsoft or Apple.
+Keep private SMBIOS serial, MLB, SystemUUID and ROM values out of public repositories. Community project; not affiliated with Microsoft or Apple.

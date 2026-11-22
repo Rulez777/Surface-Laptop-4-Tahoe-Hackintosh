@@ -2,6 +2,8 @@
 
 **Updated 2026-11-22.** The previous no-acceleration-only status is obsolete. On the test laptop (i7-1185G7, Iris Xe 96 EU `8086:9A49`), **Tahoe 26.7.1 + stock WhateverXe 0.8.3 + Graphics 0.4.4 + fixed 60 MB DVMT profile booted with Metal 2** and 1536 MB dynamic VRAM. The built-in 2496×1664 display and external 2560×1440 DisplayPort monitor worked. Intel AX201 Wi-Fi also works. **Built-in keyboard and trackpad now work on the owner's tested SL4 Intel with the Tiger Lake BigSurface input stack; full peak performance is still not established.** See the [full validated report](VALIDATED-METAL-SL4.md).
 
+**Post-install hardware status:** internal speakers and microphone work using AppleALC 1.9.8, SimpleHDA 1.0.2 and ALC274 layout 35; native brightness controls work after enabling SSDT-PNLF UID 19. [Install both from the main guide](../README.md#3-speakers-microphone-and-brightness).
+
 This is an **already-installed Tahoe** workflow using only the **internal SSD** and Windows 11. The scripts never need a removable transfer drive. Keep the Windows Boot Manager, EFI/Microsoft, EFI/BOOT and existing partitions unchanged.
 
 ## Windows: current repository, verified candidates, known-good EFI backup

@@ -1,5 +1,8 @@
 # Validated Surface Laptop 4 Tiger Lake-U Metal 2 configuration — 2026-11-22
 
+> **Current state:** This document records the earlier graphics milestone. For the subsequently verified keyboard, audio and native brightness installation, use the [current README](../README.md).
+
+
 This is an observed, reproducible **post-install** configuration for a *specific test laptop*, not a blanket compatibility claim or a distributable personalized EFI. It avoids external storage devices. The machine already had Tahoe on its internal APFS partition and an independent internal OpenCore UEFI entry beside Windows Boot Manager.
 
 ## Hardware and validated stack

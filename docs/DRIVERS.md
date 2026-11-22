@@ -13,6 +13,7 @@ Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8)
 | Battery | BigSurface | Battery percentage |
 | Audio output | Lilu 1.7.2, AppleALC 1.9.8, SimpleHDA 1.0.2; ALC274 layout 35 | **Built-in speakers working** |
 | Audio input | Same audio stack | **Built-in microphone working** |
+| Brightness | WhateverXe 0.8.3 + AppleBacklight + SSDT-PNLF UID 19 | **Built-in backlight controls working after reboot** |
 | Temperature | SMCProcessor 1.3.8 | CPU die temperature |
 | Cooling | Surface performance profile | Fan operation and profiles |
 
@@ -34,8 +35,26 @@ sudo python3 scripts/install_audio_macos.py rollback --esp disk0s1
 
 The ESP identifier may differ; check `diskutil list`. Do not install competing AppleHDA restoration drivers or enable VoodooHDA simultaneously.
 
+## Brightness installation
+
+The tested panel has `AppleBacklightDisplay` and `AppleIntelPanelA` attached. The original Surface `SSDT-PNLF.aml` exposes `_UID=14`, which does not activate the tested WhateverXe brightness curve. Changing it to `_UID=19` enables native `brightness` and `linear-brightness` parameters.
+
+Use [the brightness installer](../scripts/install_brightness_macos.py), which safely validates the known 126-byte SSDT, corrects its ACPI checksum, enables its OpenCore entry if disabled, and creates full EFI backups before writing:
+
+```bash
+sudo python3 scripts/install_brightness_macos.py apply --esp disk0s1
+```
+
+Restart macOS and verify **System Settings → Displays → Brightness**. Roll back if necessary:
+
+```bash
+sudo python3 scripts/install_brightness_macos.py rollback --esp disk0s1
+```
+
+Do not combine this tested WhateverXe/PNLF fix with unrelated panel patches or other hardware configurations.
+
 ## Other hardware
 
-Display brightness control and reliable sleep/wake are not yet confirmed. Direct fan RPM control is unavailable through the documented Surface interface. Headphone jack and additional hardware variants have not been validated.
+Reliable sleep/wake remains in progress. The headphone jack and additional hardware variants have not been validated.
 
 See [installation and verified hardware](../README.md), [graphics](VALIDATED-METAL-SL4.md) and [keyboard/trackpad](INPUT-KEYBOARD-TRACKPAD.md).

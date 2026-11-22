@@ -1,0 +1,24 @@
+name: Brightness installer validation
+
+on:
+  push:
+    paths:
+      - "scripts/install_brightness_macos.py"
+      - "tests/test_brightness_macos.py"
+      - ".github/workflows/brightness-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/install_brightness_macos.py"
+      - "tests/test_brightness_macos.py"
+      - ".github/workflows/brightness-validation.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m py_compile scripts/install_brightness_macos.py
+      - run: python -m unittest discover -v -s tests -p test_brightness_macos.py
