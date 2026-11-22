@@ -62,6 +62,6 @@ The [read-only media checker](../scripts/verify_video_macos.py) verifies that th
 
 ## Other hardware
 
-Reliable sleep/wake remains in progress. The headphone jack and additional hardware variants have not been validated.
+Reliable sleep/wake is **not working** in the tested configuration. An experimental S0ixStandby 0.5.8 / SSDT-DEEPIDLE test ended with an unresponsive Surface and required a restart; the experiment was rolled back and is **not bundled**. See [SLEEP.md](SLEEP.md). The headphone jack and additional hardware variants have not been validated.
 
 See [installation and verified hardware](../README.md), [graphics](VALIDATED-METAL-SL4.md) and [keyboard/trackpad](INPUT-KEYBOARD-TRACKPAD.md).

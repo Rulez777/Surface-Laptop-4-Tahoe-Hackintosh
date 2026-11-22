@@ -34,9 +34,11 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | Battery percentage | **Working** |
 | CPU temperature / automatic fan / performance profiles | **Working** |
 | Surface Dock | **Working** |
-| Sleep / wake | In progress |
+| Sleep / wake | **Not working reliably; do not enable experimental S0ix** |
 
 Verified on one Surface Laptop 4 Intel. Other models, headphone jack and untested hardware are not certified.
+
+**Sleep warning:** The tested Surface failed to resume from a supervised S0ixStandby 0.5.8 / SSDT-DEEPIDLE experiment. This experimental stack is **not included** in the supported driver pack. See [sleep limitations](docs/SLEEP.md); do not treat display-off as successful system sleep.
 
 ## Installation — reproduce the tested setup
 
