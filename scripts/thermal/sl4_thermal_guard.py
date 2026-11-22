@@ -32,6 +32,15 @@ def require(ok, message):
         raise RuntimeError(message)
 
 
+def smc_error(result, key):
+    """Decode known SMC status separately from IOKit transport errors."""
+    if result == 0x84:
+        return f"SMC key {key} not found (0x84); SMCProcessor.kext may be missing or CPU sensor unavailable"
+    if result == 0x85:
+        return f"SMC key {key} not readable (0x85)"
+    return f"SMC key {key} rejected request (0x{result:02X})"
+
+
 def check_hardware():
     require(sys.platform == "darwin", "Only macOS is supported")
     result = subprocess.run(["/usr/sbin/ioreg", "-p", "IOACPIPlane", "-lw0"],
@@ -97,9 +106,12 @@ class CpuDie:
         size = C.c_size_t(C.sizeof(response))
         rc = self.io.IOConnectCallStructMethod(self.conn.value, 2, C.byref(request),
             C.sizeof(request), C.byref(response), C.byref(size))
-        require(rc == 0 and size.value == C.sizeof(response) and
-                response.result == 0 and response.status == 0,
-                f"Invalid AppleSMC reply: rc={rc}, size={size.value}, result={response.result}, status={response.status}")
+        require(rc == 0 and size.value == C.sizeof(response),
+                f"AppleSMC IOKit transport failure: rc={rc}, size={size.value}")
+        require(response.result == 0,
+                smc_error(response.result, "TC0D"))
+        require(response.status == 0,
+                f"AppleSMC status={response.status}; CPU die temperature is not trustworthy")
         return response
 
     def read(self):
