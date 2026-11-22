@@ -17,6 +17,7 @@ import sys
 import urllib.request
 import uuid
 import zipfile
+from dvmt60 import DVMT_ARG, is_ready as dvmt60_ready, stage as stage_dvmt60
 
 HERE = pathlib.Path(__file__).resolve().parent.parent
 RELEASES = {
@@ -137,6 +138,7 @@ def main():
     cli.add_argument("--uuid", required=True, help="Generate with GenSMBIOS; keep private")
     cli.add_argument("--rom", required=True, help="Exactly 12 hexadecimal digits; keep private")
     cli.add_argument("--verbose-boot", action="store_true", help="Keep initial diagnostic boot output instead of the default quiet boot")
+    cli.add_argument("--dvmt-60", action="store_true", help="Stage tested Surface Iris Xe GGC 0xFEC1 (60 MB) settings; keep -wex-noaccel until Graphics pkg is installed")
     cli.add_argument("--out", type=pathlib.Path, default=pathlib.Path("EFI-output"))
     cli.add_argument("--cache", type=pathlib.Path, default=pathlib.Path(".efi-build-cache"))
     args = cli.parse_args()
@@ -172,6 +174,16 @@ def main():
     settings = plistlib.loads(cfg.read_bytes())
     settings["ACPI"]["Add"].append({"Comment": "Surface Laptop 4 RTC0 at PC00.LPCB", "Enabled": True, "Path": "SSDT-RTC0-SL4.aml"})
     settings["PlatformInfo"]["Generic"].update({"SystemSerialNumber": args.serial, "MLB": args.mlb, "SystemUUID": uid, "ROM": rom})
+    if args.dvmt_60:
+        for change in stage_dvmt60(settings):
+            print("60 MB DVMT:", change)
+        boot_args = settings["NVRAM"]["Add"][GUID]["boot-args"].split()
+        require("-wex-noaccel" in boot_args, "60 MB DVMT builder output must remain in no-accel mode until Graphics pkg installation")
+        if DVMT_ARG not in boot_args:
+            boot_args.append(DVMT_ARG)
+        settings["NVRAM"]["Add"][GUID]["boot-args"] = " ".join(boot_args)
+        require(dvmt60_ready(settings), "DVMT profile validation failed")
+        print("60 MB DVMT prepared; -wex-noaccel remains ON until Graphics pkg installation")
     if not args.verbose_boot:
         from quiet_boot import edit as quiet_profile
         quiet_profile(settings)
