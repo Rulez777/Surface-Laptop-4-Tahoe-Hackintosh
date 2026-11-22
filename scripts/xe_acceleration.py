@@ -152,6 +152,8 @@ def main():
         require(sip == SIP_WEX, "SIP must be Data 03080000; run --mode prepare first and reboot")
         require(all(x in flags for x in REQUIRED_ARGS), "Required WEX boot arguments missing; run --mode prepare")
         require(DISABLE_FLAG in flags, "Already enabled, no -wex-noaccel flag found")
+        require("boot-args" in cfg["NVRAM"].get("Delete", {}).get(APPLE_GUID, []),
+                "NVRAM -> Delete must include boot-args to replace a persisted -wex-noaccel value")
         require(dvmt60_ready(cfg) and DVMT_ARG in flags,
                 "DVMT 60 MB properties or -igfxdvmt missing; DO NOT remove -wex-noaccel. Run --mode prepare --dvmt-60 first")
         print("CRITICAL: WhateverXe Graphics 0.4.4 must have been installed successfully in Tahoe 26.7+.")
