@@ -12,6 +12,8 @@ f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec
 
 Upstream release: [WhateverXe Graphics v0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4). **This package is installed into macOS `/Library`, not into the EFI directory.** Simply placing kexts in `EFI/OC/Kexts` cannot enable Iris Xe Metal acceleration.
 
+For the concrete Windows-to-macOS installation sequence, package transfer, checksum verification, and safe removal of `-wex-noaccel`, see **[Full performance setup](FULL-PERFORMANCE.md)**. It uses `scripts/xe_acceleration.py` to preserve a private rollback and `scripts/install_wex_graphics_macos.sh` to check and install the official package.
+
 ## Required conditions before the acceleration attempt
 
 1. Tahoe must be **26.7 or newer**; the test installer was 26.7.1.
