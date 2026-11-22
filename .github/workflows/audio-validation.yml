@@ -1,0 +1,24 @@
+name: Audio installer validation
+
+on:
+  push:
+    paths:
+      - "scripts/install_audio_macos.py"
+      - "tests/test_audio_macos.py"
+      - ".github/workflows/audio-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/install_audio_macos.py"
+      - "tests/test_audio_macos.py"
+      - ".github/workflows/audio-validation.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m py_compile scripts/install_audio_macos.py
+      - run: python -m unittest discover -v -s tests -p test_audio_macos.py

@@ -131,7 +131,7 @@ The owner has **verified physical keyboard and trackpad function** on the Surfac
 - Intel AX201 Wi-Fi: **user-confirmed working**. AirportItlwm 2.4.0 loaded.
 - Microsoft Surface Dock: USB2/USB3 hubs and GigE adapter enumerate; external monitor appeared over DisplayPort with Metal, but **all** dock functions and sustained reliability were not fully tested.
 - Built-in keyboard and trackpad: **user-confirmed working** with the dedicated [SL4 Intel BigSurface UART A0A8 stack](INPUT-KEYBOARD-TRACKPAD.md). Simple VoodooPS2/VoodooI2C is not a substitute; use the guarded installation procedure and a full EFI backup.
-- Bluetooth/audio/battery: some kexts loaded; functional results are not yet confirmed.
+- Audio: internal speakers and microphone confirmed working with SimpleHDA 1.0.2, AppleALC 1.9.8 and ALC274 layout 35 ([installer](../scripts/install_audio_macos.py)). Bluetooth and battery display also work on the tested SL4.
 - Samsung PM991 NVMe stability, sleep/wake, high-refresh external output, CPU power management, sustained performance: **unverified**.
 - Metal fixed a major graphics bottleneck, **not** every source of lag.
 
