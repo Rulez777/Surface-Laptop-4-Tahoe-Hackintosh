@@ -1,6 +1,6 @@
 # Surface Laptop 4 Intel: complete candidate driver pack and verified Metal 2
 
-**Updated 2026-11-22.** The previous no-acceleration-only status is obsolete. On the test laptop (i7-1185G7, Iris Xe 96 EU `8086:9A49`), **Tahoe 26.7.1 + stock WhateverXe 0.8.3 + Graphics 0.4.4 + fixed 60 MB DVMT profile booted with Metal 2** and 1536 MB dynamic VRAM. The built-in 2496×1664 display and external 2560×1440 DisplayPort monitor worked. Intel AX201 Wi-Fi also works. **Built-in keyboard and trackpad still do not work, and full peak performance is not established.** See the [full validated report](VALIDATED-METAL-SL4.md).
+**Updated 2026-11-22.** The previous no-acceleration-only status is obsolete. On the test laptop (i7-1185G7, Iris Xe 96 EU `8086:9A49`), **Tahoe 26.7.1 + stock WhateverXe 0.8.3 + Graphics 0.4.4 + fixed 60 MB DVMT profile booted with Metal 2** and 1536 MB dynamic VRAM. The built-in 2496×1664 display and external 2560×1440 DisplayPort monitor worked. Intel AX201 Wi-Fi also works. **Built-in keyboard and trackpad now work on the owner's tested SL4 Intel with the Tiger Lake BigSurface input stack; full peak performance is still not established.** See the [full validated report](VALIDATED-METAL-SL4.md).
 
 This is an **already-installed Tahoe** workflow using only the **internal SSD** and Windows 11. The scripts never need a removable transfer drive. Keep the Windows Boot Manager, EFI/Microsoft, EFI/BOOT and existing partitions unchanged.
 
@@ -120,11 +120,17 @@ kmutil showloaded 2>/dev/null | grep -Ei 'AppleIntelTGL|WhateverXe|AMFIAnchor'
 
 The **actual observed** test boot used `npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt` and showed **Metal 2, 1536 MB VRAM, loaded AppleIntelTGLGraphics 16.0.0** and an external monitor. Wi-Fi worked.
 
+## Surface keyboard and trackpad — newly confirmed working on the test laptop
+
+The owner has **verified physical keyboard and trackpad function** on the Surface Laptop 4 Intel with the specialized BigSurface input drivers: `VoodooGPIO 1.2.0`, `VoodooSerial 1.2` (UART `8086:A0A8`), `BigSurface 1.2.0`, `BigSurfaceHIDDriver 1.0.0`, and `VoodooInput 1.1.3`. The owner also reported the [gesture-preference script](../scripts/configure_surface_trackpad.sh) made the touchpad work correctly.
+
+**This is a new, separate input-driver stage; it is not the old disabled `BigSurface 6.5` candidate.** New users must follow [input-driver installation and rollback](INPUT-KEYBOARD-TRACKPAD.md) after first successful Tahoe + Metal boot. The `build_efi.py` clean-checkout output has **not** been independently boot-tested with this input stack and should not have unverified kexts silently enabled by default.
+
 ## Current non-graphics driver limitations
 
 - Intel AX201 Wi-Fi: **user-confirmed working**. AirportItlwm 2.4.0 loaded.
 - Microsoft Surface Dock: USB2/USB3 hubs and GigE adapter enumerate; external monitor appeared over DisplayPort with Metal, but **all** dock functions and sustained reliability were not fully tested.
-- Built-in keyboard and trackpad: **nonfunctional**; require further Surface SAM/ACPI investigation. VoodooPS2/VoodooI2C alone cannot be assumed sufficient.
+- Built-in keyboard and trackpad: **user-confirmed working** with the dedicated [SL4 Intel BigSurface UART A0A8 stack](INPUT-KEYBOARD-TRACKPAD.md). Simple VoodooPS2/VoodooI2C is not a substitute; use the guarded installation procedure and a full EFI backup.
 - Bluetooth/audio/battery: some kexts loaded; functional results are not yet confirmed.
 - Samsung PM991 NVMe stability, sleep/wake, high-refresh external output, CPU power management, sustained performance: **unverified**.
 - Metal fixed a major graphics bottleneck, **not** every source of lag.
