@@ -24,6 +24,8 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | Windows 11 dual boot | **Working** |
 | Intel Iris Xe / Metal 2 | **Working** |
 | Safari YouTube H.264 playback (1080p) | **Working on tested SL4** |
+| WebKit local video: H.264 / HEVC / VP8 | **Working (480×270 tested)** |
+| WebKit local video: VP9 / AV1 | **Not working in this configuration** |
 | Internal HiDPI and external DisplayPort | **Working** |
 | **Internal display brightness controls** | **Working** |
 | Intel AX201 Wi-Fi / Bluetooth | **Working** |
@@ -80,7 +82,7 @@ Check the video prerequisites in **macOS Terminal**:
 python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/verify_video_macos.py"
 ```
 
-The driver-pack builder also includes this read-only checker in `SL4-FULL-DRIVERS/macOS-Installers/`. Expected: **MATCHES TESTED VIDEO CONFIGURATION: YES**. It verifies the exact Graphics 0.4.4 package, WhateverXe 0.8.3, Metal 2, H.264 availability and `AllowOnePassMetalScaling=false`. It cannot prove on-screen playback; open YouTube in Safari and use **Stats for nerds** to inspect the actual codec. VP9/AV1 hardware decoding was **not** advertised on the tested device; other codecs, protected media and all YouTube videos have not been verified. [Troubleshooting and evidence](docs/MEDIA.md).
+The driver-pack builder also includes this read-only checker in `SL4-FULL-DRIVERS/macOS-Installers/`. Expected: **MATCHES TESTED VIDEO CONFIGURATION: YES**. It verifies the exact Graphics 0.4.4 package, WhateverXe 0.8.3, Metal 2, H.264 availability and `AllowOnePassMetalScaling=false`. It cannot prove on-screen playback; open YouTube in Safari and use **Stats for nerds** to inspect the actual codec. WebKit local-file testing also confirmed HEVC and VP8 playback, while VP9 stalled and AV1 returned `NotSupportedError`. VP9/AV1 hardware decoding was **not** advertised on the tested device. Other browsers, protected media and all YouTube videos have not been verified. [Troubleshooting and evidence](docs/MEDIA.md).
 
 ### 2. Built-in keyboard, trackpad and battery
 

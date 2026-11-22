@@ -26,7 +26,23 @@ If the video stalls, record the codec, resolution and whether audio continues. C
 
 ## Limitations
 
-- Playback was confirmed only for the observed Safari/YouTube H.264 case; this is **not universal video compatibility** or guaranteed performance for other codecs, protected media, fullscreen scaling or every hardware revision.
+- Additional controlled tests of local files in a dedicated WebKit view (the engine used by Safari) confirmed **H.264, HEVC and VP8 playback** at 480×270, 24 fps. VP9 did not advance or render frames, and AV1 returned `NotSupportedError`. This is **not universal browser video compatibility** or guaranteed performance for other resolutions, codecs, protected media, fullscreen scaling or hardware revisions.
 - Known upstream Tiger Lake VideoToolbox and AppleGVA issues may still affect particular media operations: [WhateverXe issue #92](https://github.com/b00t0x/WhateverXe/issues/92), [issue #96](https://github.com/b00t0x/WhateverXe/issues/96) and [issue #129](https://github.com/b00t0x/WhateverXe/issues/129). Graphics 0.4.4 includes a CPU image-conversion fallback but does not resolve every possible GVA failure.
 - Avoid deleting AppleIntelTGLGraphicsVADriver, disabling GVA globally or adding unverified video boot arguments. Such workarounds can break Metal, fullscreen playback, WindowServer or protected playback.
 - This project does not modify or redistribute the signed WhateverXe Graphics package. Its pinned original download and SHA-256 are verified by the driver-pack builder.
+
+## Local codec playback results (2026-11-22)
+
+These tests used a dedicated macOS `WKWebView`, **not a regular Safari tab**. Each locally generated six-second sample contained 480×270 video at 24 fps and audio, and was played with an HTML `video` element. WebKit playback time, decode counts, errors and dropped frames were captured. All results refer to the single tested Intel Surface Laptop 4.
+
+| Codec / container | WebKit playback | Frames decoded | Dropped | Hardware decode |
+| --- | --- | ---: | ---: | --- |
+| H.264 / MP4 | Working | 181 | 2 | Confirmed in WebKit GPU logs |
+| HEVC / MP4 | Working | 183 | 0 | Confirmed in WebKit GPU logs |
+| VP8 / WebM | Working | 185 | 0 | Not established |
+| VP9 / WebM | Does not start (0 s) | 0 | 0 | Not advertised |
+| AV1 / MP4 | `NotSupportedError` (code 4) | 0 | 0 | Not advertised |
+
+Independent FFmpeg software decoding of the **same VP9 and AV1 files succeeded**. This demonstrates CPU decoding can work with a bundled decoder, not that WebKit includes one.
+
+The original YouTube test separately confirmed **Safari H.264 1920×1080 playback** via VideoToolbox, with successful frame progression. The local codec experiment is a compatibility baseline, **not a repair**. No EFI settings, Apple drivers, or macOS system preferences were modified.
