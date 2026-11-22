@@ -55,7 +55,7 @@ def verify_hardware():
     check(sys.platform == "win32", "Run from Windows 11, not macOS or WSL")
     name = ps("(Get-CimInstance Win32_ComputerSystem).Model")
     check(any(m.lower() in name.lower() for m in MODELS), "Unsupported system: " + name)
-    serial = ps("Get-CimInstance Win32_PnPEntity | Where-Object { $_.PNPDeviceID -match 'PCI\\VEN_8086&DEV_A0A8' } | Select-Object -ExpandProperty PNPDeviceID")
+    serial = ps("Get-CimInstance Win32_PnPEntity | Where-Object { $_.PNPDeviceID -match 'VEN_8086&DEV_A0A8' } | Select-Object -ExpandProperty PNPDeviceID")
     check("VEN_8086&DEV_A0A8" in serial.upper(), "SL4 Intel 8086:A0A8 UART not found")
 
 
