@@ -9,7 +9,7 @@
 - Inspect the actual disks in Recovery with `diskutil list` and `gpt -r show /dev/diskN`. Device numbers change between boots, and must never be copied blindly from screenshots.
 - Create APFS **only in confirmed unallocated space**. In the original test, Windows remained on `disk1s3`, while a distinct 148.4 GB APFS container became `disk1s4`. **Those identifiers are examples, not commands to run on another laptop.**
 - Do not use `eraseDisk` or `partitionDisk` on the internal SSD. Never erase or overwrite `EFI SYSTEM`, `Microsoft Reserved` or the Windows NTFS volume.
-- Keep OpenCore on the external USB until Tahoe and Windows can both boot reliably. Do not replace Windows Boot Manager just to make Tahoe start.
+- Keep OpenCore on the external USB until Tahoe and Windows can both boot reliably. For permanent USB-free startup, [stage the known-working OpenCore as a separate firmware entry](INTERNAL-BOOT.md). Never overwrite Windows Boot Manager or the UEFI fallback loader.
 - The Samsung PM991 is a known macOS compatibility risk; successful detection at boot does not prove stable write operation. Keep reliable backups.
 
 ## Installer media
