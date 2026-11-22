@@ -88,6 +88,15 @@ def main():
     subprocess.run(cmd, check=True)
     graphics_dir = target / "macOS-Installers"
     graphic = fetch(GRAPHICS_URL, graphics_dir / "WhateverXe-Graphics-0.4.4.pkg", GRAPHICS_SIZE, GRAPHICS_SHA256)
+    # The signed upstream Graphics package is not modified. Include an offline,
+    # read-only macOS checker that confirms the tested YouTube/H.264 prerequisites.
+    video_checker = Path(__file__).with_name("verify_video_macos.py")
+    require(video_checker.is_file(), "Missing companion video verification script")
+    checker_target = graphics_dir / "verify_video_macos.py"
+    checker_target.write_bytes(video_checker.read_bytes())
+    require(hashlib.sha256(checker_target.read_bytes()).hexdigest() ==
+            hashlib.sha256(video_checker.read_bytes()).hexdigest(),
+            "Video checker failed to copy")
     touch = fetch(IPTS_URL, graphics_dir / "IPTSDaemon-v1.4.zip")
     # Do not extract/execute daemon: the upstream release only documents older Surface hardware.
     manifest = {
@@ -95,6 +104,12 @@ def main():
         "status": "Driver candidates. Not a complete, validated, working macOS Tahoe hardware configuration.",
         "installed_macOS": "Tahoe 26.7 or newer required for these WhateverXe Graphics releases.",
         "graphics": graphic,
+        "video": {
+            "validation_script": str(checker_target),
+            "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
+            "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
+            "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",
+        },
         "touchscreen_daemon_candidate": touch,
         "staged_efi": str(target / "optional-EFI" / "EFI"),
         "opencore_validator": str(validator),
@@ -105,12 +120,14 @@ def main():
             "Do not remove -wex-noaccel until the proper graphics package, SIP and AMFI dependencies are verified.",
             "BigSurface 6.5 and IPTSDaemon 1.4 are from 2023, and neither is qualified for Surface Laptop 4 on Tahoe.",
             "Do not combine BigSurface with VoodooI2C and SMCBatteryManager.",
-            "Use the original Kingston EFI as a recovery path. Do not replace the working internal EFI blindly.",
+            "Keep an independent Windows Boot Manager recovery path. Do not replace the working internal EFI blindly.",
+            "Safari H.264 playback was verified; this is not a fix for every VideoToolbox, VP9, AV1 or protected-content issue.",
         ],
     }
     (target / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("FULL CANDIDATE DRIVER PACK READY:", target)
     print("Graphics and OpenCore ZIP SHA256 verified against official release asset digests.")
+    print("Read-only Tahoe video check:", checker_target)
     if sys.platform == "win32":
         print("Generated EFI config checked by official OpenCore 1.0.8 ocvalidate.exe.")
     print("No drivers have been installed into macOS or enabled on the internal EFI.")

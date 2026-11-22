@@ -1,0 +1,26 @@
+name: macOS video diagnostic tests
+
+on:
+  push:
+    paths:
+      - "scripts/verify_video_macos.py"
+      - "scripts/prepare_full_driver_pack.py"
+      - "tests/test_video_macos.py"
+      - ".github/workflows/video-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/verify_video_macos.py"
+      - "scripts/prepare_full_driver_pack.py"
+      - "tests/test_video_macos.py"
+      - ".github/workflows/video-validation.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m py_compile scripts/verify_video_macos.py scripts/prepare_full_driver_pack.py
+      - run: python -m unittest discover -v -s tests -p test_video_macos.py

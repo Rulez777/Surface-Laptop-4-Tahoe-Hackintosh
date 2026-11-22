@@ -7,6 +7,7 @@ Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8)
 | Component | Driver / configuration | Result |
 | --- | --- | --- |
 | Graphics | WhateverXe 0.8.3 + Graphics 0.4.4; DVMT 60 MB | Intel Iris Xe Metal 2; internal HiDPI and external DisplayPort |
+| Browser video | Same graphics stack; CoreMedia scaling flag disabled | **Safari YouTube H.264 1080p playback working** |
 | Wi-Fi | AirportItlwm 2.4.0 | Intel AX201 wireless |
 | Bluetooth | Intel Bluetooth stack | Working |
 | Keyboard / trackpad | BigSurface 1.2.0, BigSurfaceHIDDriver 1.0.0, VoodooGPIO 1.2.0, VoodooSerial 1.2, VoodooInput 1.1.3 | Keyboard, taps, clicks and multitouch |
@@ -52,6 +53,12 @@ sudo python3 scripts/install_brightness_macos.py rollback --esp disk0s1
 ```
 
 Do not combine this tested WhateverXe/PNLF fix with unrelated panel patches or other hardware configurations.
+
+## Browser video
+
+On the tested Tahoe 26.7.1 Surface, **Safari successfully played YouTube H.264 (`avc1`) at 1920 × 1080** using VideoToolbox hardware decoding. The official WhateverXe Graphics 0.4.4 installer had already set `/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist → AllowOnePassMetalScaling:Enabled=false`. No additional OpenCore changes were required.
+
+The [read-only media checker](../scripts/verify_video_macos.py) verifies that the same prerequisites are installed. The driver-pack builder includes the checker alongside the pinned, SHA-256 verified upstream Graphics 0.4.4 package. Codec availability is not proof that all videos can play. VP9 and AV1 hardware decoding were not advertised on the test Surface; see [media details](MEDIA.md).
 
 ## Other hardware
 
