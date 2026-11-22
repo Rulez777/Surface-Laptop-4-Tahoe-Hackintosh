@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+import os
 import pathlib
 import plistlib
 import shutil
@@ -25,6 +26,8 @@ RELEASES = {
     "VoodooPS2": ("https://github.com/acidanthera/VoodooPS2/releases/download/2.3.7/VoodooPS2Controller-2.3.7-RELEASE.zip", ["VoodooPS2Controller.kext"]),
     "VoodooI2C": ("https://github.com/VoodooI2C/VoodooI2C/releases/download/v2.9.1/VoodooI2C-2.9.1-RELEASE.zip", ["VoodooI2C.kext", "VoodooI2CHID.kext"]),
     "BigSurface": ("https://github.com/Xiashangning/BigSurface/releases/download/v6.5/BigSurface.zip", ["BigSurface.kext"]),
+    "NVMeFix": ("https://github.com/acidanthera/NVMeFix/releases/download/1.1.3/NVMeFix-1.1.3-RELEASE.zip", ["NVMeFix.kext"]),
+    "RestrictEvents": ("https://github.com/acidanthera/RestrictEvents/releases/download/1.1.6/RestrictEvents-1.1.6-RELEASE.zip", ["RestrictEvents.kext"]),
 }
 # Names to enable with --enable; never enable BigSurface or Voodoo input automatically.
 PROFILES = {
@@ -35,7 +38,8 @@ PROFILES = {
 TAHOE_ONLY = {"AirportItlwm.kext"}
 # Kexts requiring additional checks, ACPI, hardware matching, or Tahoe compatibility tests.
 MANUAL_ONLY = {"BigSurface.kext", "VoodooPS2Controller.kext", "VoodooI2C.kext",
-               "VoodooI2CHID.kext", "SMCBatteryManager.kext", "IntelBTPatcher.kext"}
+               "VoodooI2CHID.kext", "SMCBatteryManager.kext", "IntelBTPatcher.kext",
+               "NVMeFix.kext", "RestrictEvents.kext"}
 
 
 def require(ok, message):
@@ -126,7 +130,8 @@ def main():
     enabled_groups = [x.strip() for x in args.enable.split(",") if x.strip()]
     require(all(x in PROFILES for x in enabled_groups), "Allowed groups: audio,wifi,bluetooth. Surface input requires manual ACPI work.")
     enabled_names = {n for g in enabled_groups for n in PROFILES[g]}
-    source = args.source.resolve()
+    # Windows mountvol /S does not always support pathlib strict volume resolution.
+    source = pathlib.Path(os.path.abspath(str(args.source)))
     require(source.name.upper() == "EFI" and (source / "OC/config.plist").is_file(), "--source must be a personal EFI directory")
     cfg_in = plistlib.loads((source / "OC/config.plist").read_bytes())
     require(any(a.get("Enabled") and a.get("Path") == "SSDT-RTC0-SL4.aml" for a in cfg_in["ACPI"]["Add"]),
