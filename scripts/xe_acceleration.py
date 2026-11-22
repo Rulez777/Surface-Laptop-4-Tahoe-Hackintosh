@@ -15,6 +15,7 @@ import plistlib
 import subprocess
 import sys
 import tempfile
+from dvmt60 import DVMT_ARG, is_ready as dvmt60_ready, stage as stage_dvmt60
 
 APPLE_GUID = "7C436110-AB2A-4BBB-A880-FE41995C9F82"
 SIP_WEX = bytes.fromhex("03080000")
@@ -97,6 +98,7 @@ def main():
     p.add_argument("--backup-dir", type=Path, help="Private backups on C:")
     p.add_argument("--backup", type=Path, help="Known-good config.plist for restore")
     p.add_argument("--ocvalidate", type=Path, help="OpenCore 1.0.8 ocvalidate.exe")
+    p.add_argument("--dvmt-60", action="store_true", help="Explicitly prepare 60 MB DVMT Surface Iris Xe properties (requires verified GGC 0xFEC1)")
     args = p.parse_args()
     root = Path(os.path.abspath(os.fspath(args.efi)))
     require(root.name.upper() == "EFI", "Expected EFI folder, not bare ESP root")
@@ -120,6 +122,8 @@ def main():
     print("SIP Data: 0x" + sip.hex())
     print("Graphics: ", "NO ACCEL (-wex-noaccel)" if DISABLE_FLAG in flags else "ACCEL FLAG NOT DISABLED")
     print("Required boot flags:", {a: (a in flags) for a in REQUIRED_ARGS})
+    print("Fixed 60 MB DVMT properties ready:", dvmt60_ready(cfg))
+    print("DVMT boot flag present:", DVMT_ARG in flags)
     if args.mode == "inspect":
         print("INSPECT OK: no changes")
         return
@@ -135,11 +139,21 @@ def main():
             if arg not in new_flags:
                 new_flags.append(arg)
                 print("ADD boot-arg:", arg)
+        if args.dvmt_60:
+            for change in stage_dvmt60(cfg):
+                print("DVMT 60 MB:", change)
+            if DVMT_ARG not in new_flags:
+                new_flags.append(DVMT_ARG)
+                print("ADD boot-arg:", DVMT_ARG)
+        elif not dvmt60_ready(cfg) or DVMT_ARG not in new_flags:
+            print("WARNING: verified Surface GGC 0xFEC1 requires --dvmt-60 before enabling acceleration")
         print("PRESERVED: -wex-noaccel (until Graphics pkg has been installed into Tahoe)")
     else:
         require(sip == SIP_WEX, "SIP must be Data 03080000; run --mode prepare first and reboot")
         require(all(x in flags for x in REQUIRED_ARGS), "Required WEX boot arguments missing; run --mode prepare")
         require(DISABLE_FLAG in flags, "Already enabled, no -wex-noaccel flag found")
+        require(dvmt60_ready(cfg) and DVMT_ARG in flags,
+                "DVMT 60 MB properties or -igfxdvmt missing; DO NOT remove -wex-noaccel. Run --mode prepare --dvmt-60 first")
         print("CRITICAL: WhateverXe Graphics 0.4.4 must have been installed successfully in Tahoe 26.7+.")
         require(input("Type GRAPHICS-0.4.4-INSTALLED to confirm the pkg installation: ") == "GRAPHICS-0.4.4-INSTALLED", "Not confirmed")
         new_flags = [x for x in flags if x != DISABLE_FLAG]
