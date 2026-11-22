@@ -58,6 +58,34 @@ class TMPAttemptTests(unittest.TestCase):
                 service.request_once(guard)
             guard.BigSurface.assert_not_called()
 
+    def test_daemon_sends_only_at_start_and_after_wake(self):
+        class FakeClock:
+            def __init__(self):
+                self.up = 500.0
+                self.wall = 1000.0
+                self.ticks = 0
+
+            def step(self, seconds):
+                self.ticks += 1
+                self.up += seconds
+                self.wall += seconds
+                if self.ticks == 5:
+                    self.wall += 180  # Suspended interval excluded from uptime.
+                if self.ticks >= 12:
+                    raise KeyboardInterrupt()
+
+        fake=FakeClock()
+        with patch.object(service.os,"geteuid", return_value=0), \
+             patch.object(service,"cpu_and_surface_module",return_value=MagicMock()), \
+             patch.object(service,"hardware_safety"), \
+             patch.object(service,"uptime",side_effect=lambda: fake.up), \
+             patch.object(service.time,"time",side_effect=lambda: fake.wall), \
+             patch.object(service.time,"sleep",side_effect=fake.step), \
+             patch.object(service,"request_once",return_value=54.0) as request:
+            with self.assertRaises(KeyboardInterrupt):
+                service.run_daemon()
+            self.assertEqual(request.call_count,2)
+
     def test_sensor_failure_does_not_write(self):
         guard=MagicMock()
         guard.CpuDie.return_value.read.side_effect=RuntimeError("missing sensor")
