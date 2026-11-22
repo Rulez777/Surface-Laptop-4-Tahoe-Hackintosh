@@ -1,93 +1,79 @@
-# Boot Tahoe and Windows without a USB drive
+# Boot installed Tahoe and Windows from the internal SSD
 
-**Tested target:** Surface Laptop 4 (Intel i7-1185G7), Windows 11 + an existing Tahoe installation. This is the **post-install** step. It does not create a macOS partition or reinstall Tahoe.
+**Tested on 2026-11-22:** Microsoft Surface Laptop 4 Intel (i7-1185G7), Windows 11 + Tahoe 26.7.1 on separate partitions of Samsung PM991 256 GB. The test machine **successfully booted installed Tahoe using OpenCore 1.0.8 on its internal EFI System Partition, with no external media attached**. The independent Windows Boot Manager files and UEFI entry were preserved. Do not equate that with exhaustive dual-boot/menu or disk-encryption validation.
 
-The goal is a separate **OpenCore** firmware entry next to **Windows Boot Manager**. Both operating systems should then appear in the OpenCore picker, without keeping the Kingston installer plugged in.
+This is a **post-install** procedure. You must already have installed Tahoe and an OpenCore EFI that **actually boots** your machine. Do not overwrite or delete `EFI/Microsoft`, `EFI/BOOT`, Windows BCD, any partitions or your backups. Preserve private no-accel and accelerated `config.plist` copies off the ESP.
 
-> **Before changing firmware:** back up Windows, record your BitLocker recovery key, and keep the already-working Kingston OpenCore USB for rescue. A firmware change or failed boot may trigger BitLocker recovery. Run commands in **elevated Windows PowerShell**, not macOS Recovery. Do not try this while an installation/reboot sequence is still in progress.
+## Working test-machine layout
 
-**Keep Kingston unchanged as a recovery USB.** First stage its known-working EFI on the internal ESP, then [apply the quiet boot profile to the internal copy only](QUIET-BOOT.md). After the internal OpenCore entry works, select installed **macOS Tahoe** and press **Ctrl+Enter** once to make it the persistent default. Windows remains selectable. Exact visual order depends on boot enumeration; do not hard-code Windows as the second entry.
+- Internal physical SSD: EFI partition 1, Windows 11 on NTFS and Tahoe 26.7.1 on separate APFS.
+- Internal ESP seen in Windows as `S:` using `mountvol S: /S`; in macOS as FAT32 `disk0s1` volume named `SYSTEM`.
+- Internal OpenCore located at `\EFI\OC\OpenCore.efi`. `SSDT-RTC0-SL4.aml` and all working dependencies are inside the private `EFI/OC` directory.
+- Windows Boot Manager remains `\EFI\Microsoft\Boot\bootmgfw.efi`; a **separate** OpenCore firmware entry was created, rather than changing Windows's boot path.
+- Quiet picker is configured with `ShowPicker=True`, `Timeout=4` and optional `Ctrl+Enter` for default selection.
+- The tested accelerated display path requires fixed-60-MB DVMT settings; see [validated Metal](VALIDATED-METAL-SL4.md).
 
-## 1. Stage the known-working EFI on the internal ESP
+## Safe read-only inspection from Windows
 
-Use the EFI that actually booted Tahoe, **not** an untested new build. The script copies only `EFI\OC` to the internal Windows EFI System Partition. It never replaces `EFI\Microsoft` or `EFI\BOOT`, and does not change any boot entries.
-
-Confirm Windows is on disk 0 and Kingston is present:
-
-```powershell
-Get-Disk | Format-Table Number,FriendlyName,BusType,IsSystem,IsBoot,Size
-```
-
-Run a read-only check:
+Open elevated PowerShell. Check the internal ESP location without changing the boot order:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\stage_internal_efi.ps1" -Mode Inspect -InternalDiskNumber 0
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
-
-After `INSPECT OK`, stage OpenCore:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\stage_internal_efi.ps1" -Mode Stage -InternalDiskNumber 0
+Get-Item 'S:\EFI\OC\OpenCore.efi','S:\EFI\OC\ACPI\SSDT-RTC0-SL4.aml','S:\EFI\Microsoft\Boot\bootmgfw.efi'
 ```
-
-Type `STAGE-OPENCORE-INTERNAL` when prompted. The script stores a Windows EFI and BCD backup in `Downloads\SL4-ESP-BACKUP-...`, then hashes **every** copied file. Do not continue unless it reports `STAGE SUCCESS`.
-
-Disconnect and reconnect the USB if desired, then verify the internal EFI **without** requiring Kingston:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\stage_internal_efi.ps1" -Mode Verify -InternalDiskNumber 0
-```
-
-## 2. Apply quiet settings to the internal EFI
-
-After `STAGE SUCCESS`, leave Kingston unchanged. Follow [Quiet Boot](QUIET-BOOT.md) to disable OpenCore debug-file logging **in the internal EFI only**. This takes a private `config.plist` backup and sets the OpenCore picker to four seconds.
-
-## 3. Create a *new* firmware entry — keep the original Windows entry
-
-Create a copy of the firmware's Windows boot entry, **without modifying the original**:
-
-```powershell
-bcdedit.exe /copy "{bootmgr}" /d "OpenCore (Surface Laptop 4)"
-```
-
-The command returns a **new GUID**. Substitute that new GUID into the following command; **never substitute `{bootmgr}`**:
-
-```powershell
-bcdedit.exe /set "{YOUR-NEW-GUID}" path "\EFI\OC\OpenCore.efi"
-```
-
-Check the result. You should see one entry called `Windows Boot Manager` with `\EFI\Microsoft\Boot\bootmgfw.efi` and a **separate** entry called `OpenCore (Surface Laptop 4)` with `\EFI\OC\OpenCore.efi`:
 
 ```powershell
 bcdedit.exe /enum firmware
 ```
 
-**Stop** if the Windows entry was changed or the new entry was not created correctly. Do **not** run `bcdedit /set "{bootmgr}" path ...`: that replaces the boot path associated with Windows.
+Do not place a copied or newly built, **untested** EFI on the internal ESP just because `ocvalidate` accepts it. The repo's EFI builder is not independently boot-validated from a clean checkout. Use a *known-bootable private* OpenCore EFI as your baseline, saved outside the ESP. The historic original-staging procedure is preserved in [legacy first-boot notes](LEGACY-FIRST-BOOT.md); it is not required to reproduce the already installed test machine's current result.
 
-## 4. Test from firmware with the USB removed
+## Independent firmware entry (only if not already present)
 
-Power down fully, remove the USB, enter Surface UEFI (Volume Up + Power), and choose the newly created **OpenCore** boot entry if the firmware exposes it. Check that both Tahoe and Windows can be selected from the OpenCore picker; test **both** before changing the boot order. Surface firmware may filter or reorder custom entries; in that case, do not remove the Windows entry or overwrite its bootloader to force OpenCore.
-
-After a successful test, you may put the new entry first in firmware order:
+The test Surface already has an OpenCore entry: **do not duplicate it**. On a different machine, only after verified OpenCore files exist in its internal ESP, create a separate UEFI entry. Never edit the original `{bootmgr}` path.
 
 ```powershell
-bcdedit.exe /set "{fwbootmgr}" displayorder "{YOUR-NEW-GUID}" /addfirst
+bcdedit.exe /copy "{bootmgr}" /d "OpenCore (Surface Laptop 4)"
 ```
 
-With the quiet profile applied, OpenCore has `Misc -> Boot -> ShowPicker = True` and `Timeout = 4`. `UEFI -> Quirks -> RequestBootVarRouting = True` is also set. Do not enable `LauncherOption = Full` on the USB and internal EFI simultaneously, as it may create a boot entry for the wrong device.
+Record the **new** GUID printed by this command. Use that returned GUID (not `{bootmgr}`) in:
 
-If Windows doesn't appear in OpenCore, **do not change partitions**: use the UEFI's existing Windows Boot Manager entry, confirm that `EFI\Microsoft\Boot\bootmgfw.efi` still exists and investigate picker scanning.
+```powershell
+bcdedit.exe /set "{YOUR-NEW-GUID}" path "\EFI\OC\OpenCore.efi"
+```
 
-## Roll back
+Inspect with:
 
-Return Windows Boot Manager to the top of the firmware boot order via Surface UEFI, then delete **only the newly created GUID**:
+```powershell
+bcdedit.exe /enum firmware
+```
+
+Verify that Windows Boot Manager still targets `\EFI\Microsoft\Boot\bootmgfw.efi`, while your **different** entry targets `\EFI\OC\OpenCore.efi`. If firmware filters custom entries, stop and investigate; do **not** replace Windows Boot Manager to force OpenCore.
+
+Test Tahoe from the OpenCore entry and Windows from its original entry before considering any permanent boot order change. The first OpenCore-only test can use the firmware's one-time boot choice. Changing boot order or firmware state may trigger BitLocker recovery; keep recovery credentials available.
+
+To return to the Windows boot priority, use Surface UEFI. Only if necessary and after verifying its GUID, delete **the new independent OpenCore entry**, never `{bootmgr}`:
 
 ```powershell
 bcdedit.exe /delete "{YOUR-NEW-GUID}"
 ```
 
-Verify with `bcdedit /enum firmware`. Leaving the staged `EFI\OC` directory in place is harmless; do not delete or rename `EFI\Microsoft` or `EFI\BOOT`. If Windows does not start, use its recovery media and the saved BCD/EFI backup.
+The test machine's OpenCore entry was already created with a distinct GUID; keep it as-is.
 
-**References:** [Dortania: dual boot](https://dortania.github.io/OpenCore-Multiboot/oc/win.html), [Microsoft: BCDEdit](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/bcdedit), [OpenCore LauncherOption](https://dortania.github.io/OpenCore-Post-Install/multiboot/bootstrap.html).
+## Graphics and rollback
 
-This is a documented, reversible path; the **internal firmware-entry boot has not yet been verified on the test Surface**. The confirmed macOS boot used the Kingston USB.
+The test laptop's **accelerated** configuration was successfully booted with:
+
+- WhateverXe 0.8.3 + Graphics 0.4.4 installed inside Tahoe.
+- 60 MB DVMT: `framebuffer-patch-enable` Data `01000000`; `framebuffer-stolenmem` Data `0000C003` under `PciRoot(0x0)/Pci(0x2,0x0)`.
+- `boot-args = npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt`.
+- Metal 2 / 1536 MB dynamic VRAM, with AppleIntelTGLGraphics actually loaded.
+
+The owner saved a private working Metal `config.plist` in macOS Downloads and an earlier no-accel EFI backup. If a new change causes boot failure, select the preserved independent Windows Boot Manager entry and restore the known-good **no-acceleration** config (with `-wex-noaccel`) from the private backup. Do not reset NVRAM wholesale, repair the ESP blindly, alter Windows BCD or repartition.
+
+See [Quick Start](../README.md#quick-start-reproduce-the-validated-metal-2-state-existing-tahoe-no-removable-media) for the end-to-end no-removable-media graphics path.
+
+References: [Microsoft BCDEdit](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/bcdedit), [Dortania multiboot](https://dortania.github.io/OpenCore-Multiboot/oc/win.html).
