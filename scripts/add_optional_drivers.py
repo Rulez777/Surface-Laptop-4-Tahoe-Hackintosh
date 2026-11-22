@@ -13,6 +13,7 @@ import pathlib
 import plistlib
 import shutil
 import subprocess
+import tempfile
 import sys
 import urllib.request
 import zipfile
@@ -28,6 +29,21 @@ RELEASES = {
     "BigSurface": ("https://github.com/Xiashangning/BigSurface/releases/download/v6.5/BigSurface.zip", ["BigSurface.kext"]),
     "NVMeFix": ("https://github.com/acidanthera/NVMeFix/releases/download/1.1.3/NVMeFix-1.1.3-RELEASE.zip", ["NVMeFix.kext"]),
     "RestrictEvents": ("https://github.com/acidanthera/RestrictEvents/releases/download/1.1.6/RestrictEvents-1.1.6-RELEASE.zip", ["RestrictEvents.kext"]),
+}
+
+# Frozen GitHub release asset metadata checked against the official release API
+# on 2026-11-22. A missing official SHA is represented by None (size + CRC only).
+ASSET_INTEGRITY = {
+    "AppleALC-1.9.8-RELEASE.zip": (3780656, "d4d36cd2da7863cf7cbfcb0892d45c08457f4f4ddd065a073dd010e46bd63bcb"),
+    "AirportItlwm-Tahoe-v2.4.0-RELEASE-alpha-7204c69.zip": (15099363, "a5d098e6752592435c021aa6e8d08c64ee6aab9f2786660a6c72d7af1218fcf9"),
+    "IntelBluetooth-v2.4.0.zip": (11440164, None),
+    "BrcmPatchRAM-2.7.2-RELEASE.zip": (5422378, "e1c1c55347526d031a8ae2fdd1f52efa3019161e497fb38e1cfa809752f8af21"),
+    "VirtualSMC-1.3.8-RELEASE.zip": (1400933, "2e29a8aaf91b4eb0bcdf5913ed17e70f5cf76531122acd4132eff7813a54de8b"),
+    "VoodooPS2Controller-2.3.7-RELEASE.zip": (632757, None),
+    "VoodooI2C-2.9.1-RELEASE.zip": (1338392, None),
+    "BigSurface.zip": (219192, None),
+    "NVMeFix-1.1.3-RELEASE.zip": (108136, "e1d5657ab7ac31f69771708f7b80bf218ab9aa0b8e4c4fe6ff943983037e3dfb"),
+    "RestrictEvents-1.1.6-RELEASE.zip": (109908, "98170dfae195ddd28b5d95e3f040125a13ca783bcb9bd1e5b8c588e217b14ee6"),
 }
 # Names to enable with --enable; never enable BigSurface or Voodoo input automatically.
 PROFILES = {
@@ -47,16 +63,45 @@ def require(ok, message):
         raise RuntimeError(message)
 
 
+def verified_zip(path, expected_size, expected_sha):
+    """Verify a pinned asset; CRC also checks assets without official SHA-256."""
+    try:
+        if not path.is_file() or path.stat().st_size != expected_size:
+            return False
+        if expected_sha and hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha:
+            return False
+        with zipfile.ZipFile(path) as archive:
+            return archive.testzip() is None
+    except (OSError, zipfile.BadZipFile, RuntimeError):
+        return False
+
+
 def cached_download(url, cache):
-    output = cache / url.rsplit("/", 1)[-1]
-    if not output.is_file():
+    name = url.rsplit("/", 1)[-1]
+    require(name in ASSET_INTEGRITY, "Unpinned release asset: " + name)
+    expected_size, expected_sha = ASSET_INTEGRITY[name]
+    output = cache / name
+    if not verified_zip(output, expected_size, expected_sha):
+        if output.exists():
+            print("NOTICE: incomplete or invalid cached asset; downloading again:", name)
         print("Downloading", url)
         req = urllib.request.Request(url, headers={"User-Agent": "SL4-Optional-Kexts/1.0"})
-        with urllib.request.urlopen(req, timeout=180) as response, output.open("wb") as f:
-            shutil.copyfileobj(response, f)
-    raw = output.read_bytes()
-    require(len(raw) > 100 and zipfile.is_zipfile(io.BytesIO(raw)), "Invalid ZIP from " + url)
-    return zipfile.ZipFile(io.BytesIO(raw))
+        with tempfile.NamedTemporaryFile(prefix=".sl4-", suffix=".part", dir=cache, delete=False) as f:
+            temporary = pathlib.Path(f.name)
+            try:
+                with urllib.request.urlopen(req, timeout=180) as response:
+                    shutil.copyfileobj(response, f)
+            except BaseException:
+                temporary.unlink(missing_ok=True)
+                raise
+        try:
+            require(verified_zip(temporary, expected_size, expected_sha),
+                    "Release asset failed pinned size/SHA256/ZIP CRC checks: " + name)
+            os.replace(temporary, output)
+        finally:
+            temporary.unlink(missing_ok=True)
+    print("Verified release ZIP:", name, "(SHA256)" if expected_sha else "(size + ZIP CRC; upstream SHA unavailable)")
+    return zipfile.ZipFile(output)
 
 
 def find_files(archive, kext_name):
@@ -78,9 +123,7 @@ def find_files(archive, kext_name):
 
 def unpack_one(archive, name, dst):
     matches = find_files(archive, name)
-    if not matches:
-        print("NOTICE: upstream release does not contain", name, "- skipped")
-        return False
+    require(matches, "Upstream archive missing expected kext: " + name)
     dest = dst / name
     seen = set()
     for relative, source in matches:
@@ -134,6 +177,7 @@ def main():
     source = pathlib.Path(os.path.abspath(str(args.source)))
     require(source.name.upper() == "EFI" and (source / "OC/config.plist").is_file(), "--source must be a personal EFI directory")
     cfg_in = plistlib.loads((source / "OC/config.plist").read_bytes())
+    original_names = {entry["BundlePath"] for entry in cfg_in["Kernel"]["Add"]}
     require(any(a.get("Enabled") and a.get("Path") == "SSDT-RTC0-SL4.aml" for a in cfg_in["ACPI"]["Add"]),
             "Source EFI is missing the Surface RTC0 fix")
     target = args.out.resolve()
@@ -151,19 +195,29 @@ def main():
     config = plistlib.loads(config_path.read_bytes())
     kext_root = root / "OC/Kexts"
     for label, (url, names) in RELEASES.items():
-        archive = cached_download(url, cache)
+        # Preserve every already-configured kext byte-for-byte, even when a
+        # pinned upstream version differs. Never overwrite the tested source.
+        pending = [name for name in names if name not in original_names]
         for name in names:
-            if unpack_one(archive, name, kext_root):
+            if name in original_names:
+                require((kext_root / name / "Contents/Info.plist").is_file(),
+                        "Configured source kext is absent: " + name)
+                print("PRESERVED original kext:", name)
+            else:
+                require(not (kext_root / name).exists(), "Unlisted kext directory already present: " + name)
+        if not pending:
+            continue
+        with cached_download(url, cache) as archive:
+            for name in pending:
+                require(unpack_one(archive, name, kext_root), "Kext extraction failed: " + name)
                 register(config, kext_root, name, name in enabled_names)
     require(all((kext_root / n / "Contents/Info.plist").is_file() for n in enabled_names),
             "One or more requested driver groups missing from upstream releases")
     # Never load WhateverGreen alongside WhateverXe.
     require(not any(x.get("BundlePath") == "WhateverGreen.kext" and x.get("Enabled") for x in config["Kernel"]["Add"]),
             "WhateverGreen conflicts with the working WhateverXe EFI")
-    # Keep surface-specific input stacks disabled until there is an appropriate ACPI mapping.
-    for x in config["Kernel"]["Add"]:
-        if x.get("BundlePath") in MANUAL_ONLY:
-            x["Enabled"] = False
+    # Existing active entries must remain untouched. All newly added manual
+    # candidates start disabled by register(..., enabled=False).
     config_path.write_bytes(plistlib.dumps(config, sort_keys=False))
     # Ensure every enabled bundle references real files.
     for x in config["Kernel"]["Add"]:
