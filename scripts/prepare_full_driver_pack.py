@@ -6,6 +6,7 @@ Downloads upstream candidates into an isolated directory, without enabling
 unverified kernel extensions. The graphics package must be installed in macOS.
 """
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import zipfile
@@ -53,9 +54,26 @@ def main():
     source = Path(os.path.abspath(str(args.source)))
     require(source.name.upper() == "EFI" and (source / "OC/config.plist").is_file(), "Specify a private, working EFI folder")
     target = Path(os.path.abspath(str(args.out)))
-    require(not target.exists(), "Output exists; refusing to overwrite: " + str(target))
     require(target != source and source not in target.parents, "Output must not be inside the source EFI")
-    target.mkdir(parents=True)
+    if target.exists():
+        # A previous attempt may have failed while copying a live Windows BCD
+        # file. Resume ONLY a recognizable, unfinished output from this script.
+        # Preserve the failed EFI copy under a new name rather than deleting it.
+        require(target.is_dir() and not target.is_symlink(), "Output is not a normal directory")
+        require(not (target / "manifest.json").exists(), "Existing output already finished; choose a new --out")
+        allowed = lambda name: name in {"tools", "optional-EFI", "macOS-Installers"} or name.startswith("optional-EFI.failed-")
+        require(all(allowed(child.name) for child in target.iterdir()), "Unknown files in output; choose a new --out")
+        require((target / "tools" / "OpenCore-1.0.8-RELEASE.zip").is_file(),
+                "Cannot recognize previous attempt; choose a new --out")
+        partial = target / "optional-EFI"
+        if partial.exists():
+            saved = target / ("optional-EFI.failed-" + datetime.now().strftime("%Y%m%d-%H%M%S"))
+            require(not saved.exists(), "Timestamp collision while preserving previous partial output")
+            partial.rename(saved)
+            print("PRESERVED incomplete driver EFI:", saved)
+        print("RESUMING incomplete driver pack:", target)
+    else:
+        target.mkdir(parents=True)
     tools_dir = target / "tools"
     oc_asset = fetch(OC_URL, tools_dir / "OpenCore-1.0.8-RELEASE.zip", OC_SIZE, OC_SHA256)
     with zipfile.ZipFile(oc_asset["file"]) as oc:
