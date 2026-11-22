@@ -139,8 +139,12 @@ def main():
     target = args.out.resolve()
     require(not target.exists(), "Output already exists; never overwrite a known-good EFI")
     target.mkdir(parents=True)
+    # This is a kext development bundle, NOT a bootable cloned ESP.
+    # Never copy EFI/Microsoft/Boot/BCD: Windows holds that store open on
+    # mountvol /S, and it is not needed for OpenCore kernel extensions.
     root = target / "EFI"
-    shutil.copytree(source, root)
+    root.mkdir()
+    shutil.copytree(source / "OC", root / "OC")
     cache = args.cache.resolve()
     cache.mkdir(parents=True, exist_ok=True)
     config_path = root / "OC/config.plist"
