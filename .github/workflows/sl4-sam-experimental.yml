@@ -22,8 +22,10 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Verify Python script syntax
-        run: python3 -m py_compile experiments/sl4-input/build-bigsurface-sl4.py
+      - name: Verify installer and build scripts compile
+        run: python3 -m py_compile experiments/sl4-input/build-bigsurface-sl4.py experiments/sl4-input/stage-surface-input.py experiments/sl4-input/test_stage_surface_input.py
+      - name: Verify installer staging and rollback on synthetic EFI
+        run: python3 -m unittest discover -s experiments/sl4-input -p 'test_stage_surface_input.py' -v
       - name: Compile BigSurface stack on Intel macOS
         run: python3 experiments/sl4-input/build-bigsurface-sl4.py
       - name: Verify five kext bundles and Tiger Lake UART identity
