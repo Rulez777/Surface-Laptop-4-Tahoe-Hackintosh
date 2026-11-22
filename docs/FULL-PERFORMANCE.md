@@ -34,6 +34,8 @@ Download **all** currently identified optional driver kexts, the Surface touch d
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\prepare_full_driver_pack.py" --source "S:\EFI" --out "$HOME\Downloads\SL4-FULL-DRIVERS" --cache "$HOME\Downloads\SL4-KEXT-CACHE"
 ```
 
+If an older build failed while copying `S:\\EFI\\Microsoft\\Boot\\BCD`, update Git first and rerun the same download command. The current tool copies **only `EFI\\OC`**. An unfinished `SL4-FULL-DRIVERS/optional-EFI` is renamed `optional-EFI.failed-...` instead of deleted, and already downloaded archives are reused. This archived folder may contain private EFI/SMBIOS information; do not publish it. Do not run the staging commands until `FULL CANDIDATE DRIVER PACK READY` appears.
+
 The next two commands **stage the full candidate set in the internal EFI, but keep new/untested kexts disabled**. They compare the generated pack against the live internal EFI, verify kext files and retain a complete `EFI/OC` backup on C:. Windows EFI/BCD stays untouched.
 
 ```powershell
