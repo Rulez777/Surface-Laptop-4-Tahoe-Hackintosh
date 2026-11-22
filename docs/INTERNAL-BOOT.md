@@ -6,6 +6,8 @@ The goal is a separate **OpenCore** firmware entry next to **Windows Boot Manage
 
 > **Before changing firmware:** back up Windows, record your BitLocker recovery key, and keep the already-working Kingston OpenCore USB for rescue. A firmware change or failed boot may trigger BitLocker recovery. Run commands in **elevated Windows PowerShell**, not macOS Recovery. Do not try this while an installation/reboot sequence is still in progress.
 
+**Before staging**, [switch the known-working Kingston EFI to the quiet picker profile](QUIET-BOOT.md) and test it once from USB. That profile uses OpenCore release-style logging, a four-second timer and `AllowSetDefault=True`. After the internal OpenCore entry is working, select installed **macOS Tahoe** and use **Ctrl+Enter** once to make it the persistent default. Windows will remain selectable. Exact visual order depends on boot enumeration, so don't hardcode Windows as the second entry.
+
 ## 1. Stage the known-working EFI on the internal ESP
 
 Use the EFI that actually booted Tahoe, **not** an untested new build. The script copies only `EFI\OC` to the internal Windows EFI System Partition. It never replaces `EFI\Microsoft` or `EFI\BOOT`, and does not change any boot entries.
