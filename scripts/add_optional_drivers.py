@@ -11,6 +11,7 @@ import io
 import pathlib
 import plistlib
 import shutil
+import subprocess
 import sys
 import urllib.request
 import zipfile
@@ -120,6 +121,7 @@ def main():
     p.add_argument("--out", type=pathlib.Path, default=pathlib.Path("EFI-peripherals"))
     p.add_argument("--cache", type=pathlib.Path, default=pathlib.Path(".optional-driver-cache"))
     p.add_argument("--enable", default="", help="Opt-in groups: audio,wifi,bluetooth (experimental)")
+    p.add_argument("--ocvalidate", type=pathlib.Path, help="Matching OpenCore 1.0.8 ocvalidate.exe path (optional but strongly recommended)")
     args = p.parse_args()
     enabled_groups = [x.strip() for x in args.enable.split(",") if x.strip()]
     require(all(x in PROFILES for x in enabled_groups), "Allowed groups: audio,wifi,bluetooth. Surface input requires manual ACPI work.")
@@ -161,6 +163,14 @@ def main():
             require((d / x["PlistPath"]).is_file(), "Missing Info.plist: " + x["BundlePath"])
             if x.get("ExecutablePath"):
                 require((d / x["ExecutablePath"]).is_file(), "Missing executable: " + x["BundlePath"])
+    if args.ocvalidate:
+        validator = args.ocvalidate.resolve()
+        require(validator.is_file(), "ocvalidate binary not found")
+        check = subprocess.run([str(validator), str(config_path)], capture_output=True, text=True)
+        print(check.stdout, check.stderr)
+        require(check.returncode == 0, "ocvalidate failed; do not boot this EFI")
+    else:
+        print("WARNING: no ocvalidate was run; provide --ocvalidate on Windows before testing")
     print("SUCCESS: experimental copy at", root)
     print("Config SHA256:", hashlib.sha256(config_path.read_bytes()).hexdigest())
     print("Enabled peripheral groups:", ",".join(enabled_groups) or "none")
