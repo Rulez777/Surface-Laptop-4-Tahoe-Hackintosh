@@ -45,6 +45,8 @@ Use **only a dedicated APFS macOS volume** as the installation target, choose **
 
 > **Windows dual-boot:** I used unallocated space for a separate Tahoe APFS container. Do not erase the internal SSD, Windows NTFS, Microsoft Reserved or Windows EFI partitions. See [safe partitioning](docs/SAFETY.md).
 
+**Post-install: faster OpenCore.** The tested USB still had diagnostic logging. I provide a [quiet boot profile](docs/QUIET-BOOT.md) that removes verbose logs, shows the picker for 4 seconds, and supports saving **macOS Tahoe as default with Ctrl+Enter**. Windows remains selectable. The EFI builder now produces the quiet profile by default; use `--verbose-boot` to keep debug output for troubleshooting.
+
 **6. Boot without the USB (after both OSes work).** Copy the *known-good Kingston* `EFI/OC` to the internal Windows EFI System Partition using the read-only/staging tool. Then add a **separate OpenCore firmware entry**, keeping Windows Boot Manager unchanged. Follow [Boot without USB](docs/INTERNAL-BOOT.md). Test Windows and Tahoe separately **before** making OpenCore the default. This internal boot method is documented but not yet verified on the test Surface.
 
 **7. Optional hardware drivers.** Build a *separate* experimental EFI containing audio, Intel Wi-Fi/Bluetooth, BigSurface, VoodooI2C/VoodooPS2 and battery kexts. They are staged **disabled** by default, with opt-in test profiles for audio, Wi-Fi and Bluetooth:
@@ -93,6 +95,8 @@ I adapted the compiled RTC0 sample from `PCI0` to `PC00`, recalculated the ACPI 
 ## Repository contents
 
 - [`scripts/build_efi.py`](scripts/build_efi.py): builds a personal boot EFI with pinned upstream binaries.
+- [`scripts/quiet_boot.py`](scripts/quiet_boot.py): switches an existing working EFI to a quiet 4-second boot picker with a private backup.
+- [`docs/QUIET-BOOT.md`](docs/QUIET-BOOT.md): set Tahoe as default, keep Windows in the menu, and roll back.
 - [`scripts/add_optional_drivers.py`](scripts/add_optional_drivers.py): builds a separate optional kext pack for peripheral experiments.
 - [`scripts/stage_internal_efi.ps1`](scripts/stage_internal_efi.ps1): stages the tested USB EFI on the internal Windows ESP without altering Windows Boot Manager.
 - [`docs/INTERNAL-BOOT.md`](docs/INTERNAL-BOOT.md): adds an independent firmware entry for USB-free Windows/Tahoe selection.
