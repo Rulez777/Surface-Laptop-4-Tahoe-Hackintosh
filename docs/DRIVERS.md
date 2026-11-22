@@ -43,7 +43,9 @@ The following are copied to `EFI-peripherals/EFI/OC/Kexts`, with matching **disa
 | [RestrictEvents](https://github.com/acidanthera/RestrictEvents/releases/tag/1.1.6) | 1.1.6 | Optional macOS compatibility patches | Not necessary for proven boot; staged disabled |
 | [IPTSDaemon](https://github.com/Xiashangning/IPTSDaemon/releases/tag/v1.4) | 1.4 | Surface touchscreen/stylus user-space helper | Downloaded as a separate ZIP; requires compatible SAM and touch drivers, unqualified for Tahoe |
 
-The [BigSurfaceHIDDriver source](https://github.com/Xiashangning/BigSurfaceHIDDriver) is also available, but it has **no published prebuilt release**. It cannot honestly be presented as a ready-made tested Laptop 4/Tahoe driver. Compiling and adapting the Surface SAM/HID stack may be necessary.\n\nThe official BigSurface README specifically lists earlier Surface models and instructs users to remove VoodooI2C and SMCBatteryManager before using BigSurface. **Do not enable BigSurface and VoodooI2C simultaneously.** Do not assume the 2023 BigSurface release loads on Tahoe 26.
+The [BigSurfaceHIDDriver source](https://github.com/Xiashangning/BigSurfaceHIDDriver) is also available, but it has **no published prebuilt release**. It cannot honestly be presented as a ready-made tested Laptop 4/Tahoe driver. Compiling and adapting the Surface SAM/HID stack may be necessary.
+
+The official BigSurface README specifically lists earlier Surface models and instructs users to remove VoodooI2C and SMCBatteryManager before using BigSurface. **Do not enable BigSurface and VoodooI2C simultaneously.** Do not assume the 2023 BigSurface release loads on Tahoe 26.
 
 Optional test profiles supported by the builder (each in a **new output directory**):
 
