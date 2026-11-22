@@ -1,44 +1,47 @@
-# Intel Iris Xe acceleration on macOS Tahoe
+# Intel Iris Xe acceleration on macOS Tahoe: Surface Laptop 4 Intel
 
-**Test machine:** Surface Laptop 4, Core i7-1185G7, Intel Iris Xe 96 EU (`8086:9A49`), macOS Tahoe 26.7.1. The currently proven EFI uses `-wex-noaccel`, meaning **framebuffer-only graphics without hardware acceleration**. This is the likely reason for slow window animations and UI rendering; disabling OpenCore logging alone does not provide Metal acceleration.
+**Verified on 2026-11-22:** Core i7-1185G7, Iris Xe **96 EU** (`8086:9A49`, rev 01), macOS Tahoe **26.7.1**, OpenCore 1.0.8, WhateverXe 0.8.3, WhateverXe Graphics 0.4.4, AMFIAnchor 0.1.2, Lilu 1.7.2. **Metal 2 / 1536 MB dynamic VRAM / AppleIntelTGLGraphics loaded** were all observed, along with the built-in 2496×1664 eDP panel and external 2560×1440 Thunderbolt/DisplayPort monitor.
 
-## What the full driver pack adds
+For the tested command-by-command procedure, evidence and safe rollback, see **[Validated Surface Laptop 4 Metal 2](VALIDATED-METAL-SL4.md)** and the new [root Quick Start](../README.md#quick-start-reproduce-the-validated-metal-2-state-existing-tahoe-no-removable-media).
 
-The [full driver pack builder](../scripts/prepare_full_driver_pack.py) downloads the pinned **WhateverXe Graphics 0.4.4** `.pkg` (95,215,914 bytes) and validates its release SHA-256:
+## The essential discovery: GGC 0xFEC1 / 60 MB DVMT
+
+With only `npci=0x2000 -allow3d -disablegfxfirmware -wex-noaccel` Tahoe booted but showed only **15 MB / no Metal**. The `DeviceProperties -> Add` dictionary was empty. Installing the official Graphics pkg and then *only* deleting `-wex-noaccel` caused the system to stall at the Apple boot screen.
+
+`ioreg` reported **`WhateverXePhysicalGGC = 65217`**, which is hex **`0xFEC1`**: firmware-fixed **60 MB DVMT pre-allocation**. The [upstream WhateverXe DVMT instructions](https://github.com/b00t0x/WhateverXe#dvmt) prescribe:
+
+| Setting | Exact required value on this machine |
+| --- | --- |
+| `DeviceProperties -> Add -> PciRoot(0x0)/Pci(0x2,0x0) -> framebuffer-patch-enable` | **Data** `01000000` |
+| Same path, `framebuffer-stolenmem` | **Data** `0000C003` |
+| `boot-args` | `npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt` (remove `-wex-noaccel` **only after** pkg installation) |
+
+After applying these changes to the existing, known-bootable internal OpenCore EFI, macOS booted with **Metal 2, 1536 MB dynamic VRAM**, the accelerated TGL driver actually loaded, and an external monitor was detected. These are direct observations, not inferred compatibility.
+
+These parameters are **for measured fixed-60-MB DVMT**, not a universal Tiger Lake profile. They do not increase physical firmware-allocated memory. The repo's `scripts/xe_acceleration.py` now requires the explicit `--dvmt-60` option during preparation and **refuses to enable** accelerated boot without those binary values and `-igfxdvmt`. `scripts/build_efi.py --dvmt-60` stages the profile but retains safe `-wex-noaccel` for first boot.
+
+## Graphics installation and dependencies
+
+The separate **WhateverXe Graphics 0.4.4** pkg is essential, installed **inside Tahoe** into `/Library` and the AuxKC, not into EFI. It was verified by SHA-256 before installation:
 
 ```text
 f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec
 ```
 
-Upstream release: [WhateverXe Graphics v0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4). **This package is installed into macOS `/Library`, not into the EFI directory.** Simply placing kexts in `EFI/OC/Kexts` cannot enable Iris Xe Metal acceleration.
+The installed test system used `sudo installer -pkg ... -target /` and reported `The install was successful`. `kmutil inspect` listed `AppleIntelTGLGraphics`, `AppleIntelTGLGraphicsFramebuffer` and `AppleIntelTGLCompat`. After the corrected accelerated boot, `kmutil showloaded` reported the actual loaded TGL accelerator.
 
-For the concrete Windows-to-macOS installation sequence, package transfer, checksum verification, and safe removal of `-wex-noaccel`, see **[Full performance setup](FULL-PERFORMANCE.md)**. It uses `scripts/xe_acceleration.py` to preserve a private rollback and `scripts/install_wex_graphics_macos.sh` to check and install the official package.
+Keep `-allow3d` and `-disablegfxfirmware`, preserve WhateverXe/Lilu/AMFIAnchor and injector order, and ensure the nondefault SIP data required for this package (`03080000` in this test). SIP is deliberately weakened; review the security implications. Never enable WhateverGreen alongside WhateverXe.
 
-## Required conditions before the acceleration attempt
+## CDCLK diagnostics are not the demonstrated blocker
 
-1. Tahoe must be **26.7 or newer**; the test installer was 26.7.1.
-2. OpenCore must load `Lilu 1.7.2+`, `WhateverXe 0.8.3`, `AMFIAnchor 0.1.2`, and the matching `AMFIAnchorInjector` in the required order. Do not enable WhateverGreen simultaneously.
-3. Confirm `csr-active-config` is **Data `03080000`**. Review SIP implications before changing it.
-4. Preserve `-allow3d -disablegfxfirmware` boot flags.
-5. Preserve the recovery-capable Kingston EFI with `-wex-noaccel`; back up the internal EFI and the macOS volume before modifying either.
-6. Keep an external USB keyboard/mouse available. The internal Surface Aggregator Module input is not yet verified.
+The earlier framebuffer-only logs repeatedly reported `Unsupported CD clock decimal frequency 0x158`, `Wrong CD clock frequency 0x0 set by EFI`, and backlight/cursor-memory messages. **Those messages also appeared on successful no-acceleration boots.** They deserve investigation but should not be described as the proven root cause of the original boot stall. The decisive observed fix on this test machine was the **60 MB DVMT profile**. A custom CDCLK kext was **not** needed for the successful Metal result.
 
-**Do not simply remove `-wex-noaccel` now.** Doing so before the Graphics package and dependencies are in place may cause a black screen or boot failure.
+## Remaining limitations
 
-## Recommended order on this machine
+Metal support does not prove peak performance or video encode/decode stability. User still observed some UI lag. External MSI MPG271QX OLED was detected at **2560×1440 59 Hz**, not verified at higher refresh. Wi-Fi (Intel AX201) is reported working. Built-in keyboard and trackpad do **not** work. Sleep/wake, brightness controls, docking stability, video acceleration and sustained GPU load remain unverified.
 
-1. First confirm that the **internal OpenCore firmware entry** boots the installed Tahoe **without Kingston** in framebuffer-only mode. This does not mean accepting the slow mode as final; it establishes rollback.
-2. With installed Tahoe running, open and install the **official WhateverXe Graphics 0.4.4 pkg** downloaded by the full driver pack builder. Do not ignore an installer failure.
-3. Ensure the AMFIAnchor provider/injector, SIP and kext ordering meet upstream requirements. Then prepare a backup EFI with the same working ACPI and storage drivers but **remove only** `-wex-noaccel` from that test configuration.
-4. Reboot to try hardware acceleration. If the screen fails, boot the original Kingston configuration and roll back the internal `config.plist`.
-5. Once working, verify with `system_profiler SPDisplaysDataType`, `ioreg`, a Metal app and real UI response. **A GPU name or 1536 MB in About This Mac alone is not proof of Metal rendering**.
+### Recovery
 
-This repo **does not** claim that 96-EU Tiger Lake `9A49` was hardware-validated on this exact Surface. WhateverXe's own documentation lists Tiger Lake-U 96-EU as expected, not tested across all hardware. Panel timing and Surface firmware may still need tuning.
+Preserve a **private** known-good no-acceleration `config.plist` and Windows boot entry. The test machine's accelerated config was also saved as `~/Downloads/SL4-WORKING-METAL.plist` (not distributed). If a subsequent change breaks the graphics boot, restore the earlier private config from Windows and reboot with `-wex-noaccel`; do not erase the ESP or edit `EFI/Microsoft`. If `diskutil mount disk0s1` fails in Tahoe, a read-only mount worked during diagnosis, but **never repair the Windows ESP blindly**.
 
-## If acceleration fails
-
-Keep the checked-good internal or USB backup. Restore `-wex-noaccel`, confirm the Graphics package version and matched Lilu/WEX/AMFIAnchor settings, and inspect macOS installer logs. Do not randomly add AGDP patches or remove RTC0. Upstream provides an [uninstall script](https://github.com/b00t0x/WhateverXe-Graphics/blob/main/uninstall.sh) if Graphics must be uninstalled.
-
-**Upstream documentation:** [WhateverXe installation](https://github.com/b00t0x/WhateverXe#installation), [WhateverXe Graphics installation](https://github.com/b00t0x/WhateverXe-Graphics#install), [AMFIAnchor setup](https://github.com/b00t0x/AMFIAnchor#install-with-opencore).
-
-*Status: complete preparation path documented; full accelerated graphics on this Surface remains unverified.*
+**Upstream:** [WhateverXe DVMT](https://github.com/b00t0x/WhateverXe#dvmt) · [WhateverXe Graphics v0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4) · [our Surface hardware report to the developer](https://github.com/b00t0x/WhateverXe/issues/101#issuecomment-7082305989).
