@@ -1,42 +1,40 @@
-# Full driver pack and accelerated graphics — Intel Surface Laptop 4
+# Surface Laptop 4 Intel: complete candidate driver pack and verified Metal 2
 
-**Goal:** fast OpenCore, real Iris Xe hardware acceleration where supported, and every identified peripheral driver available for testing on the installed macOS Tahoe. This is a staged transition, not a one-click "enable everything" profile.
+**Updated 2026-11-22.** The previous no-acceleration-only status is obsolete. On the test laptop (i7-1185G7, Iris Xe 96 EU `8086:9A49`), **Tahoe 26.7.1 + stock WhateverXe 0.8.3 + Graphics 0.4.4 + fixed 60 MB DVMT profile booted with Metal 2** and 1536 MB dynamic VRAM. The built-in 2496×1664 display and external 2560×1440 DisplayPort monitor worked. Intel AX201 Wi-Fi also works. **Built-in keyboard and trackpad still do not work, and full peak performance is not established.** See the [full validated report](VALIDATED-METAL-SL4.md).
 
-**Confirmed starting point (2026-11-22):** internal OpenCore on the Samsung PM991 was staged from the working Kingston, quiet boot enabled, Windows Boot Manager preserved, independent firmware entry created. An actual no-USB boot, WhateverXe Graphics, and Surface SAM peripherals still require testing.
+This is an **already-installed Tahoe** workflow using only the **internal SSD** and Windows 11. The scripts never need a removable transfer drive. Keep the Windows Boot Manager, EFI/Microsoft, EFI/BOOT and existing partitions unchanged.
 
-> **Back up first.** Keep the original Kingston recovery USB unchanged. The internal SSD has Windows and Tahoe on separate partitions. If new graphics breaks the internal boot, use Kingston to load Tahoe in `-wex-noaccel` mode and restore the backed-up internal `config.plist` using Windows.
+## Windows: current repository, verified candidates, known-good EFI backup
 
-## Phase A — Windows: download and stage all known driver candidates
+Run PowerShell as Administrator. All commands are one line.
 
-Use **PowerShell as Administrator**. The following commands each occupy a single line and are intentionally independent. Replace the clone location if necessary.
-
-Update the project:
+Update the repo:
 
 ```powershell
 git -C "$HOME\Downloads\SL4-Tahoe-Git" pull --ff-only
 ```
 
-Mount the **internal Windows ESP**:
+Mount the internal Windows ESP *if not already mounted*:
 
 ```powershell
-mountvol S: /S
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
 
-Inspect the Tiger Lake graphics requirements, without writing:
+Inspect existing core graphics kexts, SIP, boot flags and 60 MB DVMT readiness (read-only):
 
 ```powershell
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode inspect --efi "S:\EFI"
 ```
 
-Download **all** currently identified optional driver kexts, the Surface touch daemon candidate, **WhateverXe Graphics 0.4.4** and matching **OpenCore 1.0.8 ocvalidate.exe** into C:. GitHub release ZIPs and Graphics pkg are verified against the release digests where available:
+If needed, download the official Graphics 0.4.4 pkg, **OpenCore 1.0.8** validator and optional driver candidates. The downloader uses pinned release URLs and checks the pkg hash. The output is on Windows C:, not in the ESP:
 
 ```powershell
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\prepare_full_driver_pack.py" --source "S:\EFI" --out "$HOME\Downloads\SL4-FULL-DRIVERS" --cache "$HOME\Downloads\SL4-KEXT-CACHE"
 ```
 
-If an older build failed while copying `S:\\EFI\\Microsoft\\Boot\\BCD`, update Git first and rerun the same download command. The current tool copies **only `EFI\\OC`**. An unfinished `SL4-FULL-DRIVERS/optional-EFI` is renamed `optional-EFI.failed-...` instead of deleted, and already downloaded archives are reused. This archived folder may contain private EFI/SMBIOS information; do not publish it. Do not run the staging commands until `FULL CANDIDATE DRIVER PACK READY` appears.
+It prepares AppleALC, Tahoe AirportItlwm, IntelBluetoothFirmware/Patcher, BlueToolFixup, SMCBatteryManager, VoodooPS2, VoodooI2C/HID, BigSurface, NVMeFix, RestrictEvents and IPTSDaemon candidates; the unproven kexts remain **disabled**. The package is at `SL4-FULL-DRIVERS/macOS-Installers/WhateverXe-Graphics-0.4.4.pkg`. `ocvalidate.exe` is at `SL4-FULL-DRIVERS/tools/ocvalidate.exe`.
 
-The next two commands **stage the full candidate set in the internal EFI, but keep new/untested kexts disabled**. They compare the generated pack against the live internal EFI, verify kext files and retain a complete `EFI/OC` backup on C:. Windows EFI/BCD stays untouched.
+If this driver set is **not already staged** on the ESP, these commands inspect and apply only the missing disabled entries, with a private verified OC backup on C:. Do **not** repeat the staging command on a machine whose pack has already been applied and tested:
 
 ```powershell
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\stage_full_kext_pack.py" --mode inspect --internal-efi "S:\EFI" --pack-efi "$HOME\Downloads\SL4-FULL-DRIVERS\optional-EFI\EFI" --backup-dir "$HOME\Downloads\SL4-KEXT-BACKUPS"
@@ -46,83 +44,91 @@ py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\stage_full_kext_pack.py" --mode ins
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\stage_full_kext_pack.py" --mode apply --internal-efi "S:\EFI" --pack-efi "$HOME\Downloads\SL4-FULL-DRIVERS\optional-EFI\EFI" --backup-dir "$HOME\Downloads\SL4-KEXT-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
 ```
 
-Type `STAGE-FULL-KEXT-PACK` only after inspecting the planned list. Drivers already present in the proven EFI are left untouched. The extra kexts are **physically staged** in `S:\EFI\OC\Kexts` and listed as disabled entries; they will not be loaded until a compatible profile is tested.
+The additional drivers are candidates, **not** a universal mutually-compatible stack. Do not enable BigSurface and VoodooI2C/SMCBatteryManager indiscriminately: Surface SAM/ACPI and Tahoe compatibility are not proven. Merely staging them does not make devices work.
 
-Now prepare the **required SIP value and boot flags** for WhateverXe Graphics, but **preserve `-wex-noaccel` for the package-install boot**:
+## Windows: prepare the *verified fixed-60-MB* graphics settings
 
-```powershell
-py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode prepare --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
-```
+On the test machine `ioreg` reported **`WhateverXePhysicalGGC = 65217` (0xFEC1)**. That means **60 MB fixed DVMT**. The original empty `DeviceProperties -> Add` prevented successful accelerated boot even after Graphics 0.4.4 was installed: simply removing `-wex-noaccel` stalled at the Apple logo.
 
-The command requires `PREPARE-XE-EFI` confirmation before changing SIP/boot flags. **SIP `0x803` is less restrictive than default Apple SIP; do not apply without understanding the trust implications.** The script checks the presence and order of Lilu, WhateverXe, AMFIAnchor and its injector, as well as the custom RTC0 fix.
-
-Copy the graphics installer **and SHA256-checking helper** onto Kingston's **exFAT data volume**, not its EFI. Kingston is only used to transfer files, not to boot macOS:
+For **measured 60 MB DVMT** only, run:
 
 ```powershell
-$d=Get-Volume -FileSystemLabel "SL4DATA" | Where-Object DriveLetter | Select-Object -First 1; if(!$d){throw "SL4DATA not mounted"}; Copy-Item "$HOME\Downloads\SL4-FULL-DRIVERS\macOS-Installers\WhateverXe-Graphics-0.4.4.pkg" "$($d.DriveLetter):\" -Force; Copy-Item "$HOME\Downloads\SL4-Tahoe-Git\scripts\install_wex_graphics_macos.sh" "$($d.DriveLetter):\" -Force
+py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode prepare --dvmt-60 --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
 ```
 
-Unmount the internal ESP:
+The protected script stages the official WhateverXe DVMT entries (`framebuffer-patch-enable=01000000` and `framebuffer-stolenmem=0000C003`, both **Data**, under `PciRoot(0x0)/Pci(0x2,0x0)`) plus `-igfxdvmt`. It leaves `-wex-noaccel` intact until the macOS pkg succeeds. It also checks Lilu/WEX/AMFIAnchor dependencies, custom RTC0 and SIP; it backs up `config.plist` before writing and validates the new plist.
 
 ```powershell
 mountvol S: /D
 ```
 
-## Phase B — macOS: install WhateverXe Graphics into the installed OS
+## Installed macOS: install Graphics 0.4.4 from internal Windows NTFS
 
-Boot **internal OpenCore** with **Kingston disconnected** (the independent UEFI entry created earlier). It should still boot using `-wex-noaccel` with the quiet four-second picker.
-
-If it boots, connect Kingston as a **data drive**. In Tahoe Terminal, confirm the macOS version:
+Boot installed Tahoe in no-acceleration mode. If internet in macOS is unavailable, **use the internal Windows NTFS partition** as the data source. On this test it was already mounted read-only as `/Volumes/Windows`. Substitute the actual Windows username:
 
 ```bash
-sw_vers -productVersion
+cp "/Volumes/Windows/Users/YOUR_WINDOWS_USER/Downloads/SL4-FULL-DRIVERS/macOS-Installers/WhateverXe-Graphics-0.4.4.pkg" "$HOME/Downloads/"
 ```
 
-**Stop if the installed OS is older than 26.7.** Check the official package hash before installation:
+Check SHA-256 (do **not** skip):
 
 ```bash
-shasum -a 256 "/Volumes/SL4DATA/WhateverXe-Graphics-0.4.4.pkg"
+shasum -a 256 "$HOME/Downloads/WhateverXe-Graphics-0.4.4.pkg"
 ```
 
-Expected SHA-256: `f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec`.
-
-Install the verified package using the helper (requires admin credentials and a working input device):
+Expected `f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec`. Also verify `sw_vers -productVersion` is **26.7+**. Then install:
 
 ```bash
-bash "/Volumes/SL4DATA/install_wex_graphics_macos.sh" "/Volumes/SL4DATA/WhateverXe-Graphics-0.4.4.pkg"
+sudo installer -pkg "$HOME/Downloads/WhateverXe-Graphics-0.4.4.pkg" -target /
 ```
 
-**Do not proceed** if the installer reports an error. Follow its restart instructions. The Graphics installer modifies macOS `/Library` and rebuilds AuxKC; merely copying a `.pkg` to EFI cannot enable acceleration.
+The successful test output included `installer: The install was successful.` and `installer: The install requires restarting now.` This installs graphics components into macOS `/Library` and its AuxKC; it is **not** accomplished by copying kexts into EFI. If the installer fails, do not remove `-wex-noaccel`.
 
-## Phase C — Windows: remove `-wex-noaccel` from the internal EFI
+## Windows: safely enable Metal after successful pkg installation
 
-After the macOS installer completes successfully, boot Windows, mount `S:` again and enable graphics:
+Return to Windows via the existing independent Windows Boot Manager entry and mount the internal ESP:
 
 ```powershell
-mountvol S: /S
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
+
+Run guarded enable:
 
 ```powershell
 py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode enable --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
 ```
 
-The script requires explicit confirmation of a successful installation of Graphics 0.4.4, then removes **only `-wex-noaccel`**, preserving RTC0, other WEX arguments and the fast OpenCore picker. It keeps a private verified backup of `config.plist`.
+The updated script now **requires** `-igfxdvmt` and the two exact 60 MB Data properties, *and* explicitly asks you to confirm successful Graphics package installation before removing only `-wex-noaccel`. It makes a separate private backup. Then:
 
 ```powershell
 mountvol S: /D
 ```
 
-Boot the internal OpenCore entry again. If Tahoe launches, check `system_profiler SPDisplaysDataType`, Metal apps and the actual window animation speed. **The test-machine Iris Xe 96 EU has not yet been validated with hardware acceleration.**
+Boot Tahoe and verify:
 
-## Peripherals and limits
+```bash
+nvram boot-args
+```
 
-The prepared full pack includes AppleALC, Tahoe AirportItlwm (alpha), Intel Bluetooth, BlueToolFixup, SMCBatteryManager, VoodooPS2, VoodooI2C/HID, BigSurface, NVMeFix, RestrictEvents and IPTSDaemon. They are candidates, not one mutually-compatible stack. In particular:
+```bash
+system_profiler SPDisplaysDataType
+```
 
-- **BigSurface 6.5** is from 2023 and lists older Surface models. It may conflict with **VoodooI2C/HID** and **SMCBatteryManager**. There is no published fully qualified Surface Laptop 4 + Tahoe SAM/input setup; these remain disabled until model-specific testing.
-- **Intel Wi-Fi/Bluetooth and AppleALC** can be enabled in isolated tests after graphics stability has been established; exact hardware and kext compatibility remain unverified.
-- **NVMeFix** is not automatically enabled on Samsung PM991. Stability is more important than speculative NVMe gains.
-- No kext can be guaranteed to deliver "peak performance" without confirming **Metal acceleration, XCPM CPU power management, thermals, SSD performance, sleep/wake and I/O stability** on this machine.
+```bash
+kmutil showloaded 2>/dev/null | grep -Ei 'AppleIntelTGL|WhateverXe|AMFIAnchor'
+```
 
-For a black screen, use the unchanged Kingston fallback, restore the `config.plist` saved by `xe_acceleration.py`, then revisit WEX/Graphics/AMFIAnchor/SIP. Do **not** erase or repartition the internal SSD to troubleshoot graphics.
+The **actual observed** test boot used `npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt` and showed **Metal 2, 1536 MB VRAM, loaded AppleIntelTGLGraphics 16.0.0** and an external monitor. Wi-Fi worked.
 
-Upstream: [WhateverXe](https://github.com/b00t0x/WhateverXe) · [Graphics](https://github.com/b00t0x/WhateverXe-Graphics) · [AMFIAnchor](https://github.com/b00t0x/AMFIAnchor) · [BigSurface](https://github.com/Xiashangning/BigSurface).
+## Current non-graphics driver limitations
+
+- Intel AX201 Wi-Fi: **user-confirmed working**. AirportItlwm 2.4.0 loaded.
+- Microsoft Surface Dock: USB2/USB3 hubs and GigE adapter enumerate; external monitor appeared over DisplayPort with Metal, but **all** dock functions and sustained reliability were not fully tested.
+- Built-in keyboard and trackpad: **nonfunctional**; require further Surface SAM/ACPI investigation. VoodooPS2/VoodooI2C alone cannot be assumed sufficient.
+- Bluetooth/audio/battery: some kexts loaded; functional results are not yet confirmed.
+- Samsung PM991 NVMe stability, sleep/wake, high-refresh external output, CPU power management, sustained performance: **unverified**.
+- Metal fixed a major graphics bottleneck, **not** every source of lag.
+
+Keep a private **known-bootable no-accel config** on Windows and macOS. If GPU init fails, select Windows Boot Manager and restore it, reintroducing `-wex-noaccel`. Never erase the ESP, alter Windows BCD or repartition the SSD to test graphics.
+
+Upstream: [WhateverXe DVMT](https://github.com/b00t0x/WhateverXe#dvmt) · [Graphics 0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4) · [Surface success report](https://github.com/b00t0x/WhateverXe/issues/101#issuecomment-7082305989).
