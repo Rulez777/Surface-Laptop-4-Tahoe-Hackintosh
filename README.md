@@ -34,7 +34,6 @@ OpenCore configuration and drivers for the **Microsoft Surface Laptop 4 Intel (1
 | Surface Dock | **Working** |
 | Internal display brightness controls | In progress |
 | Sleep / wake | In progress |
-| Direct fan RPM control | Not supported by the documented SL4 interface |
 
 All working results are based on the tested Surface Laptop 4 Intel. Untested audio jacks and other hardware variants are not implied.
 
