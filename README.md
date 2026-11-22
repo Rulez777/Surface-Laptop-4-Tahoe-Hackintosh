@@ -55,7 +55,9 @@ Use **only a dedicated APFS macOS volume** as the installation target, choose **
 py -3 scripts/add_optional_drivers.py --source EFI-output/EFI --out EFI-peripherals
 ```
 
-See [drivers and test profiles](docs/DRIVERS.md). **Do not overwrite the proven boot EFI with all experimental drivers at once.**
+See [drivers and test profiles](docs/DRIVERS.md). **Do not enable conflicting experimental input drivers together.**
+
+**8. Install the full driver candidate pack and graphics acceleration.** Follow [Full performance setup](docs/FULL-PERFORMANCE.md) to stage all available kexts on the internal ESP, install WhateverXe Graphics 0.4.4 **inside macOS**, then remove `-wex-noaccel` from the internal OpenCore configuration with a verified rollback. Keep the original Kingston rescue EFI unchanged. The full package is prepared for testing; acceleration on the specific 96-EU Surface is not yet confirmed.
 
 ## Full hardware driver pack and performance
 
@@ -113,6 +115,9 @@ I adapted the compiled RTC0 sample from `PCI0` to `PC00`, recalculated the ACPI 
 - [`docs/QUIET-BOOT.md`](docs/QUIET-BOOT.md): set Tahoe as default, keep Windows in the menu, and roll back.
 - [`scripts/add_optional_drivers.py`](scripts/add_optional_drivers.py): builds a separate optional kext pack for peripheral experiments.
 - [`scripts/prepare_full_driver_pack.py`](scripts/prepare_full_driver_pack.py): fetches all pinned candidate kexts, IPTSDaemon and the verified WhateverXe Graphics package.
+- [`scripts/stage_full_kext_pack.py`](scripts/stage_full_kext_pack.py): copies the full disabled candidate kext set to internal EFI, with checks and a private backup.
+- [`scripts/xe_acceleration.py`](scripts/xe_acceleration.py): prepares WEX/SIP and removes `-wex-noaccel` **only after the macOS Graphics installer succeeds**.
+- [`docs/FULL-PERFORMANCE.md`](docs/FULL-PERFORMANCE.md): end-to-end instructions for full driver staging and hardware acceleration.
 - [`docs/GRAPHICS-ACCELERATION.md`](docs/GRAPHICS-ACCELERATION.md): requirements for Metal acceleration on Iris Xe and safe rollback.
 - [`scripts/stage_internal_efi.ps1`](scripts/stage_internal_efi.ps1): stages the tested USB EFI on the internal Windows ESP without altering Windows Boot Manager.
 - [`docs/INTERNAL-BOOT.md`](docs/INTERNAL-BOOT.md): adds an independent firmware entry for USB-free Windows/Tahoe selection.
