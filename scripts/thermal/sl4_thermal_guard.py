@@ -184,7 +184,10 @@ class BigSurface:
         self.cf.CFDictionaryCreateMutable.argtypes = [C.c_void_p, C.c_long, C.c_void_p, C.c_void_p]
         self.cf.CFDictionaryCreateMutable.restype = C.c_void_p
         self.cf.CFDictionarySetValue.argtypes = [C.c_void_p, C.c_void_p, C.c_void_p]
+        self.cf.CFDictionarySetValue.restype = None
         self.cf.CFRelease.argtypes = [C.c_void_p]
+        self.cf.CFRelease.restype = None
+        self.io.IOObjectRelease.restype = C.c_int32
 
     def set(self, mode):
         require(mode in (1, 3, 4), "Unsupported TMP mode")
