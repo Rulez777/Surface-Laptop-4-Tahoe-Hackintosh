@@ -65,7 +65,16 @@ try {
     New-Item -ItemType Directory -Path $backup -Force | Out-Null
     & bcdedit.exe /export "$backup\Windows-BCD.bak" | Out-Null
     Require ($LASTEXITCODE -eq 0) "BCD export failed; no EFI changes made"
-    Copy-Item -LiteralPath "S:\EFI\Microsoft" -Destination (Join-Path $backup "Microsoft") -Recurse -Force
+    # The active Windows EFI BCD store is locked by Windows. A consistent BCD backup
+    # was already created using bcdedit /export above. Do not try to copy BCD raw.
+    Require ((Get-Item -LiteralPath "$backup\Windows-BCD.bak").Length -gt 0) "BCD export was empty"
+    $msBackup=Join-Path $backup "Microsoft"
+    & robocopy.exe "S:\EFI\Microsoft" $msBackup /E /COPY:DAT /DCOPY:DAT /R:0 /W:0 /XJ /XF BCD BCD.LOG BCD.LOG1 BCD.LOG2 /NFL /NDL /NJH /NJS /NP | Out-Null
+    Require ($LASTEXITCODE -lt 8) "Microsoft EFI backup failed (robocopy exit code $LASTEXITCODE); no OpenCore files copied"
+    $bootBackup=Join-Path $msBackup "Boot\bootmgfw.efi"
+    Require (Test-Path -LiteralPath $bootBackup) "Backup of Windows Boot Manager is missing"
+    Require ((Get-FileHash -LiteralPath $bootBackup -Algorithm SHA256).Hash -eq $before) "Windows Boot Manager backup hash mismatch"
+    Write-Host "Windows EFI backup completed (active BCD exported separately)"
     New-Item -ItemType Directory -Path $dst -Force | Out-Null
     Copy-Item -Path "$src\*" -Destination $dst -Recurse -Force
     foreach($f in $srcFiles){
