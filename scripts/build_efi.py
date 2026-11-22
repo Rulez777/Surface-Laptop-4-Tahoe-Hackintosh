@@ -136,6 +136,7 @@ def main():
     cli.add_argument("--mlb", required=True, help="Generate with GenSMBIOS; keep private")
     cli.add_argument("--uuid", required=True, help="Generate with GenSMBIOS; keep private")
     cli.add_argument("--rom", required=True, help="Exactly 12 hexadecimal digits; keep private")
+    cli.add_argument("--verbose-boot", action="store_true", help="Keep initial diagnostic boot output instead of the default quiet boot")
     cli.add_argument("--out", type=pathlib.Path, default=pathlib.Path("EFI-output"))
     cli.add_argument("--cache", type=pathlib.Path, default=pathlib.Path(".efi-build-cache"))
     args = cli.parse_args()
@@ -171,6 +172,10 @@ def main():
     settings = plistlib.loads(cfg.read_bytes())
     settings["ACPI"]["Add"].append({"Comment": "Surface Laptop 4 RTC0 at PC00.LPCB", "Enabled": True, "Path": "SSDT-RTC0-SL4.aml"})
     settings["PlatformInfo"]["Generic"].update({"SystemSerialNumber": args.serial, "MLB": args.mlb, "SystemUUID": uid, "ROM": rom})
+    if not args.verbose_boot:
+        from quiet_boot import edit as quiet_profile
+        quiet_profile(settings)
+        print("Quiet boot: no verbose diagnostics, 4-second picker, Ctrl+Enter can select macOS as default")
     cfg.write_bytes(plistlib.dumps(settings, sort_keys=False))
     validate_tree(root, settings)
     try:
