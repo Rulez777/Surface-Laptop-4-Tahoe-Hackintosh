@@ -1,0 +1,9 @@
+# User-specific EFI, SMBIOS, extracted recovery, installers
+EFI-output/
+*.pkg
+*.dmg
+*.chunklist
+*.zip
+*.log
+.DS_Store
+__pycache__/
