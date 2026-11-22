@@ -25,8 +25,15 @@ echo "Validated official package SHA256: $FOUND"
 echo "macOS: $VERSION"
 echo "Current SIP status:"
 csrutil status || true
-echo "AMFIAnchor status (inspect InstallStatus and LoadedAnchors):"
-ioreg -r -c AMFIAnchor -l | grep -E 'InstallStatus|LoadedAnchors' || true
+echo "AMFIAnchor status (requires an installed anchor, not just the kext file):"
+ANCHOR_STATUS="$(ioreg -r -c AMFIAnchor -l 2>/dev/null || true)"
+printf '%s\n' "$ANCHOR_STATUS" | grep -E 'InstallStatus|LoadedAnchors|AMFIAnchorInjector' || true
+if ! printf '%s\n' "$ANCHOR_STATUS" | grep -Eq '"InstallStatus"[[:space:]]*=[[:space:]]*1'; then
+  echo "STOP: AMFIAnchor InstallStatus=1 not detected. Do not install graphics yet." >&2; exit 1
+fi
+if ! printf '%s\n' "$ANCHOR_STATUS" | grep -q 'org.b00t0x.AMFIAnchorInjector'; then
+  echo "STOP: WhateverXe Graphics signing anchor is not registered in IORegistry." >&2; exit 1
+fi
 echo
 echo "This package installs graphics drivers into /Library and rebuilds AuxKC."
 echo "It is NOT a firmware driver or a standalone OpenCore kext."
