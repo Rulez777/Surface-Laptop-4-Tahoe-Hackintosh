@@ -57,6 +57,20 @@ py -3 scripts/add_optional_drivers.py --source EFI-output/EFI --out EFI-peripher
 
 See [drivers and test profiles](docs/DRIVERS.md). **Do not overwrite the proven boot EFI with all experimental drivers at once.**
 
+## Full hardware driver pack and performance
+
+The initial Tahoe boot is **not a daily-driver performance result**: it used `-wex-noaccel`, which disables hardware graphics acceleration. That is a likely cause of the slow interface. The release-ready EFI and graphics-accelerated macOS are two different steps.
+
+To fetch **all currently identified candidate drivers** and the verified WhateverXe Graphics 0.4.4 macOS package (without changing the booted EFI):
+
+```powershell
+py -3 scripts/prepare_full_driver_pack.py --source "C:\\path\\to\\personal\\EFI" --out SL4-Driver-Pack
+```
+
+This stages AppleALC, Tahoe AirportItlwm, Intel Bluetooth, BlueToolFixup, SMCBatteryManager, VoodooPS2, VoodooI2C/HID, BigSurface, NVMeFix and RestrictEvents, plus the IPTSDaemon ZIP. **Unverified drivers remain disabled.** The signed-graphics payload installer is downloaded to `SL4-Driver-Pack/macOS-Installers/`, and its official SHA-256 is checked. The existing EFI/boot order is never modified.
+
+**Important:** [Iris Xe acceleration must be installed inside running macOS](docs/GRAPHICS-ACCELERATION.md) and `-wex-noaccel` must only be removed after the WEX/AMFI/SIP dependencies have been verified. A complete verified, working driver set for Surface Laptop 4 on Tahoe has not yet been established. This project does not advertise full support for BigSurface input or hardware Metal before tests.
+
 ## Test machine
 
 | Component | Configuration |
@@ -98,6 +112,8 @@ I adapted the compiled RTC0 sample from `PCI0` to `PC00`, recalculated the ACPI 
 - [`scripts/quiet_boot.py`](scripts/quiet_boot.py): switches an existing working EFI to a quiet 4-second boot picker with a private backup.
 - [`docs/QUIET-BOOT.md`](docs/QUIET-BOOT.md): set Tahoe as default, keep Windows in the menu, and roll back.
 - [`scripts/add_optional_drivers.py`](scripts/add_optional_drivers.py): builds a separate optional kext pack for peripheral experiments.
+- [`scripts/prepare_full_driver_pack.py`](scripts/prepare_full_driver_pack.py): fetches all pinned candidate kexts, IPTSDaemon and the verified WhateverXe Graphics package.
+- [`docs/GRAPHICS-ACCELERATION.md`](docs/GRAPHICS-ACCELERATION.md): requirements for Metal acceleration on Iris Xe and safe rollback.
 - [`scripts/stage_internal_efi.ps1`](scripts/stage_internal_efi.ps1): stages the tested USB EFI on the internal Windows ESP without altering Windows Boot Manager.
 - [`docs/INTERNAL-BOOT.md`](docs/INTERNAL-BOOT.md): adds an independent firmware entry for USB-free Windows/Tahoe selection.
 - [`data/seed.lzma.b64`](data/seed.lzma.b64): sanitized configuration and device-specific USB/ACPI descriptors.
