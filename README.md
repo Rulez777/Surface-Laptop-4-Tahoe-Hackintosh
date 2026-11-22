@@ -117,6 +117,7 @@ I adapted the compiled RTC0 sample from `PCI0` to `PC00`, recalculated the ACPI 
 - [`scripts/prepare_full_driver_pack.py`](scripts/prepare_full_driver_pack.py): fetches all pinned candidate kexts, IPTSDaemon and the verified WhateverXe Graphics package.
 - [`scripts/stage_full_kext_pack.py`](scripts/stage_full_kext_pack.py): copies the full disabled candidate kext set to internal EFI, with checks and a private backup.
 - [`scripts/xe_acceleration.py`](scripts/xe_acceleration.py): prepares WEX/SIP and removes `-wex-noaccel` **only after the macOS Graphics installer succeeds**.
+- [`scripts/install_wex_graphics_macos.sh`](scripts/install_wex_graphics_macos.sh): checks package SHA-256 and installs official Graphics 0.4.4 into macOS.
 - [`docs/FULL-PERFORMANCE.md`](docs/FULL-PERFORMANCE.md): end-to-end instructions for full driver staging and hardware acceleration.
 - [`docs/GRAPHICS-ACCELERATION.md`](docs/GRAPHICS-ACCELERATION.md): requirements for Metal acceleration on Iris Xe and safe rollback.
 - [`scripts/stage_internal_efi.ps1`](scripts/stage_internal_efi.ps1): stages the tested USB EFI on the internal Windows ESP without altering Windows Boot Manager.
