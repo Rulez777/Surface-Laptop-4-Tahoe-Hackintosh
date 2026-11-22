@@ -1,65 +1,89 @@
-# Surface Laptop 4 Intel — CPU temperature and cooling profiles
+# Surface Laptop 4 Intel — CPU temperature and thermal profiles
 
-**macOS Tahoe 26.7.1 · VirtualSMC 1.3.8 · BigSurface 1.2.0**
+**macOS Tahoe 26.7.1 · VirtualSMC / SMCProcessor 1.3.8 · BigSurface 1.2.0**
 
-## Hardware
+## Hardware status
 
-| Function | Status |
+| Component | Status |
 | --- | --- |
 | Battery charge percentage | **Working** |
-| Automatic EC fan operation | **Working** |
-| Surface TMP performance profile selection | **Working** |
-| CPU die SMC temperature key `TC0D` | Requires `SMCProcessor.kext 1.3.8` |
-| Independent FAN RPM control | Not available via the documented SL4 interface |
-| Automatic temperature-dependent TMP switching | Experimental, **disabled by default** |
+| CPU die SMC temperature `TC0D` | **Working** |
+| Surface performance profile request | **Working at IOKit API level**; EC acknowledgement unavailable |
+| Fan operation | **Working** |
+| Automatic fan RPM override | **Not available through documented SL4 Intel interface** |
+| Automatic CPU-temperature-based profile switching | **Disabled for safety** |
 
-Linux registers `MSHW0250` in the Surface Laptop 3/4 profile group with `ssam_node_tmp_perf_profile`. Independent `has_fan` / `ssam_node_fan_speed` support exists for later devices, not in the SL4 Intel registry.
+macOS Tahoe and OpenCore 1.0.8 load `SMCProcessor.kext 1.3.8`. The `TC0D` sensor returns CPU die temperature in °C.
 
-**`PerformanceMode=4` is not a 100% fan-speed command.** It also changes CPU performance and can increase heat. Fan operation remains managed by the embedded controller (EC).
+## Cooling interface on the SL4
 
-## CPU sensor: SMCProcessor 1.3.8
+The Linux Surface registry maps SL4 Intel `MSHW0250` to the SL3/SL4 group with `ssam_node_tmp_perf_profile`, **without** the `has_fan` and `ssam_node_fan_speed` interfaces exposed on SL5.
 
-VirtualSMC provides the AppleSMC service. SMCProcessor adds the `TC0D` CPU die temperature key if the thermal hardware counters are available. An absent plugin produces `SMC result 0x84` (key not found).
+TMP mode indices: `1` — Normal (Balanced), `2` — Battery Saver (Low Power), `3` — Better Performance (Balanced Performance), `4` — Best Performance.
 
-**macOS-native installation (no USB, no Windows session):**
+BigSurface `SurfaceBatteryDriver` has an original `PerformanceMode=1` configuration key; its wake code reapplies that configured value. A one-time mode `3` request can be lost after sleeping or rebooting. The `ioreg` property reflects the **configured** value, not an EC readback of the current mode.
 
-[Installation, inspection, backups and rollback](INSTALL-SMCPROCESSOR-RU.md)
+A Surface Laptop 4 Intel Linux report describes thermal throttling with poor fan response in the **low-power mode (TMP 2)**. This does **not** prove the same effect for TMP 1 on macOS. Better/Best performance profiles can run fans faster but can also increase the CPU's power and heat.
 
-Implementation: `install_smcprocessor_macos.py`. The script adds **only** `SMCProcessor.kext` to the existing internal OpenCore ESP after a full `EFI/OC` backup and `ocvalidate 1.0.8` validation. It preserves existing VirtualSMC, BigSurface, Metal 2, Bluetooth, keyboard, trackpad, Wi-Fi, Windows Boot Manager and boot configuration.
+**No verified path to "100% fan at 80 °C" exists for the Surface Laptop 4 Intel. The original mode-3 → mode-4 on 80 °C policy is withdrawn.** Never use TMP 4 as a thermal failsafe.
 
-## Temperature probe and monitor
+Sources:
+- [Microsoft Surface fan behavior](https://support.microsoft.com/en-us/surface/performance/fan-behavior-and-fan-noise-in-a-surface-device)
+- [Linux Surface Laptop 4 Intel throttling report](https://github.com/linux-surface/linux-surface/issues/561)
+- [Linux Surface device registry](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c)
+- [Linux Surface mode implementation](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
+- [BigSurface source](https://github.com/Xiashangning/BigSurface)
 
-Run only after `SMCProcessor.kext` is installed and loaded.
+## Monitor and diagnostic commands
 
-**Read-only CPU temperature probe:**
+**Read-only CPU temperature:**
 
 ```bash
 python3 "$HOME/Downloads/sl4_thermal_guard.py" --probe
 ```
 
-**Read-only one-minute monitor:**
+**Read-only CPU temperature, 12 samples (about 1 minute):**
 
 ```bash
 python3 "$HOME/Downloads/sl4_thermal_guard.py" --monitor --samples 12
 ```
 
-The monitor requires a valid `TC0D` key with `sp78` type. Invalid, missing and implausible readings terminate the probe. Battery temperature is not a replacement for CPU die temperature.
+**Read-only loaded profile configuration and macOS thermal limits:**
 
-### Experimental thermal policy
+```bash
+ioreg -r -c SurfaceBatteryDriver -lw0 | grep -E 'PerformanceMode'; pmset -g therm
+```
 
-| CPU die temperature | Proposed TMP profile |
-| --- | --- |
-| Below 80 °C | `3` — Better Performance |
-| At least 80 °C for two consecutive 5-second samples | `4` — Best Performance |
-| At most 72 °C for 60 seconds | `3` — Better Performance |
-| At least 90 °C | `1` — Recommended |
+No fan command is sent by `--probe` or `--monitor`; `writes=OFF`. A momentary temperature spike to 88 °C does not, by itself, prove throttling; check CPU power and thermal limit samples separately.
 
-At high temperature, a performance profile is **not equivalent to guaranteed fan acceleration**; `TMP=4` may raise heat output. This policy is experimental, **not** a substitute for native thermal protection and **not installed as a background service**. The `--control` mode is deliberately disabled unless invoked with explicit acknowledgement. No automatic usage is recommended before hardware validation.
+## Controlled one-shot experiment
 
-## Quality checks
+**Only if the CPU is cooler than 80 °C and the previous manual mode 3 test produced audible fan operation.** A new explicit test is needed to measure fan response; no CPU stress test.
 
-GitHub Actions runs Python syntax checks and synthetic temperature-policy, EFI staging, rollback and error handling tests. The real `VirtualSMC-1.3.8-RELEASE.zip` is downloaded and checked for plugin identity and binary format in CI. These software tests do not verify CPU die readings, reboot compatibility or fan RPM on physical hardware.
+Download updated monitor:
 
-## References
+```bash
+curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/experimental/sl4-thermal-guard/scripts/thermal/sl4_thermal_guard.py" -o "$HOME/Downloads/sl4_thermal_guard.py"
+```
 
-[VirtualSMC](https://github.com/acidanthera/VirtualSMC) · [Linux device registry](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c) · [Linux platform profile](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
+Then request the already used `TMP 3` profile once:
+
+```bash
+sudo python3 "$HOME/Downloads/sl4_thermal_guard.py" --set-profile 3 --ack SET-TMP-3-NOT-FAN-RPM
+```
+
+The script checks the real CPU die temperature immediately before sending, refuses a request at `>=80 °C`, and sends only one `PerformanceMode=3` request via BigSurface. It does **not** request maximum fan speed, run a persistent daemon or change EFI. IOKit success does **not** verify EC acceptance; `ioreg` may still show 1. Stop if unstable, unusually hot, or the fan does not respond as expected.
+
+### Unsafe automatic control disabled
+
+`--control` exits with an explicit error before contacting the EC. The prior automatic `3 → 4` transition at 80 °C risked increasing CPU heat without increasing fan speed. Profile persistence, CPU power limits, fan RPM and EC acknowledgement remain unresolved.
+
+## SMCProcessor installation
+
+[macOS Tahoe driver installation and rollback](INSTALL-SMCPROCESSOR-RU.md)
+
+Existing installed `SMCProcessor.kext 1.3.8` works with VirtualSMC 1.3.8 and `TC0D`; no reinstallation required.
+
+## Verification
+
+GitHub CI syntax and synthetic tests cover temperature parsing, no-write monitoring, safety refusal and the reversible SMCProcessor installer. CI checks the official `VirtualSMC-1.3.8-RELEASE.zip` format. Actual fan RPM and EC acknowledgment are not available.
