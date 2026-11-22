@@ -1,107 +1,117 @@
-# Surface Laptop 4 Intel — датчик CPU для Tahoe
+# Surface Laptop 4 Intel — датчик температуры CPU в macOS Tahoe
 
-**Назначение:** подключение `SMCProcessor.kext 1.3.8` к существующему `VirtualSMC.kext 1.3.8`. Без USB, без замены графического драйвера, BigSurface, батареи или Windows EFI.
+**Платформа:** Surface Laptop 4 Intel i7-1185G7; macOS Tahoe 26.7.1; OpenCore 1.0.8; VirtualSMC 1.3.8; BigSurface 1.2.0.
 
-Требования: Surface Laptop 4 Intel i7-1185G7 / UART `8086:A0A8`, Windows 11 и macOS Tahoe на внутреннем SSD, OpenCore 1.0.8, Python 3, Git, независимый Windows Boot Manager.
+**Цель:** подключить `SMCProcessor.kext` версии `1.3.8` для чтения CPU die `TC0D`. Установщик работает **полностью в macOS**, с внутреннего SSD, без USB и без переключения в Windows. Существующие VirtualSMC, BigSurface, графика Metal 2, клавиатура, тачпад, Bluetooth и батарея не меняются.
 
-## Windows PowerShell (Администратор)
+**Текущее состояние:** `SMCProcessor.kext` отсутствует, AppleSMC отвечает `0x84` (ключ `TC0D` отсутствует). Показания температуры **не получены**. Автоматический термоконтроллер остаётся выключенным до диагностики датчика.
 
-Все команды — по одной строке. Остановка при любой ошибке.
+Все команды ниже однострочные; выполнять в **Терминале macOS** последовательно.
 
-**1. Исходники проекта.**
+## 1. Загрузка установщика в macOS
 
-~~~powershell
-if (Test-Path "$HOME\Downloads\SL4-Tahoe-Git\.git") { git -C "$HOME\Downloads\SL4-Tahoe-Git" fetch origin experimental/sl4-thermal-guard; if ($LASTEXITCODE -ne 0) { throw 'Git fetch failed' }; git -C "$HOME\Downloads\SL4-Tahoe-Git" switch -C experimental/sl4-thermal-guard origin/experimental/sl4-thermal-guard } else { git clone --branch experimental/sl4-thermal-guard https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git "$HOME\Downloads\SL4-Tahoe-Git" }; if ($LASTEXITCODE -ne 0) { throw 'Git setup failed' }
+~~~bash
+curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/experimental/sl4-thermal-guard/scripts/thermal/install_smcprocessor_macos.py" -o "$HOME/Downloads/install_smcprocessor_macos.py" && python3 --version
 ~~~
 
-**2. Официальный VirtualSMC 1.3.8 (только SMCProcessor).**
+## 2. Официальный SMCProcessor 1.3.8
 
-~~~powershell
-curl.exe -fL --retry 3 "https://github.com/acidanthera/VirtualSMC/releases/download/1.3.8/VirtualSMC-1.3.8-RELEASE.zip" -o "$HOME\Downloads\VirtualSMC-1.3.8-RELEASE.zip"; if ($LASTEXITCODE -ne 0) { throw 'VirtualSMC download failed' }
+Загружается архив от [Acidanthera VirtualSMC](https://github.com/acidanthera/VirtualSMC/releases/tag/1.3.8). Установщик извлекает **только SMCProcessor**, проверяет идентификатор, версию, зависимости и Mach-O. Другие kext из архива не устанавливаются.
+
+~~~bash
+curl -fL --retry 3 "https://github.com/acidanthera/VirtualSMC/releases/download/1.3.8/VirtualSMC-1.3.8-RELEASE.zip" -o "$HOME/Downloads/VirtualSMC-1.3.8-RELEASE.zip"
 ~~~
 
-Установщик проверяет состав архива, `CFBundleIdentifier`, версию `1.3.8`, Mach-O и зависимости. **Имеющийся VirtualSMC не заменяется.**
+## 3. OpenCore 1.0.8 ocvalidate для macOS
 
-**3. Валидатор OpenCore 1.0.8.** Уже имеется в `$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe`. При отсутствии:
-
-~~~powershell
-curl.exe -fL --retry 3 "https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip" -o "$HOME\Downloads\OpenCore-1.0.8-RELEASE.zip"; if ($LASTEXITCODE -ne 0) { throw 'OpenCore download failed' }; Expand-Archive -LiteralPath "$HOME\Downloads\OpenCore-1.0.8-RELEASE.zip" -DestinationPath "$HOME\Downloads\OC108-validate" -Force
+~~~bash
+curl -fL --retry 3 "https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip" -o "$HOME/Downloads/OpenCore-1.0.8-RELEASE.zip" && mkdir -p "$HOME/Downloads/OC108-validate" && ditto -xk "$HOME/Downloads/OpenCore-1.0.8-RELEASE.zip" "$HOME/Downloads/OC108-validate" && chmod +x "$HOME/Downloads/OC108-validate/Utilities/ocvalidate/ocvalidate"
 ~~~
 
-Альтернативный путь валидатора: `$HOME\Downloads\OC108-validate\Utilities\ocvalidate\ocvalidate.exe`. В примерах ниже используется ранее подготовленный валидатор `SL4-FULL-DRIVERS`.
+## 4. Инспекция внутреннего EFI без записи
 
-**4. Только внутренний ESP.**
+Монтирование **в режиме только чтения**:
 
-~~~powershell
-if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
+~~~bash
+sudo diskutil mount readOnly disk0s1
 ~~~
 
-**5. Проверка без записи в EFI.**
+Проверка модели `MSHW0250`, Surface Serial Hub `MSHW0084`, расположения внутренней ESP, Windows Boot Manager как идентификатора раздела, включённых Lilu / VirtualSMC / BigSurface, сохранённой графической конфигурации, архива:
 
-~~~powershell
-py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\thermal\install_smcprocessor_windows.py" --mode inspect --efi "S:\EFI" --archive "$HOME\Downloads\VirtualSMC-1.3.8-RELEASE.zip"
+~~~bash
+python3 "$HOME/Downloads/install_smcprocessor_macos.py" --mode inspect --archive "$HOME/Downloads/VirtualSMC-1.3.8-RELEASE.zip"
 ~~~
 
-Ожидается `INSPECT PASS: internal EFI untouched`. Проверки: Windows Boot Manager, SL4 Intel, UART A0A8, Lilu, VirtualSMC 1.3.8, BigSurface и архив плагина.
+**Обязательный результат:** `INSPECT PASS: read-only; no EFI files changed`. При любой ошибке — **STOP**, дальнейшие шаги не выполнять.
 
-**6. Установка с резервной копией.** Только после успешного inspect.
+## 5. Установка в существующую EFI
 
-~~~powershell
-py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\thermal\install_smcprocessor_windows.py" --mode apply --efi "S:\EFI" --archive "$HOME\Downloads\VirtualSMC-1.3.8-RELEASE.zip" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe" --backup-dir "$HOME\Downloads\SL4-SMC-BACKUPS" --ack INSTALL-SMC-SENSOR
+Перед записью монтирование раздела для записи:
+
+~~~bash
+sudo diskutil unmount disk0s1 && sudo diskutil mount disk0s1
 ~~~
 
-Ожидается `STAGED AND VALIDATED`. Полная копия `EFI/OC` сохраняется на Windows `C:`. Добавляется ровно один `Kernel/Add` после VirtualSMC. Никаких изменений `EFI/Microsoft`, других kext или NVRAM.
+Резервная копия **всего `EFI/OC`** — `~/Downloads/SL4-SMC-BACKUPS` на macOS APFS. Вспомогательный исходный `config.plist` сохраняется на внутреннем EFI как `EFI/SL4-SMC-ROLLBACK-*.plist`. Установщик меняет только список `Kernel/Add` (один новый пункт после VirtualSMC) и добавляет `OC/Kexts/SMCProcessor.kext`.
 
-~~~powershell
-mountvol S: /D
+~~~bash
+sudo python3 "$HOME/Downloads/install_smcprocessor_macos.py" --mode apply --archive "$HOME/Downloads/VirtualSMC-1.3.8-RELEASE.zip" --ocvalidate "$HOME/Downloads/OC108-validate/Utilities/ocvalidate/ocvalidate" --backup-dir "$HOME/Downloads/SL4-SMC-BACKUPS" --ack INSTALL-SMC-SENSOR
+~~~
+
+**Обязательный результат:** `STAGED AND VALIDATED: SMCProcessor 1.3.8 enabled`, полный путь резервной копии и исходного rollback-конфига.
+
+~~~bash
+sync && sudo diskutil unmount disk0s1
 ~~~
 
 Перезагрузка macOS.
 
-## macOS Tahoe — только чтение
+## 6. Проверка датчика после загрузки
 
-**7. Проверка загрузки SMCProcessor.**
+Проверка загруженных модулей:
 
 ~~~bash
 kmutil showloaded 2>/dev/null | grep -Ei 'SMCProcessor|VirtualSMC|BigSurface'
 ~~~
 
-**8. Проверка температуры процессора.**
+Проверка **реальной температуры CPU**, без команд охлаждению:
 
 ~~~bash
 curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/experimental/sl4-thermal-guard/scripts/thermal/sl4_thermal_guard.py" -o "$HOME/Downloads/sl4_thermal_guard.py" && python3 "$HOME/Downloads/sl4_thermal_guard.py" --probe
 ~~~
 
-Температура должна поступать из CPU die `TC0D` в °C. При ошибке `0x84`, неподдерживаемом формате или нереалистичных показаниях — **STOP; никаких автоматических команд контроллеру охлаждения**.
+Результат должен содержать `Validated SMC CPU DIE TC0D = ... C`. При `0x84`, неправильном формате или невозможных значениях: **STOP, автоматическое управление не включать**.
 
-**9. Минутный мониторинг без управления вентилятором.**
+Одна минута наблюдения за датчиком, без записи в EC:
 
 ~~~bash
 python3 "$HOME/Downloads/sl4_thermal_guard.py" --monitor --samples 12
 ~~~
 
-## Ограничение охлаждения SL4 Intel
+## 7. Откат из macOS
 
-Linux для `MSHW0250` поддерживает `TMP PerformanceMode`, но не независимый интерфейс оборотов `FAN`. `PerformanceMode=4` не означает 100% скорости вентилятора; профиль также может увеличить тепловыделение.
+Точный путь резервной копии печатается на этапе установки. Пример пути в команде (заменить `YYYYMMDD-HHMMSS-ffffff`):
 
-Экспериментальная температурная политика `80/72/90 °C` **не устанавливается как служба и не включается при запуске macOS**. Команды в этом документе не меняют профили Surface. Встроенные защиты процессора остаются обязательными.
-
-## Откат через Windows, без USB
-
-~~~powershell
-if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
+~~~bash
+sudo diskutil mount disk0s1
 ~~~
 
-**Точный путь** резервной копии выводится после установки. Пример синтаксиса с заменой отметки времени:
-
-~~~powershell
-py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\thermal\install_smcprocessor_windows.py" --mode restore --efi "S:\EFI" --backup "$HOME\Downloads\SL4-SMC-BACKUPS\SL4-SMC-YYYYMMDD-HHMMSS-ffffff" --ack RESTORE-SMC-SENSOR
+~~~bash
+sudo python3 "$HOME/Downloads/install_smcprocessor_macos.py" --mode restore --backup "$HOME/Downloads/SL4-SMC-BACKUPS/SL4-SMC-YYYYMMDD-HHMMSS-ffffff" --ack RESTORE-SMC-SENSOR
 ~~~
 
-Откат возвращает исходный `config.plist` и удаляет только `SMCProcessor.kext`. При стороннем изменении текущей конфигурации восстановление блокируется; сохранённая полная копия `EFI/OC` остаётся доступна на Windows-диске.
+~~~bash
+sync && sudo diskutil unmount disk0s1
+~~~
 
-## Источники
+При откате исходный `config.plist` восстанавливается из проверенной копии, удаляется **только** добавленный `SMCProcessor.kext`. При несовпадении контрольных сумм текущей конфигурации автоматический откат останавливается, сохраняя все данные.
 
-[VirtualSMC / SMCProcessor](https://github.com/acidanthera/VirtualSMC) · [Linux Surface registry](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c) · [Linux Surface performance profiles](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
+Восстановление при невозможности загрузить macOS выполняется через любую сохранённую независимую загрузочную среду; вспомогательный исходный конфиг хранится на внутреннем EFI. **Не форматировать ESP и не трогать Windows EFI.**
 
-**Готовность:** синтетические проверки установки и отката пройдены. Реальная работа CPU-датчика после загрузки плагина требует проверки.
+## Ограничения охлаждения
+
+SMCProcessor обеспечивает датчик, **не управляет оборотами вентилятора**. Surface Laptop 4 Intel использует `TMP PerformanceMode`, а не интерфейс прямого задания FAN RPM. Переход к `PerformanceMode=4` **не гарантирует максимальные обороты при 80 °C** и может повысить тепловыделение. Служба автоматического управления профилем остаётся экспериментальной и не запускается автоматически.
+
+[Исходник Linux Surface](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c) · [Интерфейсы устройства](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c)
+
+**Статус:** установка через macOS и откат подготовлены; аппаратная проверка после перезагрузки обязательна. Драйверы работающих устройств сохраняются.
