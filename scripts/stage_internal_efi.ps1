@@ -1,3 +1,4 @@
+# ASCII-only script for Windows PowerShell 5.1 (UTF-8 without BOM also supported).
 # Stage a known-working USB OpenCore on the INTERNAL Windows EFI System Partition.
 # Windows PowerShell 5.1+; run elevated. This never changes boot order or BCD entries.
 # It copies ONLY EFI\OC, never EFI\Microsoft or EFI\BOOT.
@@ -25,7 +26,7 @@ if($Mode -ne "Verify"){
   Require ($usbDisk.BusType -eq "USB" -and $usbDisk.Number -ne $InternalDiskNumber) "Source must be USB, not Windows disk"
   $src="$($volumes[0].DriveLetter):\EFI\OC"
   foreach($f in @("OpenCore.efi","config.plist","ACPI\SSDT-RTC0-SL4.aml","Kexts\Lilu.kext\Contents\Info.plist")){
-    Require (Test-Path -LiteralPath (Join-Path $src $f)) "Source USB is missing $f — do not use a generated, untested EFI"
+    Require (Test-Path -LiteralPath (Join-Path $src $f)) "Source USB is missing $f - do not use a generated, untested EFI"
   }
 }
 $mounted=$false
@@ -36,7 +37,7 @@ try {
   $mountedEsp=Get-Partition -DriveLetter S -ErrorAction Stop
   Require ($mountedEsp.DiskNumber -eq $InternalDiskNumber -and $mountedEsp.PartitionNumber -eq $esps[0].PartitionNumber) "S: is not the verified internal ESP"
   $windowsBoot="S:\EFI\Microsoft\Boot\bootmgfw.efi"
-  Require (Test-Path -LiteralPath $windowsBoot) "Windows Boot Manager missing — abort"
+  Require (Test-Path -LiteralPath $windowsBoot) "Windows Boot Manager missing - abort"
   $before=(Get-FileHash -LiteralPath $windowsBoot -Algorithm SHA256).Hash
   $dst="S:\EFI\OC"
   Write-Host "Internal: disk $InternalDiskNumber $($disk.FriendlyName), ESP partition $($esps[0].PartitionNumber)"
@@ -79,7 +80,7 @@ try {
     }
     Write-Host "VERIFY OK: Internal EFI\OC exists. Windows Boot Manager intact."
   }
-  Require ((Get-FileHash -LiteralPath $windowsBoot -Algorithm SHA256).Hash -eq $before) "Windows EFI bootmgfw.efi changed — investigate"
+  Require ((Get-FileHash -LiteralPath $windowsBoot -Algorithm SHA256).Hash -eq $before) "Windows EFI bootmgfw.efi changed - investigate"
 } finally {
   if($mounted){ & mountvol.exe S: /D | Out-Null }
 }
