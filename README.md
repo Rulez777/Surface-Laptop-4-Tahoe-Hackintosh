@@ -33,13 +33,14 @@ OpenCore configuration, driver stack and installation tools for macOS Tahoe on t
 | Built-in keyboard | **Working** |
 | Built-in trackpad, tap-to-click and multitouch | **Working** |
 | Battery percentage | **Working** |
+| CPU die temperature (`TC0D`) / SMCProcessor 1.3.8 | **Working** |
 | Fan operation / Surface performance profiles | **Working** |
 | Audio and microphone | In progress |
 | Bluetooth | **Working** |
 | Brightness controls | In progress |
 | Sleep / wake | In progress |
 | Surface Dock | **Working** |
-| CPU temperature telemetry / custom fan curve | In progress |
+| Direct FAN RPM control / custom fan curve | Not available via documented SL4 interface |
 
 ## Driver stack
 
@@ -89,7 +90,8 @@ Execution: macOS Terminal, regular account, **without `sudo`**.
 - Automatic fan operation: **Working**.
 - Direct fan RPM control and custom 80 °C fan-speed curve: In progress.
 - CPU die temperature key `TC0D`: unavailable without an appropriate SMC temperature provider.
-- Additional thermal software: experimental; not included in the standard install.
+- Optional macOS TMP 3 startup / wake reapplication: [guide](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/experimental/sl4-thermal-guard/scripts/thermal/TMP3-AUTOSTART-RU.md). Separate experimental LaunchDaemon; not installed by default.
+- Direct fan RPM override unavailable through the known SL4 Intel Surface TMP interface. Profile `4` is not a full-fan command.
 
 [Cooling source research](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
 
