@@ -201,7 +201,9 @@ def main():
     except RuntimeError:
         raise
     print("SUCCESS:", root)
-    print("Next: copy the EFI folder to FAT32 USB. Never publish personal SMBIOS data.")
+    print("PERSONAL EFI GENERATED: fresh builds are NOT independently boot-verified; preserve the working internal EFI.")
+    print("Use docs/VALIDATED-METAL-SL4.md for the post-install internal-SSD Metal path.")
+    print("Never publish personal SMBIOS data or copy a new build over a working boot EFI without rollback.")
 
 
 if __name__ == "__main__":
