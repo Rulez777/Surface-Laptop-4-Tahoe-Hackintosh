@@ -35,7 +35,7 @@ OpenCore configuration, driver stack and installation tools for macOS Tahoe on t
 | Battery percentage | **Working** |
 | Fan operation / Surface performance profiles | **Working** |
 | Audio and microphone | In progress |
-| Bluetooth | Available in macOS; pairing status not specified |
+| Bluetooth | **Working** |
 | Brightness controls | In progress |
 | Sleep / wake | In progress |
 | Surface Dock | **Working** |
