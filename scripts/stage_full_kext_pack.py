@@ -10,6 +10,7 @@ import argparse
 import copy
 from datetime import datetime
 import hashlib
+import json
 import os
 from pathlib import Path
 import plistlib
@@ -43,6 +44,18 @@ def main():
     require(target.name.upper() == "EFI" and pack.name.upper() == "EFI", "Expected EFI directories")
     require(target != pack and target.anchor.lower() != pack.anchor.lower(), "Pack must live off internal ESP")
     require(target.anchor.lower() != backup.anchor.lower(), "Backup must be off internal ESP")
+    # This is only valid after the builder successfully completed every
+    # download and wrote its atomic manifest.json completion marker.
+    manifest_file = pack.parent.parent / "manifest.json"
+    require(manifest_file.is_file(), "Driver pack incomplete: manifest.json missing")
+    manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    require(os.path.normcase(os.path.abspath(manifest.get("staged_efi", ""))) == os.path.normcase(str(pack)),
+            "Manifest identifies a different EFI directory")
+    validator = None
+    if args.mode == "apply":
+        require(args.ocvalidate is not None, "--ocvalidate is REQUIRED for apply")
+        validator = Path(os.path.abspath(str(args.ocvalidate)))
+        require(validator.is_file(), "ocvalidate.exe not found")
     current_file, proposed_file = target / "OC/config.plist", pack / "OC/config.plist"
     require(current_file.is_file() and proposed_file.is_file(), "Missing one config.plist")
     require((target / "OC/OpenCore.efi").is_file(), "Internal OpenCore missing")
@@ -52,7 +65,6 @@ def main():
     active = {x["BundlePath"]: x for x in current["Kernel"]["Add"]}
     revised = copy.deepcopy(proposed)
     new_entries = [x for x in proposed["Kernel"]["Add"] if x["BundlePath"] not in active]
-    require(new_entries, "No additional drivers to stage")
     require(not any(x["Enabled"] for x in new_entries), "New kexts must all be disabled")
     revised["Kernel"]["Add"] = [x for x in proposed["Kernel"]["Add"] if x["BundlePath"] in active]
     require(revised == current, "Base EFI settings changed; regenerate pack from the exact internal EFI")
@@ -89,7 +101,9 @@ def main():
                 matched.append(name)
             else:
                 different.append(name)
-    require(new_entries or missing, "No new entries or missing kext files to stage")
+    if not new_entries and not missing:
+        print("ALREADY STAGED: complete driver pack has no new entries or files; internal EFI unchanged")
+        return
     total = sum(f.stat().st_size for entry, kext in missing for f in kext.rglob("*") if f.is_file())
     print("Original config SHA256:", digest(current_file))
     print("New disabled config entries:", ", ".join(x["BundlePath"] for x in new_entries) or "none")
@@ -127,14 +141,9 @@ def main():
             tmp = Path(stream.name)
             stream.write(output)
         try:
-            if args.ocvalidate:
-                validator = Path(os.path.abspath(str(args.ocvalidate)))
-                require(validator.is_file(), "ocvalidate.exe not found")
-                check = subprocess.run([str(validator), str(tmp)], capture_output=True, text=True)
-                print(check.stdout, check.stderr)
-                require(check.returncode == 0, "ocvalidate rejected optional kext config")
-            else:
-                print("WARNING: ocvalidate skipped; verify before booting")
+            check = subprocess.run([str(validator), str(tmp)], capture_output=True, text=True)
+            print(check.stdout, check.stderr)
+            require(check.returncode == 0, "ocvalidate rejected optional kext config")
             require(digest(current_file) == digest(saved / "OC/config.plist"), "Internal config changed during operation")
             os.replace(tmp, current_file)
             print("SUCCESS:", len(new_entries), "new DISABLED config entries;", len(missing), "missing kext folders copied")
