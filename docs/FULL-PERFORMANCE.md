@@ -54,10 +54,10 @@ py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode prepare 
 
 The command requires `PREPARE-XE-EFI` confirmation before changing SIP/boot flags. **SIP `0x803` is less restrictive than default Apple SIP; do not apply without understanding the trust implications.** The script checks the presence and order of Lilu, WhateverXe, AMFIAnchor and its injector, as well as the custom RTC0 fix.
 
-Copy the graphics installer onto the Kingston **exFAT data volume**, not its EFI. Kingston will later be used only to **transfer the package**, not as the boot device:
+Copy the graphics installer **and SHA256-checking helper** onto Kingston's **exFAT data volume**, not its EFI. Kingston is only used to transfer files, not to boot macOS:
 
 ```powershell
-$d=Get-Volume -FileSystemLabel "SL4DATA" | Where-Object DriveLetter | Select-Object -First 1; if(!$d){throw "SL4DATA not mounted"}; Copy-Item "$HOME\Downloads\SL4-FULL-DRIVERS\macOS-Installers\WhateverXe-Graphics-0.4.4.pkg" "$($d.DriveLetter):\" -Force
+$d=Get-Volume -FileSystemLabel "SL4DATA" | Where-Object DriveLetter | Select-Object -First 1; if(!$d){throw "SL4DATA not mounted"}; Copy-Item "$HOME\Downloads\SL4-FULL-DRIVERS\macOS-Installers\WhateverXe-Graphics-0.4.4.pkg" "$($d.DriveLetter):\" -Force; Copy-Item "$HOME\Downloads\SL4-Tahoe-Git\scripts\install_wex_graphics_macos.sh" "$($d.DriveLetter):\" -Force
 ```
 
 Unmount the internal ESP:
@@ -84,10 +84,10 @@ shasum -a 256 "/Volumes/SL4DATA/WhateverXe-Graphics-0.4.4.pkg"
 
 Expected SHA-256: `f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec`.
 
-Install the package (requires admin credentials and a working input device):
+Install the verified package using the helper (requires admin credentials and a working input device):
 
 ```bash
-sudo installer -pkg "/Volumes/SL4DATA/WhateverXe-Graphics-0.4.4.pkg" -target /
+bash "/Volumes/SL4DATA/install_wex_graphics_macos.sh" "/Volumes/SL4DATA/WhateverXe-Graphics-0.4.4.pkg"
 ```
 
 **Do not proceed** if the installer reports an error. Follow its restart instructions. The Graphics installer modifies macOS `/Library` and rebuilds AuxKC; merely copying a `.pkg` to EFI cannot enable acceleration.
