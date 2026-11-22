@@ -58,18 +58,44 @@ def main():
     require(revised == current, "Base EFI settings changed; regenerate pack from the exact internal EFI")
     for name, entry in active.items():
         require(entry == next(x for x in proposed["Kernel"]["Add"] if x["BundlePath"] == name), "Existing entry modified: " + name)
+    # All archive candidates, including ones already registered in config.plist.
+    # Do not assume an existing Kernel/Add entry implies actual kext files exist.
+    candidate_names = (
+        "AppleALC.kext", "AirportItlwm.kext", "IntelBluetoothFirmware.kext",
+        "IntelBTPatcher.kext", "BlueToolFixup.kext", "SMCBatteryManager.kext",
+        "VoodooPS2Controller.kext", "VoodooI2C.kext", "VoodooI2CHID.kext",
+        "BigSurface.kext", "NVMeFix.kext", "RestrictEvents.kext",
+    )
     proposed_kexts = pack / "OC/Kexts"
     missing = []
-    for entry in new_entries:
-        kext = proposed_kexts / entry["BundlePath"]
-        require((kext / entry["PlistPath"]).is_file(), "Missing staged kext: " + entry["BundlePath"])
+    different = []
+    matched = []
+    for name in candidate_names:
+        entries = [x for x in proposed["Kernel"]["Add"] if x["BundlePath"] == name]
+        require(len(entries) == 1, "Candidate driver missing or duplicated in packed config: " + name)
+        entry = entries[0]
+        source = proposed_kexts / name
+        require((source / entry["PlistPath"]).is_file(), "Missing staged Info.plist: " + name)
         if entry.get("ExecutablePath"):
-            require((kext / entry["ExecutablePath"]).is_file(), "Missing kext binary: " + entry["BundlePath"])
-        require(not (target / "OC/Kexts" / entry["BundlePath"]).exists(), "Kext unexpectedly already exists on internal EFI: " + entry["BundlePath"])
-        missing.append((entry, kext))
+            require((source / entry["ExecutablePath"]).is_file(), "Missing staged executable: " + name)
+        dest = target / "OC/Kexts" / name
+        if not dest.exists():
+            missing.append((entry, source))
+        else:
+            require(dest.is_dir(), "Existing kext path is not a directory: " + name)
+            source_files = {str(f.relative_to(source)): digest(f) for f in source.rglob("*") if f.is_file()}
+            dest_files = {str(f.relative_to(dest)): digest(f) for f in dest.rglob("*") if f.is_file()}
+            if source_files == dest_files:
+                matched.append(name)
+            else:
+                different.append(name)
+    require(new_entries or missing, "No new entries or missing kext files to stage")
     total = sum(f.stat().st_size for entry, kext in missing for f in kext.rglob("*") if f.is_file())
     print("Original config SHA256:", digest(current_file))
-    print("New disabled kexts:", ", ".join(x[0]["BundlePath"] for x in missing))
+    print("New disabled config entries:", ", ".join(x["BundlePath"] for x in new_entries) or "none")
+    print("Missing kext directories to copy:", ", ".join(x[0]["BundlePath"] for x in missing) or "none")
+    print("Already present and byte-identical:", ", ".join(matched) or "none")
+    print("Already present with DIFFERENT bytes (PRESERVED):", ", ".join(different) or "none")
     print("Bytes to stage:", total)
     print("Unmodified existing enabled kexts:", sum(x["Enabled"] for x in current["Kernel"]["Add"]))
     if args.mode == "inspect":
@@ -87,12 +113,13 @@ def main():
     try:
         for entry, source in missing:
             dest = target / "OC/Kexts" / entry["BundlePath"]
+            # Track destination BEFORE copytree, so a mid-copy failure is cleaned up.
+            installed.append(dest)
             shutil.copytree(source, dest)
             for f in source.rglob("*"):
                 if f.is_file():
                     dst = dest / f.relative_to(source)
                     require(dst.is_file() and digest(f) == digest(dst), "Kext copy hash mismatch: " + str(dst))
-            installed.append(dest)
         updated = copy.deepcopy(current)
         updated["Kernel"]["Add"].extend(new_entries)
         output = plistlib.dumps(updated, sort_keys=False)
@@ -110,7 +137,7 @@ def main():
                 print("WARNING: ocvalidate skipped; verify before booting")
             require(digest(current_file) == digest(saved / "OC/config.plist"), "Internal config changed during operation")
             os.replace(tmp, current_file)
-            print("SUCCESS: staged", len(new_entries), "additional DISABLED driver entries")
+            print("SUCCESS:", len(new_entries), "new DISABLED config entries;", len(missing), "missing kext folders copied")
             print("WINDOWS EFI, BOOT ORDER, KNOWN GOOD ACTIVE DRIVERS: unchanged")
             print("Rollback: restore backup OC from", saved)
         finally:
