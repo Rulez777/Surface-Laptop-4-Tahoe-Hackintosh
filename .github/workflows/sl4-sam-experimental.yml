@@ -7,6 +7,12 @@ on:
     paths:
       - 'experiments/sl4-input/**'
       - '.github/workflows/sl4-sam-experimental.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'experiments/sl4-input/**'
+      - '.github/workflows/sl4-sam-experimental.yml'
   workflow_dispatch:
 
 permissions:
