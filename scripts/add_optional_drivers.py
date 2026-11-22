@@ -86,20 +86,18 @@ def cached_download(url, cache):
             print("NOTICE: incomplete or invalid cached asset; downloading again:", name)
         print("Downloading", url)
         req = urllib.request.Request(url, headers={"User-Agent": "SL4-Optional-Kexts/1.0"})
-        with tempfile.NamedTemporaryFile(prefix=".sl4-", suffix=".part", dir=cache, delete=False) as f:
-            temporary = pathlib.Path(f.name)
-            try:
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(prefix=".sl4-", suffix=".part", dir=cache, delete=False) as f:
+                temporary = pathlib.Path(f.name)
                 with urllib.request.urlopen(req, timeout=180) as response:
                     shutil.copyfileobj(response, f)
-            except BaseException:
-                temporary.unlink(missing_ok=True)
-                raise
-        try:
             require(verified_zip(temporary, expected_size, expected_sha),
                     "Release asset failed pinned size/SHA256/ZIP CRC checks: " + name)
             os.replace(temporary, output)
         finally:
-            temporary.unlink(missing_ok=True)
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     print("Verified release ZIP:", name, "(SHA256)" if expected_sha else "(size + ZIP CRC; upstream SHA unavailable)")
     return zipfile.ZipFile(output)
 
