@@ -43,6 +43,22 @@ curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-
 
 Expected on compatible SMC: `Validated SMC CPU DIE TC0D = XX.XX C`. If `TC0D missing` or `AppleSMC open failed`, **STOP**. This is information, not permission to install another kext without a separate backup/review.
 
+### Real-machine feedback: SMC key not found on owner's Tahoe
+
+The first owner test on 2026-11-22 **did not return a CPU temperature**:
+
+```text
+STOP: Invalid AppleSMC reply: rc=0, size=80, result=132, status=0
+```
+
+`132` decimal = `0x84` (SMC **key not found**). The IOKit request succeeded (`rc=0`), but the CPU die key `TC0D` is not registered. In VirtualSMC source, `SMCProcessor.kext` adds this key only if CPU package thermal counter support is detected. Confirm the plugin's presence using this **single-line, read-only** command:
+
+```bash
+kmutil showloaded 2>/dev/null | grep -Ei 'SMCProcessor|VirtualSMC|SMCSuperIO|BigSurface' || true
+```
+
+If `SMCProcessor` is absent, do not install it blindly into a working, accelerated Tahoe installation. It needs the same VirtualSMC version, correct OpenCore kernel order and an EFI backup, followed by an independent reboot test. If it is loaded but `TC0D` is missing, investigate the actual sensor registration/Intel MSR support. **Do not substitute battery percentage or battery temperature**. The guardian is deliberately unusable in control mode without real CPU readings. The source now prints a clearer `SMC key TC0D not found (0x84)` diagnostic.
+
 ### 2. Read-only monitor (12 samples = 1 minute)
 
 ```bash
