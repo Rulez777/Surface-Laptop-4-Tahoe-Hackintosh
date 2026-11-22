@@ -54,8 +54,8 @@ class ThermalPolicyTests(unittest.TestCase):
 
     def test_battery_is_not_sensor_source(self):
         self.assertEqual(mod.CpuDie.read.__name__, "read")
-        self.assertNotIn("TC0P", mod.CpuDie.read.__code__.co_consts)
-        self.assertIn("TC0D", mod.CpuDie.read.__code__.co_consts)
+        self.assertNotIn(b"TC0P", mod.CpuDie.read.__code__.co_consts)
+        self.assertIn(b"TC0D", mod.CpuDie.read.__code__.co_consts)
 
 
 if __name__ == "__main__":
