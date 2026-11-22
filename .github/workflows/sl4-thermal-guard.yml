@@ -20,6 +20,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Syntax checks
-        run: python3 -m py_compile scripts/thermal/sl4_thermal_guard.py scripts/thermal/test_sl4_thermal_guard.py
+        run: python3 -m py_compile scripts/thermal/sl4_thermal_guard.py scripts/thermal/install_smcprocessor_windows.py scripts/thermal/test_sl4_thermal_guard.py scripts/thermal/test_stage_smcprocessor_windows.py
       - name: Synthetic threshold, critical and SMC structure tests
-        run: python3 -m unittest discover -s scripts/thermal -p 'test_sl4_thermal_guard.py' -v
+        run: python3 -m unittest discover -s scripts/thermal -p 'test_*.py' -v
