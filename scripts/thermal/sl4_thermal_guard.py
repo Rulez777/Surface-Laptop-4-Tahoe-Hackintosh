@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Experimental Surface Laptop 4 Intel thermal guard (not a direct fan RPM driver).
+"""Surface Laptop 4 Intel: CPU die temperature monitor and manual TMP 3 request.
 
-Reads ONLY the SMC TC0D CPU die temperature. Read-only --probe and --monitor
-are the default safe paths. --control is explicitly opt-in, and requests
-BigSurface TMP profiles, never direct fan speed. TMP=4 may INCREASE CPU heat.
-No guarantees about fan RPM, full speed, or physical EC response.
-
-Requires a working SMC CPU die sensor (usually SMCProcessor.kext) and
-BigSurface. Never use battery temperature TC0P as a substitute for TC0D.
+No direct fan RPM interface is available for this model. Profile 4 may raise
+CPU power without adequate cooling and automatic mode switching is DISABLED.
+--probe and --monitor are read-only. --set-profile 3 is a single-shot optional
+request to the existing BigSurface driver, restricted to temperatures < 80 C;
+an IOKit success result is NOT proof of EC receipt or fan RPM changes.
+Requires TC0D CPU die SMC sensor from SMCProcessor.kext for all operations.
 """
 import argparse
 import ctypes as C
@@ -17,8 +16,6 @@ import subprocess
 import sys
 import time
 
-BASE, HOT, CRITICAL = 3, 4, 1
-HOT_C, COOL_C, CRITICAL_C = 80.0, 72.0, 90.0
 MIN_C, MAX_C = 15.0, 105.0
 INTERVAL = 5
 
@@ -129,41 +126,14 @@ class CpuDie:
         return temp
 
 
-class Policy:
-    """Pure policy; all transitions include hysteresis, no hardware operations."""
-    def __init__(self):
-        self.state, self.hot_count, self.cool_since = "balanced", 0, None
-
-    def select(self, temp, now):
-        require(MIN_C <= temp <= MAX_C, "Invalid temperature")
-        if temp >= CRITICAL_C:
-            self.state, self.cool_since = "critical", None
-            return CRITICAL
-        if self.state == "critical":
-            if temp <= COOL_C:
-                self.cool_since = now if self.cool_since is None else self.cool_since
-                if now - self.cool_since >= 60:
-                    self.state, self.cool_since = "balanced", None
-                    return BASE
-            else:
-                self.cool_since = None
-            return CRITICAL
-        if self.state == "balanced":
-            self.hot_count = self.hot_count + 1 if temp >= HOT_C else 0
-            if self.hot_count >= 2:
-                self.state, self.cool_since = "hot", None
-                return HOT
-            return BASE
-        if self.state == "hot":
-            if temp <= COOL_C:
-                self.cool_since = now if self.cool_since is None else self.cool_since
-                if now - self.cool_since >= 60:
-                    self.state, self.cool_since, self.hot_count = "balanced", None, 0
-                    return BASE
-            else:
-                self.cool_since = None
-            return HOT
-        raise RuntimeError("Invalid policy state")
+def temperature_status(temp):
+    """Read-only status, not a cooling command or diagnosis of throttling."""
+    require(MIN_C <= temp <= MAX_C, "Invalid CPU temperature")
+    if temp >= 90.0:
+        return "HIGH 90+ C: stop CPU-intensive work"
+    if temp >= 80.0:
+        return "ELEVATED 80+ C: watch temperature and CPU limits"
+    return "below 80 C"
 
 
 class BigSurface:
@@ -215,48 +185,53 @@ class BigSurface:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_mutually_exclusive_group(required=True)
-    commands.add_argument("--probe", action="store_true", help="Read CPU DIE temperature once; no writes")
-    commands.add_argument("--monitor", action="store_true", help="Log decisions, never write TMP")
-    commands.add_argument("--control", action="store_true", help="EXPERIMENTAL: request TMP profiles, NOT fan RPM")
-    parser.add_argument("--ack", default="", help="Required with --control: I-UNDERSTAND-TMP-IS-NOT-FAN-RPM")
-    parser.add_argument("--samples", type=int, default=0, help="0 = continuous, positive = finite")
+    commands.add_argument("--probe", action="store_true", help="Read CPU die once; no writes")
+    commands.add_argument("--monitor", action="store_true", help="Read-only CPU die log, no TMP writes")
+    commands.add_argument("--set-profile", type=int, choices=(3,), metavar="3",
+                          help="One-shot request for TMP=3, NOT direct fan RPM; needs sudo and --ack")
+    commands.add_argument("--control", action="store_true",
+                          help="DISABLED: unsafe automatic mode 4 requests")
+    parser.add_argument("--ack", default="", help="Required for manual mode: SET-TMP-3-NOT-FAN-RPM")
+    parser.add_argument("--samples", type=int, default=0, help="For --monitor: 0=continuous, >0=count")
     args = parser.parse_args()
-    require(args.samples >= 0, "Invalid sample count")
-    if args.control:
-        require(args.ack == "I-UNDERSTAND-TMP-IS-NOT-FAN-RPM", "Explicit --ack required")
-        require(os.geteuid() == 0, "--control requires sudo")
+    require(args.samples >= 0, "--samples must be nonnegative")
+    require(not args.control,
+            "--control is DISABLED: SL4 has no independent fan RPM interface, and TMP 4 can increase heat")
+    if args.set_profile is not None:
+        require(args.ack == "SET-TMP-3-NOT-FAN-RPM", "Manual mode requires --ack SET-TMP-3-NOT-FAN-RPM")
+        require(os.geteuid() == 0, "Manual mode requires sudo")
     check_hardware()
     sensor = CpuDie()
     try:
         temp = sensor.read()
-        say(f"Validated SMC CPU DIE TC0D = {temp:.2f} C (NOT battery temperature)")
+        say(f"SMC CPU DIE TC0D = {temp:.2f} C (not battery temperature)")
         if args.probe:
             return
-        controller = BigSurface() if args.control else None
-        policy, previous, failures = Policy(), None, 0
-        sample = 0
-        while args.samples == 0 or sample < args.samples:
-            try:
-                if sample:
+        if args.set_profile is not None:
+            require(temp < 80.0,
+                    f"CPU DIE {temp:.2f} C is >=80 C: refuse to raise CPU performance mode while hot")
+            BigSurface().set(3)
+            say("One-shot TMP 3 request sent; not persistent across sleep or reboot; EC and fan RPM unverified")
+            return
+        count = 0
+        consecutive_errors = 0
+        while args.samples == 0 or count < args.samples:
+            if count:
+                try:
                     temp = sensor.read()
-                target = policy.select(temp, time.monotonic())
-                failures = 0
-                say(f"CPU DIE {temp:.2f} C; state={policy.state}; TMP={target}; writes={'ON' if controller else 'OFF'}")
-                if target != previous:
-                    if controller:
-                        controller.set(target)
-                    previous = target
-            except (RuntimeError, OSError) as error:
-                failures += 1
-                say(f"SENSOR/IOKIT ERROR: {error}")
-                if failures >= 2 and previous == HOT and controller:
-                    controller.set(BASE)
-                    previous = BASE
-                    say("Sensor failed twice: retreated to TMP mode 3")
-                if failures >= 3:
-                    raise RuntimeError("Repeated sensor failures, stopping monitor") from error
-            sample += 1
-            if args.samples == 0 or sample < args.samples:
+                    consecutive_errors = 0
+                except (RuntimeError, OSError) as error:
+                    consecutive_errors += 1
+                    say(f"SENSOR ERROR: {error}; no EC writes")
+                    if consecutive_errors >= 3:
+                        raise RuntimeError("Repeated sensor failures; monitoring stopped") from error
+                    count += 1
+                    if args.samples == 0 or count < args.samples:
+                        time.sleep(INTERVAL)
+                    continue
+            say(f"CPU DIE {temp:.2f} C; {temperature_status(temp)}; writes=OFF")
+            count += 1
+            if args.samples == 0 or count < args.samples:
                 time.sleep(INTERVAL)
     finally:
         sensor.close()
