@@ -13,7 +13,9 @@ import zipfile
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
+import tempfile
 import urllib.request
 
 GRAPHICS_URL = "https://github.com/b00t0x/WhateverXe-Graphics/releases/download/v0.4.4/WhateverXe-Graphics-0.4.4.pkg"
@@ -30,19 +32,52 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def asset_valid(path, expected_size, expected_sha):
+    try:
+        if not path.is_file() or (expected_size is not None and path.stat().st_size != expected_size):
+            return False
+        if expected_sha and hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha:
+            return False
+        if path.suffix.lower() == ".zip":
+            with zipfile.ZipFile(path) as archive:
+                if archive.testzip() is not None:
+                    return False
+        return True
+    except (OSError, zipfile.BadZipFile, RuntimeError):
+        return False
+
+
 def fetch(url, path, expected_size=None, expected_sha=None):
     path.parent.mkdir(parents=True, exist_ok=True)
-    if not path.is_file():
+    if not asset_valid(path, expected_size, expected_sha):
+        if path.exists():
+            print("NOTICE: invalid cached asset, fetching again:", path.name)
         req = urllib.request.Request(url, headers={"User-Agent": "SL4-Tahoe-Driver-Pack/1.0"})
-        with urllib.request.urlopen(req, timeout=240) as response, path.open("wb") as stream:
-            import shutil
-            shutil.copyfileobj(response, stream)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(prefix=".sl4-", suffix=".part", dir=path.parent, delete=False) as stream:
+                temporary = Path(stream.name)
+                with urllib.request.urlopen(req, timeout=240) as response:
+                    shutil.copyfileobj(response, stream)
+            # A temporary .part has no ZIP extension; inspect ZIP by destination type.
+            if path.suffix.lower() == ".zip":
+                with zipfile.ZipFile(temporary) as archive:
+                    require(archive.testzip() is None, "ZIP CRC mismatch: " + path.name)
+            require(asset_valid_for_extension(temporary, expected_size, expected_sha),
+                    "Pinned size/SHA-256 mismatch for " + path.name)
+            os.replace(temporary, path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if expected_size is not None:
-        require(path.stat().st_size == expected_size, "Unexpected download size for " + path.name)
-    if expected_sha is not None:
-        require(digest == expected_sha, "SHA256 mismatch for " + path.name)
     return {"file": str(path), "sha256": digest, "bytes": path.stat().st_size, "source": url}
+
+
+def asset_valid_for_extension(path, expected_size, expected_sha):
+    # Used for download temp files, which do not end with .zip.
+    return (path.is_file()
+            and (expected_size is None or path.stat().st_size == expected_size)
+            and (expected_sha is None or hashlib.sha256(path.read_bytes()).hexdigest() == expected_sha))
 
 
 def main():
@@ -61,7 +96,7 @@ def main():
         # Preserve the failed EFI copy under a new name rather than deleting it.
         require(target.is_dir() and not target.is_symlink(), "Output is not a normal directory")
         require(not (target / "manifest.json").exists(), "Existing output already finished; choose a new --out")
-        allowed = lambda name: name in {"tools", "optional-EFI", "macOS-Installers"} or name.startswith("optional-EFI.failed-")
+        allowed = lambda name: name in {"tools", "optional-EFI", "macOS-Installers", "manifest.json.tmp"} or name.startswith("optional-EFI.failed-")
         require(all(allowed(child.name) for child in target.iterdir()), "Unknown files in output; choose a new --out")
         require((target / "tools" / "OpenCore-1.0.8-RELEASE.zip").is_file(),
                 "Cannot recognize previous attempt; choose a new --out")
@@ -88,7 +123,7 @@ def main():
     subprocess.run(cmd, check=True)
     graphics_dir = target / "macOS-Installers"
     graphic = fetch(GRAPHICS_URL, graphics_dir / "WhateverXe-Graphics-0.4.4.pkg", GRAPHICS_SIZE, GRAPHICS_SHA256)
-    touch = fetch(IPTS_URL, graphics_dir / "IPTSDaemon-v1.4.zip")
+    touch = fetch(IPTS_URL, graphics_dir / "IPTSDaemon-v1.4.zip", 1049971)
     # Do not extract/execute daemon: the upstream release only documents older Surface hardware.
     manifest = {
         "machine": "Surface Laptop 4 Intel Core i7-1185G7, Iris Xe 96 EU (8086:9A49)",
@@ -108,7 +143,10 @@ def main():
             "Use the original Kingston EFI as a recovery path. Do not replace the working internal EFI blindly.",
         ],
     }
-    (target / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    # Atomic completion marker: interrupted downloads must remain resumable.
+    manifest_tmp = target / "manifest.json.tmp"
+    manifest_tmp.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    os.replace(manifest_tmp, target / "manifest.json")
     print("FULL CANDIDATE DRIVER PACK READY:", target)
     print("Graphics and OpenCore ZIP SHA256 verified against official release asset digests.")
     if sys.platform == "win32":
