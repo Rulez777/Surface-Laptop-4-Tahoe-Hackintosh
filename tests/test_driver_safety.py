@@ -97,7 +97,7 @@ class DriverPackSafety(unittest.TestCase):
             self.assertTrue(entries["AppleALC.kext"]["Enabled"])
             self.assertFalse(entries["New.kext"]["Enabled"])
 
-    def make_xe(self, base, boot="-wex-noaccel", sip=b"\\x00" * 4):
+    def make_xe(self, base, boot="-wex-noaccel", sip=bytes(4)):
         xe = load("xe_acceleration")
         root = base / "EFI"
         (root / "OC" / "ACPI").mkdir(parents=True)
@@ -135,7 +135,7 @@ class DriverPackSafety(unittest.TestCase):
     def test_xe_enable_refuses_stale_nvram_delete(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
-            xe, root = self.make_xe(base, "-wex-noaccel -allow3d -disablegfxfirmware", b"\\x03\\x08\\x00\\x00")
+            xe, root = self.make_xe(base, "-wex-noaccel -allow3d -disablegfxfirmware", bytes.fromhex("03080000"))
             args = ["xe_acceleration.py", "--efi", str(root), "--mode", "enable"]
             with patch.object(sys, "argv", args):
                 with self.assertRaisesRegex(RuntimeError, "NVRAM/Delete missing"):
