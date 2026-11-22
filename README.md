@@ -24,7 +24,7 @@ git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git
 py -3 scripts/build_efi.py --serial YOUR_SERIAL --mlb YOUR_MLB --uuid YOUR_UUID --rom YOUR_12_HEX_DIGIT_ROM --out EFI-output
 ```
 
-The script fetches official **OpenCore 1.0.8, Lilu 1.7.2, VirtualSMC 1.3.8, WhateverXe 0.8.3, AMFIAnchor 0.1.2, USBToolBox 1.2.0 and HfsPlus**, adds the Surface USB map and Intel A0ED injector, generates **SSDT-RTC0-SL4**, and checks the result with OpenCore `ocvalidate` on Windows. The output is `EFI-output/EFI/`.
+The script fetches official **OpenCore 1.0.8, Lilu 1.7.2, VirtualSMC 1.3.8, WhateverXe 0.8.3, AMFIAnchor 0.1.2, USBToolBox 1.2.0 and HfsPlus**, adds the Surface USB map and Intel A0ED injector, generates **SSDT-RTC0-SL4**, and checks the result with OpenCore `ocvalidate` on Windows. The output is `EFI-output/EFI/`. **The builder has not yet been independently boot-tested from a clean checkout; the confirmed boot used the original test-machine EFI.**
 
 **4. Prepare the USB** as GPT with two volumes:
 
