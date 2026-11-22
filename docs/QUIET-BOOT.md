@@ -1,76 +1,56 @@
-# Quiet OpenCore: macOS default, Windows available
+# Quiet OpenCore picker: 4-second internal SSD boot
 
-This is the **post-install** profile for the Intel Surface Laptop 4 test machine after macOS Tahoe boots. The verified USB used verbose diagnostics while the boot problem was investigated. Those logs are not required for ordinary startup.
+**Test status (2026-11-22):** The Surface Laptop 4 Intel test machine now boots Tahoe 26.7.1 with Metal 2 via **internal OpenCore 1.0.8** beside Windows 11. Its quiet picker was configured earlier and should **not** be reapplied if already working.
 
-## What changes
+## Current known-good settings
 
-| Setting | Quiet profile |
-|---|---|
-| OpenCore | Keep **OpenCore 1.0.8 RELEASE**, not DEBUG |
-| `Misc -> Debug -> Target` | `0` — disable console/file debugging |
+| Key | Test-machine value |
+| --- | --- |
+| OpenCore | 1.0.8 RELEASE |
+| `Misc -> Boot -> ShowPicker` | `True` |
+| `PickerMode` | `Builtin` |
+| `Timeout` | `4` seconds |
+| `HideAuxiliary` | `True` (Space shows hidden Recovery tools) |
+| `Misc -> Security -> AllowSetDefault` | `True` (Ctrl+Enter can set the preferred OS) |
+| `Misc -> Debug -> Target` | `0` |
 | `AppleDebug`, `ApplePanic` | `False` |
 | `DisplayLevel` | `0` |
-| `NVRAM -> boot-args` | Remove only `-v`, `keepsyms=1`, `debug=0x100` |
-| `Misc -> Boot -> ShowPicker` | `True` |
-| `PickerMode` | `Builtin` (no graphical boot driver needed) |
-| `Timeout` | `4` seconds |
-| `HideAuxiliary` | `True` — press **Space** to show Recovery/tools |
-| `Misc -> Security -> AllowSetDefault` | `True` — **Ctrl+Enter** to save the macOS default |
+| `NVRAM -> boot-args` | **`npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt`** with validated DVMT 60 MB iGPU Data properties |
 
-Keep **all** Surface-specific ACPI, RTC0, kexts, NVMe, graphics, USB and `RequestBootVarRouting` settings unchanged. Keep `-wex-noaccel` until acceleration is independently validated. Do not reset NVRAM just to hide logging.
+The last line reflects **working accelerated graphics on this measured-60-MB-DVMT Surface**, not a default for every system. The old framebuffer-only `-wex-noaccel` configuration is kept only as a **private rollback backup**. See [validated Metal settings](VALIDATED-METAL-SL4.md).
 
-## Apply to the internal EFI without changing Kingston
+## Inspect or (only if necessary) apply quiet settings
 
-After copying the known-good Kingston OpenCore with [Internal Boot](INTERNAL-BOOT.md), leave the USB as a backup. In **Windows PowerShell as Administrator**, from the cloned repository:
-
-Mount the internal Windows EFI System Partition (ESP):
+Open PowerShell **as Administrator** on Windows. Use the internal ESP, not an external disk:
 
 ```powershell
-mountvol S: /S
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
 
-Inspect changes without writing:
+First inspect (read-only):
 
 ```powershell
-py -3 scripts/quiet_boot.py --mode inspect --efi S:\EFI
+py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\quiet_boot.py" --mode inspect --efi "S:\EFI"
 ```
 
-To apply the quiet profile **to internal `S:\EFI` only**, use the following command. Prefer supplying the **matching OpenCore 1.0.8** `ocvalidate.exe` with `--ocvalidate`, if installed:
+If the four-second picker and quiet flags are already present, **stop here**. If they are missing, and only after saving the known-good EFI and Windows backups, apply the tool with matching OpenCore 1.0.8 validator:
 
 ```powershell
-py -3 scripts/quiet_boot.py --mode apply --efi S:\EFI --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS"
+py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\quiet_boot.py" --mode apply --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
 ```
 
-Type `APPLY-SL4-QUIET` to confirm. The tool saves a verified backup of the **internal** `config.plist` on the C: drive, and changes only that plist. If a matching `ocvalidate.exe` is available, add `--ocvalidate "C:\path\to\ocvalidate.exe"` to the command; without it, the script still validates plist syntax but reports that OpenCore schema validation was skipped.
+The tool changes only `config.plist`, removes old debug flags (`-v`, `keepsyms=1`, `debug=0x100`) and preserves **all graphics, DVMT, storage and USB arguments**. It verifies and saves the old plist in a private backup. Do not edit `EFI/Microsoft`, partitions or firmware order.
 
-When done, unmount the internal ESP:
+Unmount when finished:
 
 ```powershell
 mountvol S: /D
 ```
 
-Never apply to the Kingston `MACOS-OC` volume unless deliberately updating the emergency recovery USB.
+### Default boot and rollback
 
-### Set macOS as the boot default
+From the independent internal OpenCore picker, you may select installed Tahoe and press **Ctrl+Enter** to set it as default; **this default-selection action has not been separately verified on the test machine**. Keep Windows Boot Manager as an independent firmware entry, and test its boot path before changing boot order. Surface built-in keyboard is currently not functioning in Tahoe, so access to a usable input device is necessary.
 
-Boot the internal OpenCore picker **without Kingston attached** and with an external USB keyboard if the Surface built-in keyboard is not working. Select the installed **macOS Tahoe** volume, **hold Ctrl and press Enter once**. This sets the *default* boot entry in NVRAM. The picker then waits four seconds before launching macOS; Windows remains selectable.
+If the quiet profile itself introduces a problem, use the original Windows Boot Manager firmware entry and the private previous `config.plist` backup. The tool supports `--mode restore` with `--backup` and `--backup-dir`. Never publish backup files with SMBIOS values.
 
-**Note:** OpenCore enumerates entries and controls the menu order automatically. The selected macOS default often appears first, with Windows below. The script does not hard-code Windows as the second row; doing so can introduce duplicate entries or interfere with OS updates. Verify that Windows Boot Manager is visible before relying on this picker.
-
-The internal copy has these settings independently of Kingston. Follow [Internal Boot](INTERNAL-BOOT.md) to create a separate OpenCore firmware entry while leaving Windows Boot Manager intact.
-
-### Rollback
-
-If a change causes a problem, boot Windows with the rescue USB or original boot entry and restore from the private backup:
-
-```powershell
-py -3 scripts/quiet_boot.py --mode restore --efi S:\EFI --backup "$HOME\Downloads\SL4-OC-BACKUPS\SL4-OC-before-quiet-YYYYMMDD-HHMMSS\config.plist"
-```
-
-Replace the example backup folder with the path printed by `apply`. **Never publish that backup:** it contains real SMBIOS serial/MLB/SystemUUID/ROM values.
-
-## Notes
-
-The builder `scripts/build_efi.py` now generates quiet settings **by default**. Add `--verbose-boot` when a fresh debugging EFI is needed. The proven boot sequence used a diagnostic configuration. Preserve Kingston unchanged so it remains a recovery path if the internal EFI needs to be reverted.
-
-[OpenCore manual](https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/Configuration.pdf) · [OpenCore debugging](https://dortania.github.io/OpenCore-Install-Guide/troubleshooting/debug.html)
+[Internal boot](INTERNAL-BOOT.md) · [Validated Metal 2](VALIDATED-METAL-SL4.md) · [OpenCore manual](https://github.com/acidanthera/OpenCorePkg/blob/master/Docs/Configuration.pdf).
