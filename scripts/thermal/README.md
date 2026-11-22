@@ -78,6 +78,12 @@ The script checks the real CPU die temperature immediately before sending, refus
 
 `--control` exits with an explicit error before contacting the EC. The prior automatic `3 → 4` transition at 80 °C risked increasing CPU heat without increasing fan speed. Profile persistence, CPU power limits, fan RPM and EC acknowledgement remain unresolved.
 
+## TMP 3 at macOS startup and resume
+
+**Optional LaunchDaemon:** [macOS installation, status and removal](TMP3-AUTOSTART-RU.md).
+
+The service requests only `PerformanceMode=3` after startup or detected system wake, with a fresh CPU die reading below 80 °C. It does **not** request `TMP=4`, continuously write to the EC, alter EFI or bypass CPU thermal protection. The service is **not installed automatically**. Fan response on resume still needs a physical verification.
+
 ## SMCProcessor installation
 
 [macOS Tahoe driver installation and rollback](INSTALL-SMCPROCESSOR-RU.md)
