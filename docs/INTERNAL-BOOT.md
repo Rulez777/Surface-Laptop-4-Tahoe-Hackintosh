@@ -6,7 +6,7 @@ The goal is a separate **OpenCore** firmware entry next to **Windows Boot Manage
 
 > **Before changing firmware:** back up Windows, record your BitLocker recovery key, and keep the already-working Kingston OpenCore USB for rescue. A firmware change or failed boot may trigger BitLocker recovery. Run commands in **elevated Windows PowerShell**, not macOS Recovery. Do not try this while an installation/reboot sequence is still in progress.
 
-**Before staging**, [switch the known-working Kingston EFI to the quiet picker profile](QUIET-BOOT.md) and test it once from USB. That profile uses OpenCore release-style logging, a four-second timer and `AllowSetDefault=True`. After the internal OpenCore entry is working, select installed **macOS Tahoe** and use **Ctrl+Enter** once to make it the persistent default. Windows will remain selectable. Exact visual order depends on boot enumeration, so don't hardcode Windows as the second entry.
+**Keep Kingston unchanged as a recovery USB.** First stage its known-working EFI on the internal ESP, then [apply the quiet boot profile to the internal copy only](QUIET-BOOT.md). After the internal OpenCore entry works, select installed **macOS Tahoe** and press **Ctrl+Enter** once to make it the persistent default. Windows remains selectable. Exact visual order depends on boot enumeration; do not hard-code Windows as the second entry.
 
 ## 1. Stage the known-working EFI on the internal ESP
 
@@ -38,7 +38,11 @@ Disconnect and reconnect the USB if desired, then verify the internal EFI **with
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\stage_internal_efi.ps1" -Mode Verify -InternalDiskNumber 0
 ```
 
-## 2. Create a *new* firmware entry — keep the original Windows entry
+## 2. Apply quiet settings to the internal EFI
+
+After `STAGE SUCCESS`, leave Kingston unchanged. Follow [Quiet Boot](QUIET-BOOT.md) to disable OpenCore debug-file logging **in the internal EFI only**. This takes a private `config.plist` backup and sets the OpenCore picker to four seconds.
+
+## 3. Create a *new* firmware entry — keep the original Windows entry
 
 Create a copy of the firmware's Windows boot entry, **without modifying the original**:
 
@@ -60,7 +64,7 @@ bcdedit.exe /enum firmware
 
 **Stop** if the Windows entry was changed or the new entry was not created correctly. Do **not** run `bcdedit /set "{bootmgr}" path ...`: that replaces the boot path associated with Windows.
 
-## 3. Test from firmware with the USB removed
+## 4. Test from firmware with the USB removed
 
 Power down fully, remove the USB, enter Surface UEFI (Volume Up + Power), and choose the newly created **OpenCore** boot entry if the firmware exposes it. Check that both Tahoe and Windows can be selected from the OpenCore picker; test **both** before changing the boot order. Surface firmware may filter or reorder custom entries; in that case, do not remove the Windows entry or overwrite its bootloader to force OpenCore.
 
@@ -70,7 +74,7 @@ After a successful test, you may put the new entry first in firmware order:
 bcdedit.exe /set "{fwbootmgr}" displayorder "{YOUR-NEW-GUID}" /addfirst
 ```
 
-OpenCore `Misc -> Boot -> ShowPicker = True` and `Timeout = 10` are already present in the test configuration. `UEFI -> Quirks -> RequestBootVarRouting = True` is also set. Do not enable `LauncherOption = Full` on the USB and internal EFI simultaneously, as it may create a boot entry for the wrong device.
+With the quiet profile applied, OpenCore has `Misc -> Boot -> ShowPicker = True` and `Timeout = 4`. `UEFI -> Quirks -> RequestBootVarRouting = True` is also set. Do not enable `LauncherOption = Full` on the USB and internal EFI simultaneously, as it may create a boot entry for the wrong device.
 
 If Windows doesn't appear in OpenCore, **do not change partitions**: use the UEFI's existing Windows Boot Manager entry, confirm that `EFI\Microsoft\Boot\bootmgfw.efi` still exists and investigate picker scanning.
 
