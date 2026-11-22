@@ -98,7 +98,7 @@ sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_brightness_macos.py"
 
 Restart macOS. Both changes are stored in OpenCore and persist across reboots; no startup service is needed.
 
-The audio installer pins **SimpleHDA 1.0.2**, works with Lilu 1.7.2 and AppleALC 1.9.8, and selects **ALC274 layout 35**. The brightness installer enables the existing `SSDT-PNLF` and uses **UID 19**, the tested WhateverXe backlight profile; it changes only the UID, ACPI checksum and, if necessary, the OpenCore ACPI enable flag. Both installers verify prerequisites and create full `EFI/OC` backups, including a Windows-accessible copy on the EFI partition. They do not edit `EFI/Microsoft`.
+The audio installer pins **SimpleHDA 1.0.2**, works with Lilu 1.7.2 and AppleALC 1.9.8, and selects **ALC274 layout 35**. The brightness installer **adds `SSDT-PNLF` if absent** (including fresh EFI builds), or patches an existing table from **UID 14 to UID 19**, the tested WhateverXe backlight profile. It changes only the PNLF ACPI table and, when needed, its OpenCore enable entry. Both installers verify prerequisites and create full `EFI/OC` backups, including a Windows-accessible copy on the EFI partition. They do not edit `EFI/Microsoft`.
 
 ### 4. Verify
 

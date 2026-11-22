@@ -40,6 +40,7 @@ class BrightnessTests(unittest.TestCase):
         self.assertEqual(len(AML14), 126)
         self.assertEqual(sum(AML14) % 256, 0)
         self.assertEqual(bright.pnl_uid(AML14), 14)
+        self.assertEqual(bright.ORIGINAL_PNLF_UID14, AML14)
 
     def test_uid_patch_is_exactly_two_bytes(self):
         patched = bright.patch_pnlf(AML14)
@@ -81,12 +82,33 @@ class BrightnessTests(unittest.TestCase):
         self.assertEqual(new["Kernel"], old["Kernel"])
         self.assertEqual(plistlib.loads(plistlib.dumps(new)), new)
 
+    def test_missing_entry_can_be_created_for_clean_efi(self):
+        old = config()
+        old["ACPI"]["Add"] = [{"Path": "SSDT-PLUG.aml", "Enabled": True}]
+        new, changed = bright.updated_config(old, allow_missing=True)
+        self.assertTrue(changed)
+        self.assertEqual([x["Path"] for x in new["ACPI"]["Add"]],
+                         ["SSDT-PLUG.aml", "SSDT-PNLF.aml"])
+        self.assertTrue(new["ACPI"]["Add"][-1]["Enabled"])
+        self.assertEqual(len(old["ACPI"]["Add"]), 1)
+
     def test_missing_or_duplicate_pnlf_rejected(self):
-        for items in ([], [{"Path": "SSDT-PNLF.aml", "Enabled": False}] * 2):
-            old = config()
-            old["ACPI"]["Add"] = items
-            with self.assertRaisesRegex(RuntimeError, "unique"):
-                bright.updated_config(old)
+        old = config()
+        old["ACPI"]["Add"] = []
+        with self.assertRaisesRegex(RuntimeError, "unique"):
+            bright.updated_config(old)
+        old["ACPI"]["Add"] = [{"Path": "SSDT-PNLF.aml", "Enabled": False}] * 2
+        with self.assertRaisesRegex(RuntimeError, "Duplicate"):
+            bright.updated_config(old, allow_missing=True)
+
+    def test_atomic_new_acpi_write(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as work:
+            target = Path(work) / "SSDT-PNLF.aml"
+            self.assertFalse(target.exists())
+            bright.atomic_write(target, bright.patch_pnlf(bright.ORIGINAL_PNLF_UID14))
+            self.assertEqual(bright.pnl_uid(target.read_bytes()), 19)
+            self.assertEqual(sum(target.read_bytes()) % 256, 0)
 
     def test_wrong_smbios_rejected(self):
         old = config()

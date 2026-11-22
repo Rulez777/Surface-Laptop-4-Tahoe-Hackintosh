@@ -37,9 +37,9 @@ The ESP identifier may differ; check `diskutil list`. Do not install competing A
 
 ## Brightness installation
 
-The tested panel has `AppleBacklightDisplay` and `AppleIntelPanelA` attached. The original Surface `SSDT-PNLF.aml` exposes `_UID=14`, which does not activate the tested WhateverXe brightness curve. Changing it to `_UID=19` enables native `brightness` and `linear-brightness` parameters.
+The tested panel has `AppleBacklightDisplay` and `AppleIntelPanelA` attached. The tested earlier `SSDT-PNLF.aml` exposes `_UID=14`, which does not activate the WhateverXe brightness curve; a fresh EFI may not include the PNLF table at all. Changing it to `_UID=19` enables native `brightness` and `linear-brightness` parameters.
 
-Use [the brightness installer](../scripts/install_brightness_macos.py), which safely validates the known 126-byte SSDT, corrects its ACPI checksum, enables its OpenCore entry if disabled, and creates full EFI backups before writing:
+Use [the brightness installer](../scripts/install_brightness_macos.py), which adds the verified 126-byte SSDT if absent from a freshly generated EFI, or patches an existing UID 14 table. It fixes the ACPI checksum, registers or enables the OpenCore entry, and creates complete EFI backups before writing:
 
 ```bash
 sudo python3 scripts/install_brightness_macos.py apply --esp disk0s1
