@@ -89,7 +89,7 @@ Execution: macOS Terminal, regular account, **without `sudo`**.
 - Surface performance profiles: **Working** via Surface Serial Hub / `PerformanceMode`.
 - Automatic fan operation: **Working**.
 - Direct fan RPM control and custom 80 °C fan-speed curve: In progress.
-- CPU die temperature key `TC0D`: unavailable without an appropriate SMC temperature provider.
+- CPU die temperature key `TC0D`: **Working** through `SMCProcessor.kext 1.3.8`.
 - Optional macOS TMP 3 startup / wake reapplication: [guide](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/experimental/sl4-thermal-guard/scripts/thermal/TMP3-AUTOSTART-RU.md). Separate experimental LaunchDaemon; not installed by default.
 - Direct fan RPM override unavailable through the known SL4 Intel Surface TMP interface. Profile `4` is not a full-fan command.
 
