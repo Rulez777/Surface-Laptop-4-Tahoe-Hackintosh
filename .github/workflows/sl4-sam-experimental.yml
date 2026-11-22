@@ -30,6 +30,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Verify installer and build scripts compile
         run: python3 -m py_compile experiments/sl4-input/build-bigsurface-sl4.py experiments/sl4-input/stage-surface-input.py experiments/sl4-input/test_stage_surface_input.py experiments/sl4-input/stage-surface-input-macos.py experiments/sl4-input/test_stage_surface_input_macos.py
+      - name: Verify touchpad preference script syntax
+        run: sh -n scripts/configure_surface_trackpad.sh
       - name: Verify installer staging and rollback on synthetic EFI
         run: python3 -m unittest discover -s experiments/sl4-input -p 'test_stage_surface_input.py' -v
       - name: Verify macOS installer and Windows-accessible rollback
