@@ -68,8 +68,12 @@ def main():
     p.add_argument("--backup", type=pathlib.Path, help="For restore: backup config.plist")
     p.add_argument("--ocvalidate", type=pathlib.Path, help="Matching OpenCore 1.0.8 ocvalidate.exe")
     args = p.parse_args()
-    root = args.efi.resolve(strict=True)
+    # On Windows, mountvol /S exposes ESP via an unusual volume mount point.
+    # pathlib.resolve(strict=True) can raise WinError 3 on this mount even when
+    # ordinary file I/O works. Use a lexical absolute path and check files below.
+    root = pathlib.Path(os.path.abspath(os.fspath(args.efi)))
     need(root.name.upper() == "EFI", "--efi must be an EFI folder")
+    need(root.is_dir(), "EFI folder is not accessible: " + str(root))
     plist = root / "OC" / "config.plist"
     need(plist.is_file() and (root / "OC/OpenCore.efi").is_file(), "OpenCore EFI missing")
     need((root / "OC/ACPI/SSDT-RTC0-SL4.aml").is_file(), "Surface RTC0 SSDT not found")
