@@ -1,134 +1,148 @@
 <p align="center"><img src="assets/hero.svg" alt="Illustration of a Surface Laptop 4 running a macOS-style desktop" width="100%"></p>
 
-# Surface Laptop 4 — macOS Tahoe
+# Surface Laptop 4 (Intel) — macOS Tahoe with verified Metal 2
 
-Working **macOS Tahoe on an Intel Surface Laptop 4** alongside Windows 11. This repository contains the OpenCore configuration, the Surface-specific RTC fix, and a builder that downloads the pinned boot drivers.
+A community OpenCore project for **Microsoft Surface Laptop 4 Intel i7-1185G7 / Iris Xe 96 EU (`8086:9A49`)**, dual-booted with Windows 11 on the internal SSD.
 
-![OpenCore](https://img.shields.io/badge/OpenCore-1.0.8-426ba4) ![macOS](https://img.shields.io/badge/macOS-Tahoe-665fae) ![Boot](https://img.shields.io/badge/Status-Tahoe_boots-24866c)
+![OpenCore](https://img.shields.io/badge/OpenCore-1.0.8-426ba4) ![macOS](https://img.shields.io/badge/Tahoe-26.7.1-665fae) ![GPU](https://img.shields.io/badge/Iris_Xe-Metal_2_verified-24866c)
 
-## Quick Start
+> **Update: 2026-11-22.** After installing WhateverXe Graphics **0.4.4** and applying the upstream **fixed-60-MB DVMT** workaround, the test Surface boots Tahoe with **Metal 2, 1536 MB dynamic VRAM, a working internal 2496×1664 panel and an external 2560×1440 DisplayPort monitor**. Intel AX201 **Wi-Fi works**. The built-in keyboard and trackpad **do not yet work**, and overall performance is not certified as optimal. This is an observed result on one laptop, **not a universal ready-to-use EFI**.
 
-**Requirements:** Intel Surface Laptop 4 (tested: i7-1185G7), Python 3 on Windows, a 32 GB+ USB drive, and a backup of Windows.
+Full evidence and precise settings: **[Validated Surface Laptop 4 Metal 2 configuration](docs/VALIDATED-METAL-SL4.md)**. The upstream WhateverXe maintainer has been notified in [hardware report #101 (Surface follow-up)](https://github.com/b00t0x/WhateverXe/issues/101#issuecomment-7082305989).
 
-**1. Clone the repository.**
+## Compatibility: tested, not assumed
+
+| Feature | Status on the test Surface (2026-11-22) |
+| --- | --- |
+| Tahoe 26.7.1 on internal APFS + Windows 11 on NTFS | **Booted; Windows partition and Microsoft EFI preserved** |
+| OpenCore 1.0.8 on internal ESP, four-second picker | **Booted from internal SSD** |
+| Intel Iris Xe 96 EU, Metal | **Metal 2 verified; AppleIntelTGLGraphics actually loaded** |
+| Internal eDP LCD 2496×1664 | **Working with acceleration; HiDPI 1248×832** |
+| External MSI MPG271QX OLED | **Detected via Thunderbolt/DisplayPort at 2560×1440 59 Hz** |
+| Intel AX201 Wi-Fi | **Working** |
+| Surface Dock USB hub and Gigabit Ethernet adapter | Devices enumerate; actual full function **not verified** |
+| Built-in keyboard and trackpad | **Not working** |
+| Bluetooth, audio, battery reporting, touch, cameras | Drivers/devices detected in some tests; functionality **not validated** |
+| Sleep/wake, high-refresh external display, endurance, peak speed | **Not yet validated** |
+
+Do not describe this project as fully compatible. `ocvalidate` checks OpenCore configuration structure, **not** device support or boot success.
+
+## Quick Start: reproduce the validated Metal 2 state (existing Tahoe, no removable media)
+
+This **post-install** guide is for a Surface Laptop 4 whose **Tahoe is already bootable** from a known-good OpenCore EFI on the internal SSD. It does not install macOS from scratch; see the [historical first-boot procedure](docs/LEGACY-FIRST-BOOT.md) for the original experiment. Before writing EFI, back up Windows/macOS, record any disk-encryption recovery credentials, preserve your private no-acceleration config, and never overwrite `EFI/Microsoft`, `EFI/BOOT` or partition tables.
+
+**Prerequisites:** confirmed installed Tahoe **26.7+**, Intel Iris Xe with *measured* `WhateverXePhysicalGGC = 0xFEC1` (**60 MB DVMT**) on this machine, OpenCore 1.0.8, Lilu/WhateverXe 0.8.3/AMFIAnchor and injector already in the boot EFI, working macOS input via an external device or on-screen keyboard, Git/Python 3 on Windows and an OpenCore 1.0.8 `ocvalidate.exe`. **Do not apply the 60 MB patch blindly on other hardware.**
+
+**1. Update your local checkout from Windows** (PowerShell, one line):
 
 ```powershell
-git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git
+git -C "$HOME\Downloads\SL4-Tahoe-Git" pull --ff-only
 ```
 
-**2. Generate private SMBIOS values.** Use [GenSMBIOS](https://github.com/corpnewt/GenSMBIOS) with model `MacBookPro16,2`. Generate a unique serial, MLB, SystemUUID and six-byte ROM. Never copy someone else’s serial numbers.
+Clone first if needed: `git clone https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh.git`.
 
-**3. Build the EFI and driver bundle.** Run inside the cloned project folder, replacing all placeholders:
+**2. Mount the internal ESP read/write from elevated Windows PowerShell** (never target any external storage):
 
 ```powershell
-py -3 scripts/build_efi.py --serial YOUR_SERIAL --mlb YOUR_MLB --uuid YOUR_UUID --rom YOUR_12_HEX_DIGIT_ROM --out EFI-output
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
 
-The script fetches official **OpenCore 1.0.8, Lilu 1.7.2, VirtualSMC 1.3.8, WhateverXe 0.8.3, AMFIAnchor 0.1.2, USBToolBox 1.2.0 and HfsPlus**, adds the Surface USB map and Intel A0ED injector, generates **SSDT-RTC0-SL4**, and checks the result with OpenCore `ocvalidate` on Windows. The output is `EFI-output/EFI/`. **The builder has not yet been independently boot-tested from a clean checkout; the confirmed boot used the original test-machine EFI.**
+If you do not already have the official Graphics 0.4.4 pkg and `ocvalidate.exe`, get them using the [full driver pack preparation workflow](docs/FULL-PERFORMANCE.md). The Graphics pkg is a **macOS installer**, not an EFI driver.
 
-**4. Prepare the USB** as GPT with two volumes:
+**3. Stage the fixed-60-MB DVMT profile while keeping safe framebuffer-only boot**. The script backs up the personalized `config.plist`, verifies required OpenCore dependencies, refuses conflicting iGPU properties and **preserves `-wex-noaccel`**:
 
-| Volume | Format | Files |
-|---|---|---|
-| `MACOS-OC` (~2 GB) | FAT32 | `EFI/` from the builder, and `com.apple.recovery.boot/BaseSystem.dmg` + `BaseSystem.chunklist` |
-| `SL4DATA` (remaining space) | exFAT | Apple `InstallAssistant.pkg`, `BaseSystem.dmg`, `BaseSystem.chunklist`, and [UnPlugged.command](https://github.com/corpnewt/UnPlugged) |
+```powershell
+py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode prepare --dvmt-60 --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
+```
 
-Download Apple Recovery using OpenCore [macrecovery.py](https://github.com/acidanthera/OpenCorePkg/tree/master/Utilities/macrecovery). The tested Tahoe path used Board ID `Mac-CFF7D910A743CAAF`. Download the full Tahoe `InstallAssistant.pkg` **directly from Apple**; it is larger than FAT32’s file limit. Apple installer files are not distributed here.
+Unmount the ESP:
 
-**5. Boot and install.** Boot the Surface from USB, select **macOS Base System (External)** in OpenCore, then check the disks in Recovery with `diskutil list`. If `SL4DATA` is mounted, run:
+```powershell
+mountvol S: /D
+```
+
+**4. Boot installed Tahoe in no-acceleration mode; install the official Graphics pkg from your internal Windows partition**, which macOS can read when mounted at `/Volumes/Windows`. Replace `YOUR_WINDOWS_USER`:
 
 ```bash
-bash /Volumes/SL4DATA/UnPlugged.command
+cp "/Volumes/Windows/Users/YOUR_WINDOWS_USER/Downloads/SL4-FULL-DRIVERS/macOS-Installers/WhateverXe-Graphics-0.4.4.pkg" "$HOME/Downloads/"
 ```
 
-Use **only a dedicated APFS macOS volume** as the installation target, choose **Copy**, review the final summary, and follow the installer. Keep booting through USB OpenCore during installation.
+```bash
+shasum -a 256 "$HOME/Downloads/WhateverXe-Graphics-0.4.4.pkg"
+```
 
-> **Windows dual-boot:** I used unallocated space for a separate Tahoe APFS container. Do not erase the internal SSD, Windows NTFS, Microsoft Reserved or Windows EFI partitions. See [safe partitioning](docs/SAFETY.md).
+**Expected SHA-256:** `f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec`. Stop on any mismatch. Then:
 
-**Post-install: faster OpenCore.** The tested USB still had diagnostic logging. I provide a [quiet boot profile](docs/QUIET-BOOT.md) that removes verbose logs, shows the picker for 4 seconds, and supports saving **macOS Tahoe as default with Ctrl+Enter**. Windows remains selectable. The EFI builder now produces the quiet profile by default; use `--verbose-boot` to keep debug output for troubleshooting.
+```bash
+sudo installer -pkg "$HOME/Downloads/WhateverXe-Graphics-0.4.4.pkg" -target /
+```
 
-**6. Boot without the USB (after both OSes work).** Copy the *known-good Kingston* `EFI/OC` to the internal Windows EFI System Partition using the read-only/staging tool. Then add a **separate OpenCore firmware entry**, keeping Windows Boot Manager unchanged. Follow [Boot without USB](docs/INTERNAL-BOOT.md). Test Windows and Tahoe separately **before** making OpenCore the default. This internal boot method is documented but not yet verified on the test Surface.
+Confirm **`The install was successful`**. This step is essential: merely adding WhateverXe kexts to OpenCore cannot supply Metal. Do not boot a changed acceleration profile until the installer succeeds.
 
-**7. Optional hardware drivers.** Build a *separate* experimental EFI containing audio, Intel Wi-Fi/Bluetooth, BigSurface, VoodooI2C/VoodooPS2 and battery kexts. They are staged **disabled** by default, with opt-in test profiles for audio, Wi-Fi and Bluetooth:
+**5. Return to Windows, remount the same internal ESP, enable Metal safely**. Updated `xe_acceleration.py` refuses to remove `-wex-noaccel` unless `-igfxdvmt` and both exact DVMT Data values are already present.
 
 ```powershell
-py -3 scripts/add_optional_drivers.py --source EFI-output/EFI --out EFI-peripherals
+if (!(Test-Path 'S:\EFI\OC\config.plist')) { mountvol S: /S }
 ```
-
-See [drivers and test profiles](docs/DRIVERS.md). **Do not enable conflicting experimental input drivers together.**
-
-**8. Install the full driver candidate pack and graphics acceleration.** Follow [Full performance setup](docs/FULL-PERFORMANCE.md) to stage all available kexts on the internal ESP, install WhateverXe Graphics 0.4.4 **inside macOS**, then remove `-wex-noaccel` from the internal OpenCore configuration with a verified rollback. Keep the original Kingston rescue EFI unchanged. The full package is prepared for testing; acceleration on the specific 96-EU Surface is not yet confirmed.
-
-## Full hardware driver pack and performance
-
-The initial Tahoe boot is **not a daily-driver performance result**: it used `-wex-noaccel`, which disables hardware graphics acceleration. That is a likely cause of the slow interface. The release-ready EFI and graphics-accelerated macOS are two different steps.
-
-To fetch **all currently identified candidate drivers** and the verified WhateverXe Graphics 0.4.4 macOS package (without changing the booted EFI):
 
 ```powershell
-py -3 scripts/prepare_full_driver_pack.py --source "C:\\path\\to\\personal\\EFI" --out SL4-Driver-Pack
+py -3 "$HOME\Downloads\SL4-Tahoe-Git\scripts\xe_acceleration.py" --mode enable --efi "S:\EFI" --backup-dir "$HOME\Downloads\SL4-OC-BACKUPS" --ocvalidate "$HOME\Downloads\SL4-FULL-DRIVERS\tools\ocvalidate.exe"
 ```
 
-This stages AppleALC, Tahoe AirportItlwm, Intel Bluetooth, BlueToolFixup, SMCBatteryManager, VoodooPS2, VoodooI2C/HID, BigSurface, NVMeFix and RestrictEvents, plus the IPTSDaemon ZIP. **Unverified drivers remain disabled.** The signed-graphics payload installer is downloaded to `SL4-Driver-Pack/macOS-Installers/`, and its official SHA-256 is checked. The existing EFI/boot order is never modified.
+```powershell
+mountvol S: /D
+```
 
-**Important:** [Iris Xe acceleration must be installed inside running macOS](docs/GRAPHICS-ACCELERATION.md) and `-wex-noaccel` must only be removed after the WEX/AMFI/SIP dependencies have been verified. A complete verified, working driver set for Surface Laptop 4 on Tahoe has not yet been established. This project does not advertise full support for BigSurface input or hardware Metal before tests.
+**6. Boot Tahoe and verify both the reported GPU and the loaded accelerator:**
 
-## Test machine
+```bash
+nvram boot-args
+```
 
-| Component | Configuration |
-|---|---|
-| Model | Surface Laptop 4 — Intel |
-| CPU | Core i7-1185G7 (Tiger Lake-UP3) |
-| GPU | Iris Xe 96 EU, `8086:9A49` |
-| Memory | 16 GB |
-| Storage | Samsung PM991 256 GB; Windows 11 on separate partition |
-| Bootloader | OpenCore 1.0.8 |
-| macOS | Tahoe 26.x; tested full installer package 26.7.1 |
-| Initial graphics | WhateverXe 0.8.3 with `-wex-noaccel` |
+```bash
+system_profiler SPDisplaysDataType
+```
 
-## Compatibility
+```bash
+kmutil showloaded 2>/dev/null | grep -Ei 'AppleIntelTGL|WhateverXe|AMFIAnchor'
+```
 
-| Feature | Status |
-|---|---|
-| Tahoe Recovery and installed OS boot | **Confirmed on test machine** |
-| Windows + separate macOS partition | **Created without erasing Windows** |
-| Iris Xe display output | **Basic GUI output** |
-| Metal acceleration | Not verified |
-| Built-in keyboard, trackpad, touch | Not verified |
-| Wi-Fi, Bluetooth, audio | Not verified |
-| Sleep, battery, cameras, sustained NVMe stability | Not verified |
+On the tested machine the effective boot args are exactly `npci=0x2000 -allow3d -disablegfxfirmware -igfxdvmt`; the two iGPU Data properties are `01000000` and `0000C003`. `AppleIntelTGLGraphics 16.0.0` loaded; macOS reported **Metal 2 / 1536 MB**, and the external DisplayPort display appeared. Do not infer working hardware video decoding, full-speed UI, input devices or sleep from this alone.
 
-This is an **initial-boot EFI**, not a claim of complete device support. See [driver versions and follow-up testing](docs/DRIVERS.md).
+**Rollback:** use your preserved **private** no-acceleration `config.plist` to restore `-wex-noaccel` through the independent Windows Boot Manager firmware entry. Do not reset NVRAM wholesale, format the ESP or alter Windows Boot Manager. See [validated result and rollback](docs/VALIDATED-METAL-SL4.md).
 
-## The RTC0 fix
+### Building a fresh personalized EFI
 
-The test machine exposes `ACPI000E` at `\_SB.SRTC`, but no conventional `PNP0B00` RTC in its exported ACPI tables. Its LPC path is `\_SB.PC00.LPCB`, while the upstream OpenCore RTC sample targets `PCI0.LPCB`.
+The EFI generator accepts the new **opt-in** `--dvmt-60` flag for hardware that actually reports 60 MB fixed DVMT:
 
-I adapted the compiled RTC0 sample from `PCI0` to `PC00`, recalculated the ACPI checksum, and enabled `SSDT-RTC0-SL4.aml` in OpenCore. **Tahoe Recovery reached the GUI after this change**, where earlier builds had stopped during early kernel initialization. The builder reproduces the change automatically.
+```powershell
+py -3 scripts/build_efi.py --serial YOUR_SERIAL --mlb YOUR_MLB --uuid YOUR_UUID --rom YOUR_12_HEX_DIGIT_ROM --dvmt-60 --out EFI-output
+```
 
-[Read the full technical notes](docs/RTC0-CASE-STUDY.md).
+Generate **unique** SMBIOS values with [GenSMBIOS](https://github.com/corpnewt/GenSMBIOS) using `MacBookPro16,2`. `--dvmt-60` stages the correct properties and `-igfxdvmt` **but deliberately keeps `-wex-noaccel`** until the Graphics pkg is installed. The clean-build EFI is **not yet independently boot-validated**; the success above was measured on the test machine's existing EFI. Never publish your personal EFI/serial/MLB/ROM.
 
-## Repository contents
+## Architecture and remaining work
 
-- [`scripts/build_efi.py`](scripts/build_efi.py): builds a personal boot EFI with pinned upstream binaries.
-- [`scripts/quiet_boot.py`](scripts/quiet_boot.py): switches an existing working EFI to a quiet 4-second boot picker with a private backup.
-- [`docs/QUIET-BOOT.md`](docs/QUIET-BOOT.md): set Tahoe as default, keep Windows in the menu, and roll back.
-- [`scripts/add_optional_drivers.py`](scripts/add_optional_drivers.py): builds a separate optional kext pack for peripheral experiments.
-- [`scripts/prepare_full_driver_pack.py`](scripts/prepare_full_driver_pack.py): fetches all pinned candidate kexts, IPTSDaemon and the verified WhateverXe Graphics package.
-- [`scripts/stage_full_kext_pack.py`](scripts/stage_full_kext_pack.py): copies the full disabled candidate kext set to internal EFI, with checks and a private backup.
-- [`scripts/xe_acceleration.py`](scripts/xe_acceleration.py): prepares WEX/SIP and removes `-wex-noaccel` **only after the macOS Graphics installer succeeds**.
-- [`scripts/install_wex_graphics_macos.sh`](scripts/install_wex_graphics_macos.sh): checks package SHA-256 and installs official Graphics 0.4.4 into macOS.
-- [`docs/FULL-PERFORMANCE.md`](docs/FULL-PERFORMANCE.md): end-to-end instructions for full driver staging and hardware acceleration.
-- [`docs/GRAPHICS-ACCELERATION.md`](docs/GRAPHICS-ACCELERATION.md): requirements for Metal acceleration on Iris Xe and safe rollback.
-- [`scripts/stage_internal_efi.ps1`](scripts/stage_internal_efi.ps1): stages the tested USB EFI on the internal Windows ESP without altering Windows Boot Manager.
-- [`docs/INTERNAL-BOOT.md`](docs/INTERNAL-BOOT.md): adds an independent firmware entry for USB-free Windows/Tahoe selection.
-- [`data/seed.lzma.b64`](data/seed.lzma.b64): sanitized configuration and device-specific USB/ACPI descriptors.
-- [`docs/DRIVERS.md`](docs/DRIVERS.md): versions, features and post-install limits.
-- [`docs/SAFETY.md`](docs/SAFETY.md): preserving Windows and its bootloader.
-- [`docs/RTC0-CASE-STUDY.md`](docs/RTC0-CASE-STUDY.md): RTC0 investigation and the successful change.
+The critical ACPI fix is `SSDT-RTC0-SL4.aml` at `\_SB.PC00.LPCB` (corrected from upstream's `PCI0` path). Keep it enabled. The tested package uses OpenCore **1.0.8**, Lilu **1.7.2**, WhateverXe **0.8.3**, WhateverXe Graphics **0.4.4**, AMFIAnchor **0.1.2** and USBToolBox **1.2.0** with the Surface USB map. The Graphics package is installed into macOS `/Library`, not `EFI/OC/Kexts`.
+
+The extra Intel wireless/Bluetooth, AppleALC, SMCBatteryManager, VoodooPS2, VoodooI2C, BigSurface, NVMeFix and RestrictEvents downloads are **candidates**. Their presence or loading is not proof they work; **do not load conflicting BigSurface and VoodooI2C/battery stacks blindly**. Wi-Fi works on this device, but built-in Surface keyboard and trackpad require further SAM/ACPI investigation. The user still reports some lag despite Metal; `pmset -g therm` reported no thermal/performance limit at the time of observation, and an initial `top` sample did not identify a process-level bottleneck.
+
+## Repository guide
+
+- [Validated Metal 2 report and reproduction steps](docs/VALIDATED-METAL-SL4.md)
+- [Full post-install performance and driver staging](docs/FULL-PERFORMANCE.md)
+- [Graphics acceleration background](docs/GRAPHICS-ACCELERATION.md)
+- [Driver versions and remaining hardware gaps](docs/DRIVERS.md)
+- [Boot from internal SSD](docs/INTERNAL-BOOT.md)
+- [Quiet OpenCore picker](docs/QUIET-BOOT.md)
+- [Safety and Windows preservation](docs/SAFETY.md)
+- [RTC0 case study](docs/RTC0-CASE-STUDY.md)
+- [Historical first-boot notes](docs/LEGACY-FIRST-BOOT.md)
+- [Updated protected Metal transition script](scripts/xe_acceleration.py) and [DVMT 60 MB helper](scripts/dvmt60.py)
+- [EFI builder](scripts/build_efi.py), [driver pack downloader](scripts/prepare_full_driver_pack.py) and [DVMT regression tests](tests/test_dvmt60.py)
 
 ## Credits
 
-[OpenCore](https://github.com/acidanthera/OpenCorePkg) · [Lilu](https://github.com/acidanthera/Lilu) · [VirtualSMC](https://github.com/acidanthera/VirtualSMC) · [WhateverXe](https://github.com/b00t0x/WhateverXe) · [AMFIAnchor](https://github.com/b00t0x/AMFIAnchor) · [USBToolBox](https://github.com/USBToolBox/kext) · [Dortania](https://dortania.github.io/) · [UnPlugged](https://github.com/corpnewt/UnPlugged)
+[OpenCore](https://github.com/acidanthera/OpenCorePkg) · [Lilu](https://github.com/acidanthera/Lilu) · [VirtualSMC](https://github.com/acidanthera/VirtualSMC) · [WhateverXe](https://github.com/b00t0x/WhateverXe) · [WhateverXe Graphics](https://github.com/b00t0x/WhateverXe-Graphics) · [AMFIAnchor](https://github.com/b00t0x/AMFIAnchor) · [USBToolBox](https://github.com/USBToolBox/kext) · [Dortania](https://dortania.github.io/)
 
-Independent community project. Not affiliated with Apple or Microsoft. The banner is illustrative artwork, not a test screenshot. Back up your data and review applicable software licenses.
+Independent community project; not affiliated with Apple or Microsoft. macOS on non-Apple hardware is unsupported by Apple. Back up all data before experimenting. The banner is illustrative art, not a test screenshot.
