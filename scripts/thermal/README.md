@@ -1,88 +1,65 @@
-# Surface Laptop 4 Intel: experimental thermal guardian (macOS Tahoe)
+# Surface Laptop 4 Intel — CPU temperature and cooling profiles
 
-**Current status: SOURCE + SYNTHETIC TESTS ONLY. NOT A PROVEN AUTOMATIC FAN CONTROLLER.**
+**macOS Tahoe 26.7.1 · VirtualSMC 1.3.8 · BigSurface 1.2.0**
 
-The test owner reports:
-- SL4 Intel `i7-1185G7`, `MSHW0250`, Tahoe 26.7.1; Windows fan runs.
-- BigSurface keyboard/trackpad and **battery charge reporting work**.
-- SurfaceBatteryDriver is active, initially `PerformanceMode=1`.
-- An explicit `PerformanceMode=4` then `3` IOKit request returned success and the user subsequently heard the fan. **Actual RPM, delivered EC profile and temperature response have not been measured.**
-- During Steam game download the laptop previously overheated/froze. Do **not** stress-test to validate this code.
+## Hardware
 
-## Why there is no literal "100% fan at 80 C" mode on SL4
+| Function | Status |
+| --- | --- |
+| Battery charge percentage | **Working** |
+| Automatic EC fan operation | **Working** |
+| Surface TMP performance profile selection | **Working** |
+| CPU die SMC temperature key `TC0D` | Requires `SMCProcessor.kext 1.3.8` |
+| Independent FAN RPM control | Not available via the documented SL4 interface |
+| Automatic temperature-dependent TMP switching | Experimental, **disabled by default** |
 
-Linux's `drivers/platform/surface/surface_aggregator_registry.c` maps SL4 Intel `MSHW0250` to the SL3/SL4 group: `ssam_node_tmp_perf_profile`. It deliberately omits `ssam_node_fan_speed` and the `has_fan` property available for SL5. Linux's `surface_platform_profile.c` maps this to TMP profiles **1 (normal), 2 (battery saving), 3 (better performance), 4 (best performance)**. Those are NOT raw fan RPM commands. On the SL4 the embedded controller (EC) decides real fan speed. BigSurface sends TMP command 0x03, but its `SurfaceBatteryDriver::setProperties` returns IOKit success even when its internal SSH command fails. **No confirmed fan-speed feedback exists.**
+Linux registers `MSHW0250` in the Surface Laptop 3/4 profile group with `ssam_node_tmp_perf_profile`. Independent `has_fan` / `ssam_node_fan_speed` support exists for later devices, not in the SL4 Intel registry.
 
-An automatic 80 C -> 4 transition may allow more CPU power and **increase** the temperature; therefore an independent CPU temperature monitor is mandatory and the active mode is disabled by default. The guard **cannot promise maximum fan RPM**.
+**`PerformanceMode=4` is not a 100% fan-speed command.** It also changes CPU performance and can increase heat. Fan operation remains managed by the embedded controller (EC).
 
-Sources:
-- [Linux hardware registry](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c)
-- [Linux Surface performance driver](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
-- [SL4 Intel low-performance cooling issue](https://github.com/linux-surface/linux-surface/issues/561)
-- [BigSurface](https://github.com/Xiashangning/BigSurface)
+## CPU sensor: SMCProcessor 1.3.8
 
-## Monitor design
+VirtualSMC provides the AppleSMC service. SMCProcessor adds the `TC0D` CPU die temperature key if the thermal hardware counters are available. An absent plugin produces `SMC result 0x84` (key not found).
 
-`sl4_thermal_guard.py` uses only the **CPU die `TC0D`** SMC key with type `sp78`, never battery temperature (`TB*`), GPU or CPU proximity (`TC0P`). `SMCProcessor.kext` may be necessary; the previously uploaded `kmutil` output had `VirtualSMC` but did not confirm `SMCProcessor`. If `TC0D` is absent, monitoring **refuses to run** rather than guess a temperature.
+**macOS-native installation (no USB, no Windows session):**
 
-- Starting state: `TMP 3` (Better Performance), not battery saver.
-- `>= 80 C` for **2 consecutive 5-s samples**: policy *proposes* `TMP 4` (not full RPM).
-- `<= 72 C` continuously for **60 seconds**: proposes return to `TMP 3`.
-- `>= 90 C`: proposes `TMP 1` (recommended, NOT `TMP 2` battery saver) as a heat-reducing fallback; wait for cooldown.
-- Invalid, implausible or missing temperature -> **no new profile request**; after two missed readings, if the program had requested TMP 4, it requests TMP 3; after three consecutive errors it aborts.
+[Installation, inspection, backups and rollback](INSTALL-SMCPROCESSOR-RU.md)
 
-These are experimental software policy thresholds, **not established safe hardware limits**, and they do not replace the CPU's built-in protections. This program does not edit EFI, kexts, NVRAM, battery charging, BIOS or Windows. It is NOT installed as a persistent daemon, and cannot be an independent thermal safety system if macOS freezes.
+Implementation: `install_smcprocessor_macos.py`. The script adds **only** `SMCProcessor.kext` to the existing internal OpenCore ESP after a full `EFI/OC` backup and `ocvalidate 1.0.8` validation. It preserves existing VirtualSMC, BigSurface, Metal 2, Bluetooth, keyboard, trackpad, Wi-Fi, Windows Boot Manager and boot configuration.
 
-### 1. Read-only diagnostics — recommended first
+## Temperature probe and monitor
 
-From a normal user session (requires Python 3 / Apple Command Line Tools already installed):
+Run only after `SMCProcessor.kext` is installed and loaded.
+
+**Read-only CPU temperature probe:**
 
 ```bash
-curl -fL --retry 3 "https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/experimental/sl4-thermal-guard/scripts/thermal/sl4_thermal_guard.py" -o "$HOME/Downloads/sl4_thermal_guard.py" && python3 "$HOME/Downloads/sl4_thermal_guard.py" --probe
+python3 "$HOME/Downloads/sl4_thermal_guard.py" --probe
 ```
 
-Expected on compatible SMC: `Validated SMC CPU DIE TC0D = XX.XX C`. If `TC0D missing` or `AppleSMC open failed`, **STOP**. This is information, not permission to install another kext without a separate backup/review.
-
-### Real-machine feedback: SMC key not found on owner's Tahoe
-
-The first owner test on 2026-11-22 **did not return a CPU temperature**:
-
-```text
-STOP: Invalid AppleSMC reply: rc=0, size=80, result=132, status=0
-```
-
-`132` decimal = `0x84` (SMC **key not found**). The IOKit request succeeded (`rc=0`), but the CPU die key `TC0D` is not registered. In VirtualSMC source, `SMCProcessor.kext` adds this key only if CPU package thermal counter support is detected. Confirm the plugin's presence using this **single-line, read-only** command:
-
-```bash
-kmutil showloaded 2>/dev/null | grep -Ei 'SMCProcessor|VirtualSMC|SMCSuperIO|BigSurface' || true
-```
-
-If `SMCProcessor` is absent, do not install it blindly into a working, accelerated Tahoe installation. It needs the same VirtualSMC version, correct OpenCore kernel order and an EFI backup, followed by an independent reboot test. If it is loaded but `TC0D` is missing, investigate the actual sensor registration/Intel MSR support. **Do not substitute battery percentage or battery temperature**. The guardian is deliberately unusable in control mode without real CPU readings. The source now prints a clearer `SMC key TC0D not found (0x84)` diagnostic.
-
-### 2. Read-only monitor (12 samples = 1 minute)
+**Read-only one-minute monitor:**
 
 ```bash
 python3 "$HOME/Downloads/sl4_thermal_guard.py" --monitor --samples 12
 ```
 
-This logs CPU die readings and the **proposed** profile, but **never changes the EC**.
+The monitor requires a valid `TC0D` key with `sp78` type. Invalid, missing and implausible readings terminate the probe. Battery temperature is not a replacement for CPU die temperature.
 
-### 3. Optional hardware trial — DO NOT RUN UNTIL SENSOR VALIDATED
+### Experimental thermal policy
 
-The command below is **NOT recommended for unattended operation**. The software is experimental and no physical RPM feedback exists.
+| CPU die temperature | Proposed TMP profile |
+| --- | --- |
+| Below 80 °C | `3` — Better Performance |
+| At least 80 °C for two consecutive 5-second samples | `4` — Best Performance |
+| At most 72 °C for 60 seconds | `3` — Better Performance |
+| At least 90 °C | `1` — Recommended |
 
-```bash
-sudo python3 "$HOME/Downloads/sl4_thermal_guard.py" --control --ack I-UNDERSTAND-TMP-IS-NOT-FAN-RPM --samples 12
-```
+At high temperature, a performance profile is **not equivalent to guaranteed fan acceleration**; `TMP=4` may raise heat output. This policy is experimental, **not** a substitute for native thermal protection and **not installed as a background service**. The `--control` mode is deliberately disabled unless invoked with explicit acknowledgement. No automatic usage is recommended before hardware validation.
 
-This does not install a LaunchDaemon and exits after 12 readings. On entry, the program may request TMP 3 (the owner's currently functional profile); it must be run only on cool hardware with a verified die sensor and independent Windows recovery. Leave an external keyboard/mouse. At sustained >=80 C, it may request TMP 4, and at >=90 C TMP 1. **This is a profile controller, not a 100% fan command.** Do not run Steam or deliberately heat the laptop for testing.
+## Quality checks
 
-Restore currently preferred profile `TMP 3` with the previously tested `sl4fan 3` command in the same shell where that function was defined; after a fresh shell session the function must be redefined. Do not assume `ioreg` reflects actual runtime EC profile.
+GitHub Actions runs Python syntax checks and synthetic temperature-policy, EFI staging, rollback and error handling tests. The real `VirtualSMC-1.3.8-RELEASE.zip` is downloaded and checked for plugin identity and binary format in CI. These software tests do not verify CPU die readings, reboot compatibility or fan RPM on physical hardware.
 
-## Verification and limitations
+## References
 
-This first revision has not been executed on the owner's Tahoe system. It has synthetic policy tests in `test_sl4_thermal_guard.py`. The CLI ABI and SMC `TC0D` availability **must be verified on actual SL4 hardware** before enabling automatic TMP control. macOS Tahoe `powermetrics --samplers smc` is not reliable as a source across configurations, so it is deliberately not a dependency here.
-
-**Security:** `--probe` and `--monitor` do not request root or make EC calls. `--control` requires root and a deliberate acknowledgement. The code should be inspected before running, especially the CoreFoundation and AppleSMC IOKit calls.
-
-**Known remaining work:** Confirm `TC0D` from `SMCProcessor`, cross-check actual CPU sensor temperature against Windows under equal idle load, confirm the EC's fan reaction to each TMP mode, and verify protection under reboots/sleep/crashes. Only then consider a persistent service and integration with the normal installer. Battery monitoring is already working and must not be replaced.
+[VirtualSMC](https://github.com/acidanthera/VirtualSMC) · [Linux device registry](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c) · [Linux platform profile](https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_platform_profile.c)
