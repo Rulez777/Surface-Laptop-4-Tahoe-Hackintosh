@@ -1,6 +1,6 @@
 # Surface Laptop 4 (Tiger Lake) — Tahoe Recovery GUI reached after SSDT-RTC0 injection
 
-**Status:** macOS Tahoe has subsequently booted on the device after the RTC0 Recovery breakthrough. Metal acceleration, input devices, sleep and long-term dual-boot stability remain unverified.
+**Status:** I subsequently booted macOS Tahoe after the RTC0 Recovery breakthrough. Metal acceleration, input devices, sleep and long-term dual-boot stability remain unverified.
 
 ## Hardware and software
 
@@ -32,7 +32,7 @@ A known initial patcher error searched the EISA identifier for `PNP0B00` in wron
 2. Clean Kingston USB was created with the existing tested EFI and Tahoe Recovery. The system still stopped on verbose boot output after NVMe/APFS setup, frequently with a nonfatal USBToolBox XHCI message displayed last.
 3. A Tahoe `8086:A0ED` AppleUSBXHCISPT matching injector was enabled. It did **not** independently resolve the GUI issue.
 4. Four X-STATION V2 Booter quirks were tested, and GUI still did not appear. They were **restored** before the RTC0 test because X-STATION and Surface firmware have different MAT support.
-5. OEM ACPI analysis found `ACPI000E` without `PNP0B00`; the RTC0 table was generated with the correct `PC00.LPCB` path. User subsequently reported successfully reaching the Tahoe Recovery GUI.
+5. OEM ACPI analysis found `ACPI000E` without `PNP0B00`; the RTC0 table was generated with the correct `PC00.LPCB` path. I then reached the Tahoe Recovery GUI.
 
 **Interpretation:** this is a compelling single-change correlation, not a formally controlled proof that RTC0 was the sole cause. Its exact effect and generality to other BIOS revisions and models need independent replication.
 
@@ -65,10 +65,10 @@ The FIX2 patcher has hard-coded identity and checksum requirements for the *spec
 - USBToolBox/UTBMap present; Monterey-only mapping disabled on Tahoe; Tahoe A0ED matching injector enabled as of the last pre-RTC0 test.
 - Surface-specific OEM `SsdtPld` ACPI deletion enabled (to avoid a previously observed `RHUB.HS09` failure).
 - The earlier X-STATION Booter-memory quirks were rolled back to the Surface configuration (firmware previously reported MAT=1).
-- Exact post-RTC0 SHA-256 of the live `config.plist` should be recorded from the user’s Kingston; not asserted in this report without a new readback.
+- The exact post-RTC0 SHA-256 of the live `config.plist` was not independently recorded after the successful test.
 
 ## Privacy, licensing and caveats
 
-This report is sanitized: **do not post** the user's raw OEM registry export (which may disclose platform particulars), complete live `config.plist` (SMBIOS serial/MLB/ROM/UUID), Windows machine logs with personal paths, or redistributable third-party kext/Apple installer binaries unless permitted by their licenses. Publish the small patch and documentation instead. This fix only establishes successful **Recovery GUI entry**, not a complete installation of Tahoe or functioning dual boot.
+This report is sanitized: **do not post** the test machine’s raw OEM registry export (which may disclose platform particulars), complete live `config.plist` (SMBIOS serial/MLB/ROM/UUID), Windows machine logs with personal paths, or redistributable third-party kext/Apple installer binaries unless permitted by their licenses. Publish the small patch and documentation instead. The RTC0 change established successful **Recovery GUI entry**; Tahoe subsequently booted. Long-term stability and peripheral support still require testing.
 
 References: [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg), [Dortania ACPI guide](https://dortania.github.io/Getting-Started-With-ACPI/), [WhateverXe](https://github.com/b00t0x/WhateverXe), [X-STATION V2](https://github.com/Akariayumu/xstation-v2-hackintosh).
