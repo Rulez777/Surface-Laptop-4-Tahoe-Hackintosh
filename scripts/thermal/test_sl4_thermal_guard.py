@@ -52,6 +52,15 @@ class ThermalPolicyTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 p.select(temp, 1)
 
+    def test_missing_cpu_sensor_message_is_explicit_and_safe(self):
+        message = mod.smc_error(0x84, "TC0D")
+        self.assertIn("not found", message)
+        self.assertIn("SMCProcessor.kext", message)
+        self.assertIn("0x84", message)
+
+    def test_unknown_smc_result_is_not_treated_as_valid_temperature(self):
+        self.assertIn("rejected request", mod.smc_error(0x8B, "TC0D"))
+
     def test_battery_is_not_sensor_source(self):
         self.assertEqual(mod.CpuDie.read.__name__, "read")
         self.assertNotIn(b"TC0P", mod.CpuDie.read.__code__.co_consts)
