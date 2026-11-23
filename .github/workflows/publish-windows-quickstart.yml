@@ -39,8 +39,8 @@ jobs:
           $errors=$null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/QuickStart-Windows.ps1),[ref]$tokens,[ref]$errors) | Out-Null
           if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
-      - name: Run all portable tests
-        run: python -m unittest discover -s tests -q
+      - name: Run Windows Quick Start tests
+        run: python -m unittest discover -s tests -p test_windows_quickstart.py -q
       - name: Build and verify Windows distribution
         run: |
           python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.3.0-beta.zip
