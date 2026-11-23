@@ -98,6 +98,14 @@ def main():
     require(hashlib.sha256(checker_target.read_bytes()).hexdigest() ==
             hashlib.sha256(video_checker.read_bytes()).hexdigest(),
             "Video checker failed to copy")
+    # Read-only RCS GPU hang audit: pure Python, no kext or EFI changes.
+    reset_source = Path(__file__).with_name("audit_rcs_gpu_resets_macos.py")
+    require(reset_source.is_file() and not reset_source.is_symlink(), "Missing RCS reset diagnostic")
+    reset_dest = graphics_dir / reset_source.name
+    reset_dest.write_bytes(reset_source.read_bytes())
+    require(hashlib.sha256(reset_dest.read_bytes()).hexdigest() ==
+            hashlib.sha256(reset_source.read_bytes()).hexdigest(),
+            "RCS reset diagnostic copy failed integrity check")
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
@@ -120,6 +128,7 @@ def main():
         "graphics": graphic,
         "video": {
             "validation_script": str(checker_target),
+            "rcs_reset_audit_read_only": str(graphics_dir / "audit_rcs_gpu_resets_macos.py"),
             "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",

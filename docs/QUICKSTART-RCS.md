@@ -10,7 +10,7 @@
 - Working WhateverXe 0.8.3 with Metal 2, DMC trial, `-wex-tgl-gpurec`, `-wex-tgl-stampfix` and `-allow3d`.
 - Original Windows Boot Manager and a recovery boot path must remain available.
 
-This release addresses the **RCS Execlist context-switch/preemption hang**, not the unrelated VP9/AV1 VideoToolbox decoding or all possible graphics bugs.
+This release **attempts to mitigate** the **RCS Execlist context-switch/preemption hang**, not the unrelated VP9/AV1 VideoToolbox decoding or all possible graphics bugs.
 
 ## Download from GitHub Releases
 [SL4 RCS Stability 0.1.0 beta](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/tag/sl4-rcs-v0.1.0-beta)
@@ -49,6 +49,7 @@ Restart. If macOS does not boot, use Windows or Recovery to restore `EFI/OC/conf
 - After fix: `SL4RCSSinglePortReady = Yes`, **400,000 Metal command buffers** over 3 command queues, 200,000 compute/3D iterations in 57.7 seconds without GPU Reset.
 - After owner played Spectator 3: as of 18:36 CET, no new GPU restart logs, graphics fix still active, no thermal/CPU throttling.
 - Owner reports game improved from around **14 FPS to 30 FPS after approximately five minutes**, with the improvement persisting after scene changes. This is **a user report, not benchmark proof of cause**. Shader compilation/caches and GPU power management are plausible, not confirmed.
+- **Known recurrence on the reference Surface:** on November 23 at 23:32 CET a new `WindowServer` RCS GPU Reset occurred even though `SL4RCSSinglePortReady = Yes`. The 0.1.0 beta package is therefore only a partial mitigation, not a guaranteed fix. Run `QuickStart-Mac.command --rcs-audit` for a safe read-only check and read [the investigation](RCS-POSTPATCH-RESET-20261123.md).
 - Long-term gaming stability across hardware, other macOS versions, reboot, battery and sleep remains unverified. A passed synthetic stress test does not guarantee zero future hangs.
 
 ## Build source and attribution
