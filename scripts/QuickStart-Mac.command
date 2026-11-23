@@ -174,6 +174,7 @@ show_advanced_menu() {
     print "  1) First Tahoe installation"
     print "  2) Already installed Tahoe — repair RCS / audio"
     print "  3) Read-only audio and brightness inspection"
+    print "  4) Install notarized Firefox for AV1/VP9 software playback (no GPU driver change)"
     print "  0) Exit"
     read "choice?Choose: "
     case "$choice" in
@@ -188,6 +189,7 @@ show_advanced_menu() {
             sudo python3 "$audio" inspect --esp "$esp"
             sudo python3 "$brightness" inspect --esp "$esp"
             ;;
+        4) python3 "$base/install_media_fallback_macos.py" --install ;;
         0) exit 0 ;;
         *) print -u2 "Unknown option"; exit 4 ;;
     esac
@@ -198,5 +200,6 @@ case "${1:---auto}" in
     --auto-first) install_from_usb; arm_postboot_check ;;
     --auto-repair) repair_existing ;;
     --menu) show_advanced_menu ;;
-    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu]"; exit 3 ;;
+    --media-fallback) python3 "$base/install_media_fallback_macos.py" --install ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--media-fallback]"; exit 3 ;;
 esac

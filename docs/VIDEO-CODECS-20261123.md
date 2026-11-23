@@ -36,6 +36,11 @@ Read-only checks on 2026-11-23 established:
 - CoreMedia `AllowOnePassMetalScaling.Enabled=false` still in effect.
 - `VTIsHardwareDecodeSupported` is true for `avc1` and `hvc1`;
   false for `vp09` and `av01`.
+- A scoped test calling `VTRegisterSupplementalVideoDecoderIfAvailable` for
+  `av01` and `vp09` in an isolated process did **not** change either false
+  hardware-decode result. Registering professional VideoToolbox codecs also
+  left both false. This rules out a simple supplemental registration toggle
+  on the tested system, but not a future decoder implementation.
 - `VTCopyAV1DecoderCapabilitiesDictionary` returns null;
   `VTCopyVP9DecoderCapabilitiesDictionary` returns null.
 - `VTCopyHEVCDecoderCapabilitiesDictionary` returns a capability dictionary,
@@ -60,9 +65,36 @@ on installed macOS:
 
 `python3 scripts/audit_codec_macos.py --json`
 
+Optional isolated-process registration probe:
+`python3 scripts/audit_codec_macos.py --probe-supplemental --json`
+
+Neither option changes OS preferences or the installed graphics stack.
+
 The output is a **capability/registry probe**, not proof of actual decoded
 frames. Even a future "true" response needs verification from a real video
 stream and decoder/GPU telemetry.
+
+## Working software compatibility path (2026-11-23)
+
+- Official Mozilla Firefox 160.0.1 installed into the user's
+  `~/Applications/Firefox.app` with verified Apple Developer ID signature
+  (Mozilla Corporation, Team ID `43AQ936H96`) and Gatekeeper notarization.
+- Isolated real browser playback tests passed 10-second AV1/MP4 and VP9/WebM
+  at both 640×360 and 1920×1080. Firefox's HTML5 `getVideoPlaybackQuality`
+  reported ~68–69 actual decoded frames and fewer than three drops by 2.3 s.
+- This is a **software codec fallback**. No AV1/VP9 hardware path in Intel
+  media-engine / VideoToolbox was unlocked or advertised.
+- Opt-in `scripts/install_media_fallback_macos.py --install` safely deploys
+  notarized Mozilla Firefox for users who need AV1/VP9 web playback.
+  Existing Firefox is never overwritten. User browser defaults, EFI, sleep,
+  graphics and CoreMedia settings are unchanged. The helper ships in the
+  new Windows-first and offline kits, but does not run automatically.
+- Alternative experimental graphics driver `zep245/IrisXe-macos-driver` claims
+  Intel Tiger Lake hardware AV1 decoding using a **different i915/NMXGPU,
+  Mesa ANV Vulkan and VideoToolbox pipeline**; its VP9 GPU path remains off.
+  It would replace the current display/Metal/sleep stack and is not qualified
+  for the Surface's eDP/DMC/RCS fixes. **Do not install it over this system**.
+  Source: https://github.com/zep245/IrisXe-macos-driver
 
 ## Current engineering conclusion
 

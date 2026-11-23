@@ -5,18 +5,22 @@ on:
     paths:
       - "scripts/verify_video_macos.py"
       - "scripts/audit_codec_macos.py"
+      - "scripts/install_media_fallback_macos.py"
       - "scripts/prepare_full_driver_pack.py"
       - "tests/test_video_macos.py"
       - "tests/test_codec_audit.py"
+      - "tests/test_media_fallback_macos.py"
       - "docs/VIDEO-CODECS-20261123.md"
       - ".github/workflows/video-validation.yml"
   pull_request:
     paths:
       - "scripts/verify_video_macos.py"
       - "scripts/audit_codec_macos.py"
+      - "scripts/install_media_fallback_macos.py"
       - "scripts/prepare_full_driver_pack.py"
       - "tests/test_video_macos.py"
       - "tests/test_codec_audit.py"
+      - "tests/test_media_fallback_macos.py"
       - "docs/VIDEO-CODECS-20261123.md"
       - ".github/workflows/video-validation.yml"
 
@@ -28,6 +32,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: python -m py_compile scripts/verify_video_macos.py scripts/audit_codec_macos.py scripts/prepare_full_driver_pack.py
+      - run: python -m py_compile scripts/verify_video_macos.py scripts/audit_codec_macos.py scripts/install_media_fallback_macos.py scripts/prepare_full_driver_pack.py
       - run: python -m unittest discover -v -s tests -p test_video_macos.py
       - run: python -m unittest discover -v -s tests -p test_codec_audit.py
+      - run: python -m unittest discover -v -s tests -p test_media_fallback_macos.py

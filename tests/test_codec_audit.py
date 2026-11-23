@@ -62,6 +62,29 @@ class CodecSurveyTests(unittest.TestCase):
         self.assertIn('with_name("audit_codec_macos.py")',
                       (root / "scripts/prepare_full_driver_pack.py").read_text(encoding="utf-8"))
 
+    def test_supplemental_registration_measures_after_without_spoofing(self):
+        state = {"AV1": False, "VP9": False}
+        codes = {int.from_bytes(code, "big"): name for name, code in codec.CODECS.items()}
+        calls = []
+        def supported(fourcc):
+            return state.get(codes[fourcc], False)
+        def register(fourcc):
+            calls.append(codes[fourcc])  # API cannot create a missing decoder.
+        class FakeVT:
+            VTIsHardwareDecodeSupported = staticmethod(supported)
+            VTRegisterSupplementalVideoDecoderIfAvailable = staticmethod(register)
+        result = codec.probe_supplemental_registration(FakeVT())
+        self.assertTrue(result["api_present"])
+        self.assertTrue(result["process_local_only"])
+        self.assertEqual(calls, ["AV1", "VP9"])
+        for name in calls:
+            self.assertFalse(result["hardware_decoder_advertised_after_registration"][name]["before"])
+            self.assertFalse(result["hardware_decoder_advertised_after_registration"][name]["after"])
+
+    def test_missing_supplemental_api_does_not_spoof_hardware(self):
+        result = codec.probe_supplemental_registration(object())
+        self.assertFalse(result["api_present"])
+
     def test_not_mutating_input(self):
         rows = [{"CodecType": int.from_bytes(b"avc1", "big"),
                  "EncoderName": "Test", "IsHardwareAccelerated": True}]

@@ -50,6 +50,8 @@ Only **System Audio Recording consent** must be approved in macOS on first run. 
 
 **AV1/VP9 hardware investigation (2026-11-23):** Intel Tiger Lake supports both decode codecs, but installed Tahoe does not advertise them through VideoToolbox. The [measured codec audit](docs/VIDEO-CODECS-20261123.md) documents the remaining driver work. New Windows-first kits built from this updated source include `scripts/audit_codec_macos.py`, a read-only diagnostic (the existing v0.5.0 release ZIP is unchanged); **this is not an AV1/VP9 hardware unlock**.
 
+**AV1/VP9 practical web playback:** on the reference Surface, signed Mozilla Firefox 160.0.1 plays local AV1 MP4 and VP9 WebM test clips at both 360p and 1080p with decoded frames confirmed. This is **CPU/software decoding, not hardware Quick Sync**. To install the same optional, notarized Firefox without changing Safari, EFI, graphics or power settings: `python3 scripts/install_media_fallback_macos.py --install` in macOS from a current source checkout, or use the **AV1/VP9 fallback** option in QuickStart-Mac's advanced menu. See [test results and limits](docs/MEDIA.md#av1vp9-web-video-fallback-verified-on-this-surface-2026-11-23).
+
 **Not yet certified:** indefinite gaming stability, all sleep/wake combinations, VP9/AV1 hardware decoding in Safari, other hardware models and other Tahoe builds.
 
 ### Different version or hardware

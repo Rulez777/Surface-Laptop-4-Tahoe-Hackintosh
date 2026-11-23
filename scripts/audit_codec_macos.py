@@ -88,7 +88,32 @@ class CoreFoundationPropertyLists:
             self.cf.CFRelease(owned_ref)
 
 
-def survey(vt, cf):
+def probe_supplemental_registration(vt):
+    """Probe optional VideoToolbox decoder registration in this process only."""
+    register = getattr(vt, "VTRegisterSupplementalVideoDecoderIfAvailable", None)
+    if register is None:
+        return {"api_present": False, "note": "No supplemental API exported"}
+    register.argtypes = [ctypes.c_uint32]
+    register.restype = None
+    supported = vt.VTIsHardwareDecodeSupported
+    supported.argtypes = [ctypes.c_uint32]
+    supported.restype = ctypes.c_bool
+    result = {}
+    for name in ("AV1", "VP9"):
+        fourcc = int.from_bytes(CODECS[name], "big")
+        before = bool(supported(fourcc))
+        register(fourcc)
+        after = bool(supported(fourcc))
+        result[name] = {"before": before, "after": after}
+    return {
+        "api_present": True,
+        "process_local_only": True,
+        "hardware_decoder_advertised_after_registration": result,
+        "note": "A registered software decoder does not count as hardware decode."
+    }
+
+
+def survey(vt, cf, supplemental=False):
     probe = vt.VTIsHardwareDecodeSupported
     probe.argtypes = [ctypes.c_uint32]
     probe.restype = ctypes.c_bool
@@ -123,6 +148,9 @@ def survey(vt, cf):
         "video_decoder_capability_dictionaries": capability_dicts,
         "video_encoder_registry": registry,
         "video_hardware_encoders_advertised": hw_encoders,
+        "supplemental_decoder_registration": (
+            probe_supplemental_registration(vt) if supplemental else "not requested"
+        ),
         "interpretation": (
             "Advertisement/registration only; actual hardware decode must be "
             "verified with a real stream and decoder/GPU evidence. A null "
@@ -135,10 +163,14 @@ def survey(vt, cf):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="Output JSON report.")
+    parser.add_argument(
+        "--probe-supplemental", action="store_true",
+        help="Try optional decoder registration in this diagnostic process only.")
     args = parser.parse_args(argv)
     if sys.platform != "darwin":
         parser.error("This audit must run on installed macOS, not Windows or Linux.")
-    report = survey(ctypes.CDLL(VT_PATH), CoreFoundationPropertyLists())
+    report = survey(ctypes.CDLL(VT_PATH), CoreFoundationPropertyLists(),
+                    supplemental=args.probe_supplemental)
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True))
     else:
@@ -149,6 +181,9 @@ def main(argv=None):
                   f"capabilities returned={has_caps.get('dictionary') is not None}")
         for name, advertised in report["video_hardware_encoders_advertised"].items():
             print(f"  {name}: hardware encoder advertised={advertised}")
+        if args.probe_supplemental:
+            print("  Supplemental decoder registration:",
+                  json.dumps(report["supplemental_decoder_registration"], sort_keys=True))
         print("NOTE:", report["interpretation"])
     return 0
 

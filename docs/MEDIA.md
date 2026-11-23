@@ -1,6 +1,6 @@
 # Browser video — Surface Laptop 4 Intel / macOS Tahoe
 
-**2026-11-23 hardware-codec audit:** [Intel Tiger Lake AV1/VP9 vs macOS VideoToolbox registry](VIDEO-CODECS-20261123.md). The Intel Xe-LP media block supports AV1/VP9 decoding, but on the tested macOS installation the hardware decoder API returns false and the decoder capability dictionaries are null. **No AV1/VP9 hardware fix has been validated.** New all-in-one builds from this source include a read-only diagnostic, `scripts/audit_codec_macos.py` (the existing published v0.5.0 archive is unchanged); it does not modify drivers or system settings.
+**2026-11-23 hardware-codec audit:** [Intel Tiger Lake AV1/VP9 vs macOS VideoToolbox registry](VIDEO-CODECS-20261123.md). The Intel Xe-LP media block supports AV1/VP9 decoding, but on the tested macOS installation the hardware decoder API returns false and the decoder capability dictionaries are null. **No AV1/VP9 hardware fix has been validated.** Calling VideoToolbox's supplemental codec registration API in a standalone diagnostic process did not enable hardware AV1 or VP9. New all-in-one builds from this source include a read-only diagnostic, `scripts/audit_codec_macos.py` (the existing published v0.5.0 archive is unchanged); it does not modify drivers or system settings.
 
 **Verified on one machine:** macOS Tahoe 26.7.1, Intel Iris Xe `8086:9A49`, WhateverXe 0.8.3, WhateverXe Graphics 0.4.4. Safari played a YouTube H.264 (`avc1`) stream at **1920 × 1080**. WebKit's media logs showed the video timebase advancing, hundreds of decoded frames and zero dropped frames during the recorded sample.
 
@@ -25,6 +25,23 @@ The same script is bundled in the generated `SL4-FULL-DRIVERS/macOS-Installers/`
 Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats for nerds** can reveal the active codec. The confirmed working stream used H.264 (`avc1`). This macOS installation advertises hardware H.264 and HEVC decoding but **does not expose hardware VP9 or AV1**, despite the Intel GPU's documented media capabilities. Safari may select a different codec for other videos, resolutions or streams; those paths are not established by this test.
 
 If the video stalls, record the codec, resolution and whether audio continues. Check the script output, driver versions and macOS logs before changing settings. A browser/network problem and a VideoToolbox failure require different fixes.
+
+## AV1/VP9 web-video fallback verified on this Surface (2026-11-23)
+
+On this exact macOS Tahoe 26.7.1 machine, Mozilla Firefox **160.0.1** was installed into `~/Applications/Firefox.app` from the official Mozilla download. The app's notarized Apple Developer ID signature was verified as **Mozilla Corporation / Team ID `43AQ936H96`**. Safari, the default browser, GPU drivers, EFI and sleep settings were left unchanged.
+
+An **isolated Firefox WebDriver session** played real 10-second sample videos with the HTML5 `video` element. Playback time advanced beyond 2 seconds in each clip, and Firefox reported the following decoded frames and resolution:
+
+| Codec/container | Sample | Frames decoded | Dropped | Browser playback |
+| --- | --- | ---: | ---: | --- |
+| AV1/MP4 | 640 × 360 | 69 | 0 | Pass |
+| VP9/WebM | 640 × 360 | 69 | 2 | Pass |
+| AV1/MP4 | 1920 × 1080 | 68 | 0 | Pass |
+| VP9/WebM | 1920 × 1080 | 68 | 2 | Pass |
+
+Samples: `https://test-videos.co.uk/` (Big Buck Bunny 10-second AV1 MP4 / VP9 WebM, sizes 1 MB and 5 MB). These are **software playback tests**, not Intel fixed-function decoder tests. Playback at 4K, 10-bit, HDR, YouTube DRM and other applications is not established by these four samples.
+
+The Windows-first all-in-one now includes **opt-in**, no-admin `install_media_fallback_macos.py` for the same software fallback. In macOS Terminal with the full project checkout, run a **single command**: `python3 scripts/install_media_fallback_macos.py --install`. Or launch `QuickStart-Mac.command --media-fallback` from a newly built `SL4DATA` installer package, or choose advanced menu **4**. No change to the normal installer path or default browser. `--check --json` reports an existing verified Firefox without installing anything. It always refuses unsigned, unnotarized or non-Mozilla app bundles.
 
 ## Limitations
 

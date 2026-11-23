@@ -50,6 +50,7 @@ FILES=(
  "scripts/install_dolby_macos.py",
  "scripts/auto_verify_first_boot_macos.py",
  "scripts/audit_codec_macos.py",
+ "scripts/install_media_fallback_macos.py",
  "scripts/install_sl4_rcs_stability.py",
  "research/wex-sl4-rcs-singleport.patch",
  "scripts/xe_acceleration.py",

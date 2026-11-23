@@ -57,6 +57,7 @@ SELECT=[
 "scripts/install_wex_graphics_macos.sh",
 "scripts/verify_video_macos.py",
 "scripts/audit_codec_macos.py",
+"scripts/install_media_fallback_macos.py",
 "scripts/configure_surface_trackpad.sh",
 "scripts/thermal/sl4_tmp3_service.py",
 "scripts/thermal/sl4_thermal_guard.py",

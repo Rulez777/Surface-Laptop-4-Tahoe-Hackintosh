@@ -105,6 +105,13 @@ def main():
     require(hashlib.sha256(codec_audit_target.read_bytes()).digest() ==
             hashlib.sha256(codec_audit.read_bytes()).digest(),
             "Codec audit failed to copy")
+    browser_helper = Path(__file__).with_name("install_media_fallback_macos.py")
+    require(browser_helper.is_file(), "Missing safe Mozilla browser helper")
+    browser_helper_target = graphics_dir / browser_helper.name
+    browser_helper_target.write_bytes(browser_helper.read_bytes())
+    require(hashlib.sha256(browser_helper_target.read_bytes()).digest() ==
+            hashlib.sha256(browser_helper.read_bytes()).digest(),
+            "Browser fallback helper failed to copy")
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
@@ -128,6 +135,7 @@ def main():
         "video": {
             "validation_script": str(checker_target),
             "codec_audit_script": str(codec_audit_target),
+            "optional_mozilla_fallback_installer": str(browser_helper_target),
             "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",
