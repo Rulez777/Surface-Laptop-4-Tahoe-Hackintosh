@@ -17,6 +17,7 @@ SELECT=[
 "docs/EDP-WAKE.md",
 "docs/SLEEP.md",
 "docs/SYSTEM-SLEEP-RESEARCH.md",
+"docs/LINUX-SURFACE-SLEEP-PORT.md",
 "docs/BATTERY.md",
 "docs/POWER-RECOVERY.md",
 "docs/THERMAL-TMP3.md",
