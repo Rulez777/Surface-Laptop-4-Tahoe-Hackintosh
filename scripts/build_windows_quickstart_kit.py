@@ -36,6 +36,7 @@ FILES=(
  "scripts/quiet_boot.py",
  "scripts/prepare_sl4_peripherals.py",
  "scripts/enable_xe_macos.py",
+ "scripts/xe_acceleration.py",
  "scripts/windows_prepare_tahoe.py",
  "scripts/QuickStart-Windows.ps1",
  "scripts/QuickStart-Mac.command",

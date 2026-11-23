@@ -28,6 +28,7 @@ class WindowsQuickStartTests(unittest.TestCase):
                 names=z.namelist()
                 self.assertIn("SL4-Tahoe-QuickStart/QuickStart.cmd",names)
                 self.assertIn("SL4-Tahoe-QuickStart/scripts/QuickStart-Windows.ps1",names)
+                self.assertIn("SL4-Tahoe-QuickStart/scripts/xe_acceleration.py",names)
                 self.assertNotIn("SL4-Tahoe-QuickStart/EFI/OC/config.plist",names)
             with self.assertRaisesRegex(RuntimeError,"exists"):
                 build_windows_quickstart_kit.build(out)

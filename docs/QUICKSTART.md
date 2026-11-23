@@ -4,7 +4,7 @@
 
 ## 1. Запуск в Windows
 
-1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/archive/refs/tags/sl4-tahoe-v0.3.0-beta.zip). Нажмите **«Извлечь всё»**.
+1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.1-beta/SL4-Tahoe-Windows-QuickStart-v0.3.1-beta.zip). Нажмите **«Извлечь всё»**.
 2. Дважды нажмите **`QuickStart.cmd`** в распакованной папке.
 3. Выберите **1 — Install Tahoe from Windows**. Помощник определит оборудование, подготовит **уникальные личные идентификаторы OpenCore**, скачает оригинальные **Apple Recovery**, OpenCore и пакеты драйверов. При необходимости предложит установить Python.
 4. Подключите **отдельную USB-флешку от 16 ГБ**, лучше от 32 ГБ. Помощник покажет только USB-диски; укажите нужный номер. На шаге записи запросит права администратора и отдельно подтвердит очистку **только выбранного USB-диска**. **Все данные на этой флешке будут удалены**. Windows на внутреннем SSD не форматируется.
