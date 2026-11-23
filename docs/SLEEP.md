@@ -8,7 +8,7 @@
 
 Install and rollback instructions, binary checksums and hardware requirements are in [EDP wake](EDP-WAKE.md).
 
-**Two separate genuine S0ix / Deep Idle RTC wakes completed on 2026-11-23:** the system slept at **12:51:00 CET** and woke at **12:51:08 CET** (8 seconds); then slept at **12:55:09 CET** and woke at **12:56:20 CET** (71 seconds), both without a reboot, with `machdep.xcpm.deep_idle_count=2` and verified DMC reload. The internal display was enumerated online with Metal 2 working. These are **two short RTC-only tests** and does not establish dependable lid / power-button wake or battery life. [Full evidence](S0IX-INITIAL-RTC-WAKE-20261123.md).
+**Two separate genuine S0ix / Deep Idle RTC wakes completed on 2026-11-23:** the system slept at **12:51:00 CET** and woke at **12:51:08 CET** (8 seconds); then slept at **12:55:09 CET** and woke at **12:56:20 CET** (71 seconds), both without a reboot, with `machdep.xcpm.deep_idle_count=2` and verified DMC reload. The internal display was enumerated online with Metal 2 working. These are **two short RTC-only tests** and do not establish dependable lid / power-button wake or battery life. [Full evidence](S0IX-INITIAL-RTC-WAKE-20261123.md).
 
 The tested Surface still has `pmset sleep 0` and `displaysleep 0` on AC and battery. The eDP Softsleep mechanism deliberately leaves the display link powered while darkening its backlight during **display-only** transitions.
 
