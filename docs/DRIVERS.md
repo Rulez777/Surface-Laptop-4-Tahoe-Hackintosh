@@ -66,3 +66,7 @@ The [read-only media checker](../scripts/verify_video_macos.py) verifies that th
 Display-only eDP screen wake **works with the qualified Keep + Softsleep add-on**; [installation and rollback](EDP-WAKE.md). Full S3/S0ix system sleep **remains unvalidated** in the tested configuration. An experimental S0ixStandby 0.5.8 / SSDT-DEEPIDLE test ended with an unresponsive Surface and required a restart; the experiment was rolled back and is **not bundled**. See [SLEEP.md](SLEEP.md). The headphone jack and additional hardware variants have not been validated.
 
 See [installation and verified hardware](../README.md), [graphics](VALIDATED-METAL-SL4.md) and [keyboard/trackpad](INPUT-KEYBOARD-TRACKPAD.md).
+
+## RCS Stability update (2026-11-23)
+
+For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.

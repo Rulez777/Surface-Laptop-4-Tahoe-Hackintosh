@@ -1,4 +1,4 @@
-# Surface Laptop 4 — Windows Quick Start v0.3.2 beta
+# Surface Laptop 4 — Windows Quick Start v0.3.3 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.
 
@@ -15,6 +15,14 @@ Already running Tahoe? Press **2** to prepare the driver repair kit. For other r
 **Primary profile:** Surface Laptop 4 13.5-inch Intel Core i7-1185G7, Iris Xe 8086:9A49. Supported versions and components are selected by the setup; other hardware profiles require advanced customization.
 
 [**Quick Start guide**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/main/docs/QUICKSTART.md) · [**Project README**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh)
+
+## v0.3.3 beta — stable RCS driver available from Windows
+
+- Pins the verified `SL4-RCS-Stability-0.1.0-beta.zip` public release by archive SHA-256 and by the SHA-256 of its Intel WhateverXe executable. The Windows preparer validates its signed-off manifest **before copying** it to the SL4DATA partition.
+- Both the fresh Windows-to-Tahoe USB and the **Tahoe already installed** repair path stage this optional postinstall package. Users do not need macOS already installed to download and prepare the drivers on Windows.
+- Adds **option 4** to the *macOS* `QuickStart-Mac.command` to install the RCS fix only after exact Surface CPU, GPU, Tahoe donor, existing Metal/DMC profile and internal EFI pass preflight. Installer creates full private OC backup and preserves Windows Boot Manager and original WhateverXe.
+- Patches the RCS Execlist single-port/preemption issue found in two Spectator 3 GPU Reset reports. Owner observed no new reset after gameplay and a reported warm-up from 14 to approximately 30 FPS. **Causality of the FPS improvement remains unproven**.
+- Adds archive, source-patch and fail-closed regression checks; publishes a new independent v0.3.3 release without overwriting v0.3.2.
 
 ## v0.3.1 beta fix
 

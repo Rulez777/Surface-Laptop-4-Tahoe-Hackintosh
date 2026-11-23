@@ -104,3 +104,7 @@ The release ZIP contains only the **public install script, exact-source-built ke
 The WhateverXe patch is reproducible from the pinned upstream revision and the source-only [SL4 eDP baseline patch](../research/wex-sl4-edp-base.patch) plus [SL4 DMC patch](../research/wex-tgl-dmc-supervised.patch). Third-party rights: WhateverXe BSD 3-Clause, S0ixStandby BSD 3-Clause, Intel `LICENSE.i915`, and OpenCorePkg BSD 3-Clause. Intel's original DMC firmware is included unmodified; do not alter, reverse-engineer or claim Intel endorses this project.
 
 See [the two RTC wake logs](S0IX-INITIAL-RTC-WAKE-20261123.md), [DMC implementation](DMC-SLEEP-TRIAL.md) and [sleep safety details](SLEEP.md).
+
+## RCS Stability update (2026-11-23)
+
+For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.

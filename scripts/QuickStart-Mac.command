@@ -13,6 +13,7 @@ echo "macOS: $(sw_vers -productVersion)"
 echo "1) Install official Tahoe Iris Xe Graphics driver"
 echo "2) Prepare/repair Tahoe drivers (existing macOS)"
 echo "3) Install audio and brightness on already-booting Tahoe"
+echo "4) Install optional RCS graphics stability patch (existing Tahoe)"
 echo "0) Exit"
 read "choice?Choose: "
 case "$choice" in
@@ -56,6 +57,27 @@ case "$choice" in
     sudo python3 "$base/drivers/install_audio_macos.py" inspect --esp "$esp"
     sudo python3 "$base/drivers/install_brightness_macos.py" inspect --esp "$esp"
     echo "Preflight complete; to apply run each installer with apply --esp $esp."
+    ;;
+  4)
+    archive="$base/SL4-RCS-Stability-0.1.0-beta.zip"
+    [ -f "$archive" ] || { echo "RCS archive missing: prepare USB/repair kit with Windows Quick Start v0.3.3." >&2; exit 8; }
+    expected="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
+    [ "$(shasum -a 256 "$archive" | awk '{print $1}')" = "$expected" ] || { echo "RCS ZIP checksum mismatch." >&2; exit 9; }
+    dest="$HOME/Downloads/SL4-RCS-Stability-0.1.0-beta"
+    mkdir -p "$HOME/Downloads"
+    if [ -e "$dest" ]; then
+      echo "Extracted RCS folder already exists; verify/remove it manually if you want to install from this package." >&2
+      exit 10
+    fi
+    unzip -q "$archive" -d "$HOME/Downloads"
+    echo "Use only the INTERNAL EFI of your installed macOS/Windows Surface."
+    diskutil list
+    printf "Enter exact internal EFI identifier (e.g. disk0s1): "
+    read -r esp
+    [ -n "$esp" ] || { echo "EFI partition required" >&2; exit 11; }
+    sudo python3 "$dest/install.py" check --esp "$esp"
+    sudo python3 "$dest/install.py" apply --esp "$esp"
+    echo "RCS patch staged. Restart macOS to activate; rollback instructions are in the extracted folder."
     ;;
   0) exit 0 ;;
   *) echo "Unknown option" >&2; exit 4 ;;

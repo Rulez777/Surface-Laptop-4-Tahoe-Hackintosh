@@ -45,3 +45,7 @@ Metal support does not prove peak performance or video encode/decode stability. 
 Preserve a **private** known-good no-acceleration `config.plist` and Windows boot entry. The test machine's accelerated config was also saved as `~/Downloads/SL4-WORKING-METAL.plist` (not distributed). If a subsequent change breaks the graphics boot, restore the earlier private config from Windows and reboot with `-wex-noaccel`; do not erase the ESP or edit `EFI/Microsoft`. If `diskutil mount disk0s1` fails in Tahoe, a read-only mount worked during diagnosis, but **never repair the Windows ESP blindly**.
 
 **Upstream:** [WhateverXe DVMT](https://github.com/b00t0x/WhateverXe#dvmt) · [WhateverXe Graphics v0.4.4](https://github.com/b00t0x/WhateverXe-Graphics/releases/tag/v0.4.4) · [our Surface hardware report to the developer](https://github.com/b00t0x/WhateverXe/issues/101#issuecomment-7082305989).
+
+## RCS Stability update (2026-11-23)
+
+For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.

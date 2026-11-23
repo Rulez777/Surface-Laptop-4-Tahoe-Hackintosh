@@ -30,9 +30,21 @@ class WindowsQuickStartTests(unittest.TestCase):
                 self.assertIn("SL4-Tahoe-QuickStart/QuickStart.cmd",names)
                 self.assertIn("SL4-Tahoe-QuickStart/scripts/QuickStart-Windows.ps1",names)
                 self.assertIn("SL4-Tahoe-QuickStart/scripts/xe_acceleration.py",names)
+                self.assertIn("SL4-Tahoe-QuickStart/scripts/install_sl4_rcs_stability.py",names)
+                self.assertIn("SL4-Tahoe-QuickStart/docs/QUICKSTART-RCS.md",names)
+                self.assertIn("SL4-Tahoe-QuickStart/research/wex-sl4-rcs-singleport.patch",names)
                 self.assertNotIn("SL4-Tahoe-QuickStart/EFI/OC/config.plist",names)
             with self.assertRaisesRegex(RuntimeError,"exists"):
                 build_windows_quickstart_kit.build(out)
+
+    def test_rcs_addon_pinned_and_offline_stage_only(self):
+        self.assertTrue(windows_prepare_tahoe.RCS_URL.endswith("/SL4-RCS-Stability-0.1.0-beta.zip"))
+        self.assertEqual(windows_prepare_tahoe.RCS_SHA,
+                         "21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960")
+        self.assertIn("4) Install optional RCS graphics stability patch",
+                      (ROOT/"scripts/QuickStart-Mac.command").read_text())
+        self.assertIn("install_sl4_rcs_stability.py",windows_prepare_tahoe.__file__ and
+                      (ROOT/"scripts/windows_prepare_tahoe.py").read_text())
 
     def test_new_usb_shows_recovery_without_space(self):
         # Verify both regular (quiet) and diagnostic (verbose) installer paths.

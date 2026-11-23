@@ -8,7 +8,7 @@
 
 **Start on Windows. You do not need macOS installed.**
 
-1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.2-beta/SL4-Tahoe-Windows-QuickStart-v0.3.2-beta.zip) and click **Extract All**.
+1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.3-beta/SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip) and click **Extract All**.
 2. Open the extracted folder and double-click **`QuickStart.cmd`**.
 3. Press **1 — Install Tahoe from Windows**. The assistant prepares OpenCore, downloads Apple Recovery and the driver bundle, then asks which **USB drive** to prepare.
 4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**. At the **OpenCore boot menu**, use the arrow keys and **Enter** to select **macOS Base System (External)** (sometimes shown as **Recovery**). This is Apple's Recovery installer, **not** Windows Boot Manager or your existing macOS volume. New USBs show Recovery immediately, with 15 seconds to choose; on an older USB press **Space** to reveal hidden auxiliary entries.
@@ -21,6 +21,14 @@ Want to keep the existing USB-free dual boot after installation? Follow [interna
 ### Tahoe is already installed
 
 Select **2 — Tahoe already installed** in Windows Quick Start to download the driver recovery package. In macOS, use [Hardware and driver setup](docs/DRIVERS.md) or [the ready-made S0ix/DMC driver installer](docs/QUICKSTART-S0IX.md).
+
+### Important Iris Xe graphics stability update (November 23, 2026)
+
+**RCS Stability 0.1.0 beta** fixes the Tiger Lake Execlist context-switch/preemption hang observed in Spectator 3 and WindowServer on the reference Surface. After the patch, the machine booted with `SL4RCSSinglePortReady = Yes`, completed **400,000 Metal command buffers** without error and showed **no new GPU Reset reports after subsequent gameplay**. The owner reported FPS rising from approximately 14 to 30 after several minutes; the exact cause of that improvement has **not** been established.
+
+[**RCS Stability download and safe macOS installation / rollback guide**](docs/QUICKSTART-RCS.md). For **new Windows installs** use the Windows Quick Start first, then use **option 4 in `QuickStart-Mac.command`** to install the version-checked RCS stability addon after Tahoe, DMC and Metal are working. Windows QuickStart v0.3.3 stages this addon in the driver payload; a separate installed macOS system is **not** required to prepare the USB. No unsupported hardware receives this patch automatically. Your personal EFI and Windows installation are not included in the public package.
+
+**Not yet certified:** indefinite gaming stability, all sleep/wake combinations, VP9/AV1 hardware decoding in Safari, other hardware models and other Tahoe builds.
 
 ### Different version or hardware
 

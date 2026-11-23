@@ -31,6 +31,9 @@ OC_URL="https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenC
 OC_SHA="2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b"
 RELEASE_URL="https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-s0ix-v0.2.0-beta/SL4-S0ix-DMC-0.2.0-beta.zip"
 RELEASE_SHA="dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd"
+RCS_URL="https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-rcs-v0.1.0-beta/SL4-RCS-Stability-0.1.0-beta.zip"
+RCS_SHA="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
+RCS_FILENAME="SL4-RCS-Stability-0.1.0-beta.zip"
 GRAPHICS_URL="https://github.com/b00t0x/WhateverXe-Graphics/releases/download/v0.4.4/WhateverXe-Graphics-0.4.4.pkg"
 GRAPHICS_SHA="f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec"
 INPUT_SHA="446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
@@ -106,6 +109,27 @@ def copy_assets(stage,zip_path):
     return out
 
 
+def checked_rcs_addon(path):
+    """Verify the public addon before any Windows/USB stage is built."""
+    require(path.is_file() and sha(path)==RCS_SHA,"Unexpected SL4 RCS addon ZIP SHA-256")
+    with zipfile.ZipFile(path) as z:
+        require(z.testzip() is None,"Corrupt RCS addon")
+        pre="SL4-RCS-Stability-0.1.0-beta/"
+        manifest=json.loads(z.read(pre+"MANIFEST.json"))
+        require(manifest.get("release")=="SL4-RCS-Stability-0.1.0-beta" and
+                manifest.get("no_private_efi") is True,"Unexpected RCS addon manifest")
+        name="payload/WhateverXe-SL4-RCS-STABILITY.kext/Contents/MacOS/WhateverXe"
+        require(manifest.get("sha256",{}).get(name)=="e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21",
+                "Wrong tested RCS kext")
+        for rel,expected in manifest["sha256"].items():
+            require(not Path(rel).is_absolute() and ".." not in Path(rel).parts,
+                    "Unsafe RCS archive member")
+            require(hashlib.sha256(z.read(pre+rel)).hexdigest()==expected,
+                    "RCS addon content differs: "+rel)
+        require(pre+"install.py" in z.namelist(),"RCS postinstall helper missing")
+    return path
+
+
 def macrecovery_from_oc_zip(oc_zip, dest):
     with zipfile.ZipFile(oc_zip) as oc:
         blob=oc.read("Utilities/macrecovery/macrecovery.py")
@@ -134,6 +158,7 @@ def prepare(args):
     require(input_pack.is_file() and sha(input_pack)==INPUT_SHA,
             "Working Surface keyboard/trackpad package missing or differs")
     drivers=fetch(RELEASE_URL,cache/"SL4-S0ix-DMC-0.2.0-beta.zip",RELEASE_SHA)
+    rcs=checked_rcs_addon(fetch(RCS_URL,cache/RCS_FILENAME,RCS_SHA))
     identity=args.identity or identity_from_macserial(oc)
     require(isinstance(identity,dict) and all(x in identity for x in ("serial","mlb","uuid","rom")),
             "Missing private SMBIOS fields")
@@ -174,6 +199,7 @@ def prepare(args):
         data=copy_assets(stage,drivers)
         shutil.copy2(graphics,data/graphics.name)
         shutil.copy2(input_pack,data/input_pack.name)
+        shutil.copy2(rcs,data/RCS_FILENAME)
         # Official matching macOS ocvalidate and one-click graphics transition.
         with zipfile.ZipFile(oc) as oc_archive:
             validator=oc_archive.read("Utilities/ocvalidate/ocvalidate")
@@ -186,7 +212,7 @@ def prepare(args):
         scripts=data/"drivers"
         scripts.mkdir()
         for name in ("install_audio_macos.py","install_brightness_macos.py",
-                     "install_edp_keep_macos.py","configure_surface_trackpad.sh",
+                     "install_edp_keep_macos.py","install_sl4_rcs_stability.py","configure_surface_trackpad.sh",
                      "xe_acceleration.py","dvmt60.py","prepare_sl4_peripherals.py"):
             shutil.copy2(ROOT/"scripts"/name,scripts/name)
         if args.installassistant:
@@ -204,6 +230,7 @@ def prepare(args):
             "recovery_sha256":{x.name:sha(x) for x in dmgs+lists},
             "bootloader_sha256":sha(efi/"OC/OpenCore.efi"),
             "driver_release_sha256":RELEASE_SHA,
+            "rcs_stability_sha256":RCS_SHA,
             "input_kexts_sha256":INPUT_SHA,
             "graphics_installer_sha256":GRAPHICS_SHA}
         (stage/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
@@ -230,6 +257,7 @@ def repair_only(args):
     cache.mkdir(parents=True,exist_ok=True)
     graphics=fetch(GRAPHICS_URL,cache/"WhateverXe-Graphics-0.4.4.pkg",GRAPHICS_SHA)
     drivers=fetch(RELEASE_URL,cache/"SL4-S0ix-DMC-0.2.0-beta.zip",RELEASE_SHA)
+    rcs=checked_rcs_addon(fetch(RCS_URL,cache/RCS_FILENAME,RCS_SHA))
     inp=ROOT/"packages/SL4-TGL-Input-Working-v1.zip"
     require(inp.is_file() and sha(inp)==INPUT_SHA,"Working keyboard/trackpad package missing")
     out=target/"SL4DATA"
@@ -238,14 +266,15 @@ def repair_only(args):
         shutil.copy2(graphics,out/graphics.name)
         shutil.copy2(drivers,out/drivers.name)
         shutil.copy2(inp,out/inp.name)
-        files=("QuickStart-Mac.command","enable_xe_macos.py",
+        shutil.copy2(rcs,out/RCS_FILENAME)
+        files=("QuickStart-Mac.command","enable_xe_macos.py","install_sl4_rcs_stability.py",
                "install_brightness_macos.py","install_audio_macos.py",
                "install_edp_keep_macos.py","configure_surface_trackpad.sh")
         for name in files:
             shutil.copy2(ROOT/"scripts"/name,out/name)
         manifest={"format":1,"mode":"existing_tahoe_driver_repair",
                   "downloads":{"graphics":GRAPHICS_SHA,"dmc_s0ix":RELEASE_SHA,
-                               "native_input":INPUT_SHA},
+                               "native_input":INPUT_SHA,"rcs_stability":RCS_SHA},
                   "windows_disk_modified":False,
                   "requires_mac_host_validation":True}
         (target/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
