@@ -1,6 +1,6 @@
 # Surface Laptop 4 — integrated Iris Xe RCS graphics and Dolby Clear Speech
 
-**Windows-first QuickStart v0.4.1 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
+**Windows-first QuickStart v0.4.2 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
 
 ## What happens without separate patches
 
@@ -18,7 +18,10 @@ The RCS kext is compiled from upstream WhateverXe 0.8.3 plus eDP Keep/Softsleep,
 
 Tahoe YouTube H.264/HEVC playback uses the original **WhateverXe Graphics 0.4.4** installer, including its Tahoe postinstall CoreMedia fix. The all-in-one verifies `AllowOnePassMetalScaling.Enabled=false` before activating the new graphics boot configuration. No promise of VP9/AV1 playback is made.
 
-The owner's existing reference installation has `pmset sleep 0 displaysleep 0`. In new first-install flows, the tool creates a private copy of the prior `pmset -g custom` output and sets **automatic system/display sleep to 0** until longer stability tests exist. It does not modify hibernate mode, Windows or the original EFI. **This deliberately does not enable unattended lid/idle sleep**: two short supervised S0ix RTC wakes cannot certify extended overnight/battery sleep. Existing-install repair leaves any custom power policy untouched.
+On the reference Surface, manual system sleep / Deep Idle wake works and the eDP Keep/Softsleep patch enables screen wake after lid/power-button action. The device currently reports `pmset sleep=0 displaysleep=0`, which **disables only timed automatic sleep/display idle**, not manual sleep. These values were a diagnostic choice on that one system, not a required driver configuration.
+
+**Corrected in v0.4.2:** the all-in-one installation leaves `pmset` power policy **completely unchanged**, shows it read-only and preserves the tested eDP/DMC/S0ix/OpenCore patches. v0.4.1 mistakenly set both timers to zero; do not use that version for new installations. A new user's macOS sleep timers stay as they were. Verify real lid/power-button wake and monitor battery behavior on the actual device.
+
 
 ## Verified audio reference
 

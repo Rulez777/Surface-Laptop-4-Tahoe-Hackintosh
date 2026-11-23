@@ -8,7 +8,7 @@
 
 **Start on Windows. You do not need macOS installed.**
 
-1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.4.1-beta/SL4-Tahoe-Windows-QuickStart-v0.4.1-beta.zip) and click **Extract All**.
+1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.4.2-beta/SL4-Tahoe-Windows-QuickStart-v0.4.2-beta.zip) and click **Extract All**.
 2. Open the extracted folder and double-click **`QuickStart.cmd`**.
 3. Press **1 — Install Tahoe from Windows**. The assistant prepares OpenCore, downloads Apple Recovery and the driver bundle, then asks which **USB drive** to prepare.
 4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**. At the **OpenCore boot menu**, use the arrow keys and **Enter** to select **macOS Base System (External)** (sometimes shown as **Recovery**). This is Apple's Recovery installer, **not** Windows Boot Manager or your existing macOS volume. New USBs show Recovery immediately, with 15 seconds to choose; on an older USB press **Space** to reveal hidden auxiliary entries.
@@ -22,7 +22,11 @@ Want to keep the existing USB-free dual boot after installation? Follow [interna
 
 Select **2 — Tahoe already installed** in Windows Quick Start to download the driver recovery package. In macOS, use [Hardware and driver setup](docs/DRIVERS.md) or [the ready-made S0ix/DMC driver installer](docs/QUICKSTART-S0IX.md).
 
-### All-in-one graphics stability and speaker tuning — v0.4.1 beta
+### All-in-one graphics stability and speaker tuning — v0.4.2 beta
+
+**Critical sleep correction in v0.4.2:** the standard installer now **never writes macOS `pmset` power-policy settings**. It preserves existing sleep timers and the working DMC/S0ix manual sleep + eDP Keep/Softsleep screen wake. v0.4.1 should not be used for a new install because it inadvertently disabled automatic sleep. Recheck physical screen/lid wake on your own hardware.
+
+
 
 **The normal Windows-first installer now includes the RCS graphics patch and original Surface Dolby speaker correction.** No separate graphics patch download, manual EFI edit or manual audio profile import.
 
@@ -30,7 +34,7 @@ Windows QuickStart includes the byte-pinned Surface RCS driver and Dolby FIR pro
 
 Only **System Audio Recording consent** must be approved in macOS on first run. For already installed Tahoe, **option 2** checks and applies missing components. Original Windows boot data and personal EFI backups are preserved.
 
-**[All-in-one technical guide, Dolby details and rollback](docs/AUDIO-ALL-IN-ONE.md).** Clean install of the newly integrated v0.4.1 USB build has not yet been confirmed on another machine. A successful individual RCS and audio installation on the reference Surface is not proof of a fully tested fresh install.
+**[All-in-one technical guide, Dolby details and rollback](docs/AUDIO-ALL-IN-ONE.md).** Clean install of the newly integrated v0.4.2 USB build has not yet been confirmed on another machine. A successful individual RCS and audio installation on the reference Surface is not proof of a fully tested fresh install.
 
 ### Important Iris Xe graphics stability update (November 23, 2026)
 

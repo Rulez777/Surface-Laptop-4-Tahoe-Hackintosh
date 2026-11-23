@@ -87,20 +87,39 @@ class AllInOneTests(unittest.TestCase):
         self.assertIn('com.sl4.apomac.autostart',installer)
         self.assertIn('kext', (ROOT/"docs/AUDIO-ALL-IN-ONE.md").read_text().lower())
 
-    def test_coremedia_and_safe_sleep_are_preserved_in_main_installer(self):
+    def test_coremedia_and_working_sleep_are_preserved_without_power_override(self):
         script=(ROOT/"scripts/QuickStart-Mac.command").read_text()
         self.assertIn("verify_coremedia_h264",script)
         self.assertIn("AllowOnePassMetalScaling:Enabled",script)
         self.assertIn('[[ "$flag" == "false" ]]',script)
         self.assertLess(script.index("verify_coremedia_h264\n    mkdir -p"),
                         script.index('sudo python3 "$base/enable_xe_macos.py" apply'))
-        self.assertIn("safe_sleep_policy",script)
-        self.assertIn("sudo /usr/bin/pmset -a sleep 0 displaysleep 0",script)
+        self.assertIn("report_sleep_policy_unchanged",script)
         self.assertIn("/usr/bin/pmset -g custom",script)
-        self.assertIn("SL4-Tahoe-pmset-before-",script)
-        # Critical: existing-install repair cannot alter the user's policy.
-        self.assertEqual(script.count("    safe_sleep_policy\n"),1)
+        self.assertNotIn("safe_sleep_policy",script)
+        self.assertNotIn("/usr/bin/pmset -a",script)
+        self.assertNotIn("sleep 0 displaysleep 0",script)
+        # Both initial installation and repair must leave the power policy alone.
+        self.assertEqual(script.count("    report_sleep_policy_unchanged\n"),1)
         self.assertIn("repair_existing() {",script)
+        boot=(ROOT/"scripts/enable_xe_macos.py").read_text()
+        self.assertIn("S0ixStandby.kext",boot)
+        self.assertIn("SSDT-DEEPIDLE.aml",boot)
+        for flag in ("-wex-tgl-edp-keep","-wex-tgl-edp-softsleep",
+                     "-wex-sl4-tgl-dmc","-wex-sl4-rcs-singleport"):
+            self.assertIn(flag,graphics.STARTUP_ARGS)
+
+    def test_no_power_setting_writes_anywhere_in_core_install_path(self):
+        # These run automatically from the CMD-created USB. A new developer
+        # must not accidentally reintroduce forced idle-sleep deactivation.
+        for name in ("QuickStart-Mac.command","enable_xe_macos.py",
+                     "install_dolby_macos.py","windows_prepare_tahoe.py",
+                     "QuickStart-Windows.ps1"):
+            data=(ROOT/"scripts"/name).read_text().lower()
+            self.assertNotIn("sudo /usr/bin/pmset -a",data,name)
+            self.assertNotIn("pmset -a sleep",data,name)
+            self.assertNotIn("pmset -a displaysleep",data,name)
+            self.assertNotIn("sleep 0 displaysleep 0",data,name)
 
     def test_windows_stage_contains_every_offline_component_and_manifest(self):
         s=(ROOT/"scripts/windows_prepare_tahoe.py").read_text()

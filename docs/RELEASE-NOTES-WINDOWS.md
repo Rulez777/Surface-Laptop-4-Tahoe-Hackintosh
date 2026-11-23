@@ -1,10 +1,10 @@
-# Surface Laptop 4 — Windows Quick Start v0.4.1 beta
+# Surface Laptop 4 — Windows Quick Start v0.4.2 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.
 
 ## How to use
 
-1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.4.1-beta.zip`.
+1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.4.2-beta.zip`.
 2. Double-click `QuickStart.cmd`.
 3. Press `1` to prepare the Tahoe installer, personal OpenCore EFI, Apple Recovery, drivers and installation USB.
 4. Boot the Surface from USB. In OpenCore select **macOS Base System (External)** (or **Recovery**) with arrow keys + Enter; do not select Windows or an existing macOS entry. New installer USBs show Recovery without pressing Space. Then install Tahoe into free space and run `QuickStart-Mac.command` to enable the full Surface hardware profile.
@@ -16,7 +16,17 @@ Already running Tahoe? Press **2** to prepare the driver repair kit. For other r
 
 [**Quick Start guide**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/main/docs/QUICKSTART.md) · [**Project README**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh)
 
-## v0.4.1 beta — preserve verified video and sleep safety configuration
+## v0.4.2 beta — preserve working sleep and screen wake (critical correction)
+
+- **Removes the incorrect v0.4.1 `pmset -a sleep 0 displaysleep 0` call entirely.** Neither clean install nor existing-install repair overwrites the user's macOS power settings. The installer now displays the existing `pmset -g custom` values read-only.
+- Keeps the same SHA-pinned WhateverXe RCS + DMC + eDP Keep/Softsleep binary, the S0ixStandby 0.5.8 driver and Deep Idle SSDT, with original flags for panel wake and manual system sleep. Does not overwrite an existing working EFI.
+- Retains the previously verified macOS Tahoe YouTube H.264/HEVC CoreMedia compatibility check and original WhateverXe Graphics 0.4.4 postinstall, plus Dolby Clear Speech -3.0 dB profile and APOMac login support.
+- Adds a regression test that **rejects any command that resets `pmset` sleep/displaysleep in core install scripts**. Improves clear documentation of the two short system sleep/wake cycles and observed lid/power-button wake. A user's working manual sleep may coexist with `pmset sleep=0`, which only disables automatic idle sleep; neither value is used as a benchmark of driver success.
+- All-in-one clean install on independent devices still requires physical verification. A Windows CMD starts and prepares the full process but Apple Recovery installation, macOS driver transition and first-use TCC audio permission necessarily require user actions.
+
+**Do not use the earlier v0.4.1 beta package for a new setup.** Its unintended power-policy write has been corrected in this release.
+
+## v0.4.1 beta — superseded: mistaken automatic-sleep override
 
 - Confirms the official WhateverXe Graphics 0.4.4 postinstall sets `/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist` to `AllowOnePassMetalScaling.Enabled=false` for Tahoe. The first-boot setup now **asserts this value** immediately after package installation; it refuses to stage the new RCS driver if the H.264/HEVC compatibility prerequisite is missing.
 - Preserves the working machine's conservative **automatic sleep disabled** policy (`pmset -a sleep 0 displaysleep 0`) during the initial macOS hardware setup. The previous `pmset -g custom` output is saved in Downloads before modification. Manual display-off and supervised sleep/wake remain available; full unattended sleep reliability is not established.

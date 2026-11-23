@@ -55,19 +55,13 @@ verify_coremedia_h264() {
     }
     print "VERIFIED: Tahoe CoreMedia compatibility for existing H.264/HEVC playback."
 }
-safe_sleep_policy() {
-    # This laptop's two short RTC wakes do NOT certify unattended system sleep.
-    # Preserve a human-readable previous policy; only adjust auto-idle values,
-    # never change hibernate, standby, ACPI, NVRAM or the Windows disk.
-    local backup="$HOME/Downloads/SL4-Tahoe-pmset-before-$(/bin/date +%Y%m%d-%H%M%S).txt"
-    [[ ! -e "$backup" ]] || { print -u2 "Power policy backup exists: $backup"; return 16; }
-    /usr/bin/pmset -g custom > "$backup"
-    /bin/chmod 600 "$backup"
-    sudo /usr/bin/pmset -a sleep 0 displaysleep 0
-    /usr/bin/pmset -g custom | /usr/bin/awk '$1=="sleep" {n++; if ($2!="0") wrong=1} $1=="displaysleep" {d++; if ($2!="0") wrong=1} END {exit !((n>=2)&&(d>=2)&&!wrong)}' || {
-        print -u2 "Could not verify safe manual-only sleep policy; consult backup: $backup"; return 17
-    }
-    print "Safe sleep profile applied: auto sleep/display sleep off pending longer validation. Previous: $backup"
+report_sleep_policy_unchanged() {
+    # READ-ONLY: respect the user's working sleep/wake and display-wake policy.
+    # pmset sleep=0 can still permit manual sleep, and is NOT set here.
+    print "Current user power settings (preserved; no adjustments):"
+    /usr/bin/pmset -g custom
+    print "System sleep and panel wake are controlled by the tested DMC/S0ix and eDP Softsleep drivers."
+    print "Real lid, power-button and battery sleep must be checked on each machine."
 }
 install_from_usb() {
     local boot='/Volumes/MACOS-OC/EFI' tools="$HOME/Downloads/SL4-Tahoe-Installer-Tools"
@@ -85,7 +79,7 @@ install_from_usb() {
     print "Staging Metal + DMC + eDP + single-port RCS fix in ONE OpenCore transition..."
     sudo python3 "$base/enable_xe_macos.py" check --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
     sudo python3 "$base/enable_xe_macos.py" apply --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
-    safe_sleep_policy
+    report_sleep_policy_unchanged
     install_audio
     print "ALL-IN-ONE READY. Restart from USB OpenCore. No separate RCS installer or sound import is required."
     print "Keep the USB recovery EFI and complete dual boot only after a successful accelerated Tahoe boot."
