@@ -4,6 +4,8 @@ EFI-output/
 *.dmg
 *.chunklist
 *.zip
+# Ship only the explicitly verified public SL4 eDP add-on archive.
+!packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip
 *.log
 .DS_Store
 __pycache__/

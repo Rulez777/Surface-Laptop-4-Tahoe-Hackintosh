@@ -13,6 +13,7 @@ import zipfile
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import urllib.request
 
@@ -97,6 +98,19 @@ def main():
     require(hashlib.sha256(checker_target.read_bytes()).hexdigest() ==
             hashlib.sha256(video_checker.read_bytes()).hexdigest(),
             "Video checker failed to copy")
+    # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
+    # existing-install driver pack. Never install/enable it automatically.
+    edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
+    edp_sha = "42664cbf1ebd3a4a169daa1adceb4e470adcdeddf691ff557e0ca06b83efa301"
+    require(edp_source.is_file() and hashlib.sha256(edp_source.read_bytes()).hexdigest() == edp_sha,
+            "Missing or modified versioned SL4 eDP addon; update/repair your repository checkout")
+    edp_target = graphics_dir / edp_source.name
+    shutil.copy2(edp_source, edp_target)
+    require(hashlib.sha256(edp_target.read_bytes()).hexdigest() == edp_sha,
+            "Copied eDP addon checksum mismatch")
+    edp_addon = {"file": str(edp_target), "sha256": edp_sha,
+                 "mode": "post-install only; installer checks i7-1185G7/9A49/donor; requires existing accelerated WhateverXe 0.8.3",
+                 "install": "see docs/EDP-WAKE.md; not enabled by this builder"}
     touch = fetch(IPTS_URL, graphics_dir / "IPTSDaemon-v1.4.zip")
     # Do not extract/execute daemon: the upstream release only documents older Surface hardware.
     manifest = {
@@ -110,6 +124,7 @@ def main():
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",
         },
+        "edp_keep_softsleep": edp_addon,
         "touchscreen_daemon_candidate": touch,
         "staged_efi": str(target / "optional-EFI" / "EFI"),
         "opencore_validator": str(validator),
@@ -120,6 +135,7 @@ def main():
             "Do not remove -wex-noaccel until the proper graphics package, SIP and AMFI dependencies are verified.",
             "BigSurface 6.5 and IPTSDaemon 1.4 are from 2023, and neither is qualified for Surface Laptop 4 on Tahoe.",
             "Do not combine BigSurface with VoodooI2C and SMCBatteryManager.",
+            "eDP Keep+Softsleep addresses display-off wake; it does NOT validate real S3/S0ix system sleep.",
             "Keep an independent Windows Boot Manager recovery path. Do not replace the working internal EFI blindly.",
             "Safari H.264 playback was verified; this is not a fix for every VideoToolbox, VP9, AV1 or protected-content issue.",
         ],
@@ -128,6 +144,7 @@ def main():
     print("FULL CANDIDATE DRIVER PACK READY:", target)
     print("Graphics and OpenCore ZIP SHA256 verified against official release asset digests.")
     print("Read-only Tahoe video check:", checker_target)
+    print("Reversible Surface eDP Keep + Softsleep addon:", edp_target)
     if sys.platform == "win32":
         print("Generated EFI config checked by official OpenCore 1.0.8 ocvalidate.exe.")
     print("No drivers have been installed into macOS or enabled on the internal EFI.")

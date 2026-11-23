@@ -23,9 +23,7 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | macOS Tahoe / internal SSD boot | **Working** |
 | Windows 11 dual boot | **Working** |
 | Intel Iris Xe / Metal 2 | **Working** |
-| Safari YouTube H.264 playback (1080p) | **Working on tested SL4** |
-| WebKit local video: H.264 / HEVC / VP8 | **Working (480×270 tested)** |
-| WebKit local video: VP9 / AV1 | **Not working in this configuration** |
+| Browser / online video playback | **Working on the tested SL4**; details in [media notes](docs/MEDIA.md) |
 | Internal HiDPI and external DisplayPort | **Working** |
 | **Internal display brightness controls** | **Working** |
 | Intel AX201 Wi-Fi / Bluetooth | **Working** |
@@ -34,11 +32,12 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | Battery percentage | **Working** |
 | CPU temperature / automatic fan / performance profiles | **Working** |
 | Surface Dock | **Working** |
-| Sleep / wake | **Not working reliably; do not enable experimental S0ix** |
+| Display-only sleep / screen wake with eDP Keep + Softsleep | **Working on tested SL4** (power/sleep button and lid cycle) |
+| Full system sleep (S3 / S0ix) | **Not validated; leave disabled** |
 
 Verified on one Surface Laptop 4 Intel. Other models, headphone jack and untested hardware are not certified.
 
-**Sleep warning:** The tested Surface failed to resume from a supervised S0ixStandby 0.5.8 / SSDT-DEEPIDLE experiment. This experimental stack is **not included** in the supported driver pack. See [sleep limitations](docs/SLEEP.md); do not treat display-off as successful system sleep.
+**Wake distinction:** The built-in panel now wakes from display-only sleep with the [eDP Keep + Softsleep add-on](docs/EDP-WAKE.md). This is **not a true system-suspend fix**: the tested machine still uses `pmset sleep 0`, and an earlier S0ixStandby/SSDT-DEEPIDLE experiment was unsuccessful. Do not enable deep sleep or place the running laptop in a bag based on the display-only result. See [sleep limitations](docs/SLEEP.md).
 
 ## Installation — reproduce the tested setup
 
@@ -74,17 +73,31 @@ mountvol S: /D
 
 Restart into macOS and verify `system_profiler SPDisplaysDataType` reports **Metal 2**. The tested profile uses WhateverXe 0.8.3, WhateverXe Graphics 0.4.4 and **60 MB DVMT**. Graphics 0.4.4 also configures Tahoe's CoreMedia scaling compatibility flag. [Technical details](docs/VALIDATED-METAL-SL4.md).
 
-### Browser video — Safari / YouTube
+### 1b. Internal display sleep / wake — persistent eDP fix
 
-**Tested:** YouTube H.264 (`avc1`) at 1920 × 1080 in Safari, with hardware decoding and uninterrupted frame progression on the owner's SL4. **No extra graphics patch or third-party browser is needed** when the tested driver versions are installed.
+The tested Surface now recovers the **physical internal screen** when using the sleep/power button and closing/reopening the lid. The fix is part of a versioned, offline **WhateverXe 0.8.3** add-on and keeps existing Metal 2 graphics and GPU recovery. It updates the existing internal OpenCore configuration; it is **not** a complete EFI or a generic patch for other hardware.
 
-Check the video prerequisites in **macOS Terminal**:
+Download the [eDP fix package](packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip), or use it directly from this cloned repository. In **macOS Terminal** with your existing Tahoe installation already accelerated:
 
 ```bash
-python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/verify_video_macos.py"
+diskutil list
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" check --esp disk0s1
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" apply --esp disk0s1
 ```
 
-The driver-pack builder also includes this read-only checker in `SL4-FULL-DRIVERS/macOS-Installers/`. Expected: **MATCHES TESTED VIDEO CONFIGURATION: YES**. It verifies the exact Graphics 0.4.4 package, WhateverXe 0.8.3, Metal 2, H.264 availability and `AllowOnePassMetalScaling=false`. It cannot prove on-screen playback; open YouTube in Safari and use **Stats for nerds** to inspect the actual codec. WebKit local-file testing also confirmed HEVC and VP8 playback, while VP9 stalled and AV1 returned `NotSupportedError`. VP9/AV1 hardware decoding was **not** advertised on the tested device. Other browsers, protected media and all YouTube videos have not been verified. [Troubleshooting and evidence](docs/MEDIA.md).
+**Replace `disk0s1` with the actual internal EFI partition identifier.** The script verifies your CPU/GPU, graphics donor, WhateverXe version and OpenCore 1.0.8 compatibility, backs up the entire private `EFI/OC`, keeps the previous kext, and never edits `EFI/Microsoft`. Restart macOS after installation and check that your display works. For a standalone ZIP download, extract it and run the included `install_edp_keep_macos.py` from its folder.
+
+**Rollback** (then restart):
+
+```bash
+sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" rollback --esp disk0s1
+```
+
+This only fixes **display-off / screen wake** on the tested configuration. The tested system still has full system sleep disabled; **S3 / S0ix has not been fixed or validated**. Do not change this limitation based on a successful lid/display wake. See [complete setup and recovery details](docs/EDP-WAKE.md).
+
+### Browser video
+
+Video playback has been tested successfully in Safari on this Surface. The full results and optional diagnostic checker are in [media notes](docs/MEDIA.md); the main README does not maintain a codec-compatibility list.
 
 ### 2. Built-in keyboard, trackpad and battery
 
@@ -140,6 +153,6 @@ Backups are saved in `~/Downloads/SL4-BRIGHTNESS-BACKUPS` and `~/Downloads/SL4-A
 
 ## Documentation
 
-[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
+[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
 
 Keep private SMBIOS serial, MLB, SystemUUID and ROM values out of public repositories. Community project; not affiliated with Microsoft or Apple.

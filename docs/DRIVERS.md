@@ -7,6 +7,7 @@ Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8)
 | Component | Driver / configuration | Result |
 | --- | --- | --- |
 | Graphics | WhateverXe 0.8.3 + Graphics 0.4.4; DVMT 60 MB | Intel Iris Xe Metal 2; internal HiDPI and external DisplayPort |
+| **Display-only wake** | Custom WhateverXe 0.8.3 eDP Keep + Softsleep | **Verified**: internal panel visually woke on sleep/power button and lid close/open on tested SL4; full S3 unverified |
 | Browser video | Same graphics stack; CoreMedia scaling flag disabled | **Safari YouTube H.264 1080p playback working** |
 | Wi-Fi | AirportItlwm 2.4.0 | Intel AX201 wireless |
 | Bluetooth | Intel Bluetooth stack | Working |
@@ -62,6 +63,6 @@ The [read-only media checker](../scripts/verify_video_macos.py) verifies that th
 
 ## Other hardware
 
-Reliable sleep/wake is **not working** in the tested configuration. An experimental S0ixStandby 0.5.8 / SSDT-DEEPIDLE test ended with an unresponsive Surface and required a restart; the experiment was rolled back and is **not bundled**. See [SLEEP.md](SLEEP.md). The headphone jack and additional hardware variants have not been validated.
+Display-only eDP screen wake **works with the qualified Keep + Softsleep add-on**; [installation and rollback](EDP-WAKE.md). Full S3/S0ix system sleep **remains unvalidated** in the tested configuration. An experimental S0ixStandby 0.5.8 / SSDT-DEEPIDLE test ended with an unresponsive Surface and required a restart; the experiment was rolled back and is **not bundled**. See [SLEEP.md](SLEEP.md). The headphone jack and additional hardware variants have not been validated.
 
 See [installation and verified hardware](../README.md), [graphics](VALIDATED-METAL-SL4.md) and [keyboard/trackpad](INPUT-KEYBOARD-TRACKPAD.md).
