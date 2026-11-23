@@ -15,6 +15,7 @@
 | Brightness | PNLF/UID 19 fix previously verified and persistent per project log | No physical adjustment this session |
 | Drivers | Lilu 1.7.2, WhateverXe 0.8.3, VirtualSMC/SMCProcessor 1.3.8, AppleALC 1.9.8, SimpleHDA 1.0.2, BigSurface 1.2.0, BigSurfaceHIDDriver 1.0.0 all loaded | Current-kernel versions verified |
 | Thermal | `TC0D` sensor successful; installed TMP3 LaunchDaemon running, zero bytes sampled stderr; 35 s CPU-only partial load test (two 55%-duty workers) 45–56 °C with 80 °C auto-stop | Does **not** prove EC changed fan profile or RPM |
+| Battery charging cap | At ~52% with AC connected, `AppleSmartBattery` reported `IsCharging=No`, current/max 2811/5626, cycle count 110; Microsoft's optional Surface UEFI Battery Limit intentionally holds around 50% | Probable, not confirmed; UEFI setting has not been inspected; [battery notes](BATTERY.md) |
 | Sleep | `pmset sleep=0` and `displaysleep=0` on both AC/battery, and S0ix not enabled | **True S3/S0ix unresolved** |
 | Crash evidence | Snapshot counted 8 GPU resets, 3 kernel panics, 5 WindowServer reports in prior 24 h; none by file timestamp since current boot | Older crashes remain relevant; absence of new reports is not a stress proof |
 | Local automated tests | All 62 tests passed on macOS; portable staging/backup, hash, fail-closed logic exercised in synthetic EFI fixtures | Tests are not equivalent to a real clean installation |

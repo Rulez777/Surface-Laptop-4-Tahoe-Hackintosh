@@ -17,6 +17,7 @@ SELECT=[
 "docs/EDP-WAKE.md",
 "docs/SLEEP.md",
 "docs/SYSTEM-SLEEP-RESEARCH.md",
+"docs/BATTERY.md",
 "docs/THERMAL-TMP3.md",
 "docs/UNIVERSAL-SETUP.md",
 "docs/VALIDATION-20261123.md",
