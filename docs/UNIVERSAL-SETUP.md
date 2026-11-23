@@ -94,7 +94,7 @@ Check it later with `python3 scripts/build_offline_kit.py --out "$HOME/Downloads
 
 ## Validation and release checklist
 
-Tests: `python3 -m unittest discover -s tests -v`. The [offline toolkit CI workflow](../.github/workflows/offline-toolkit-validation.yml) also tests portable fixtures and deterministic ZIP generation on GitHub-hosted Ubuntu, Windows and macOS runners. CI success does **not** certify booting an actual Surface or changing its EFI.
+Tests: `python3 -m unittest discover -s tests -v`. The [offline toolkit CI workflow](../.github/workflows/offline-toolkit-validation.yml) also tests portable fixtures and deterministic ZIP generation on GitHub-hosted Ubuntu, Windows and macOS runners. The Windows job additionally runs a synthetic PowerShell inspection, backup, staging, verification and offline recovery cycle using only disposable dummy EFI files. CI success does **not** certify booting an actual Surface or changing its EFI.
 
 Before calling an installation *verified*:
 

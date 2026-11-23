@@ -17,8 +17,9 @@
 | Thermal | `TC0D` sensor successful; installed TMP3 LaunchDaemon running, zero bytes sampled stderr; 35 s CPU-only partial load test (two 55%-duty workers) 45–56 °C with 80 °C auto-stop | Does **not** prove EC changed fan profile or RPM |
 | Sleep | `pmset sleep=0` and `displaysleep=0` on both AC/battery, and S0ix not enabled | **True S3/S0ix unresolved** |
 | Crash evidence | Snapshot counted 8 GPU resets, 3 kernel panics, 5 WindowServer reports in prior 24 h; none by file timestamp since current boot | Older crashes remain relevant; absence of new reports is not a stress proof |
-| Local automated tests | All 61 tests passed on macOS; portable staging/backup, hash, fail-closed logic exercised in synthetic EFI fixtures | Tests are not equivalent to a real clean installation |
-| Source control | Common hardware profile/installer sources and docs prepared for publication; separate private EFI not included | Requires independent public-clone verification after commit |
+| Local automated tests | All 62 tests passed on macOS; portable staging/backup, hash, fail-closed logic exercised in synthetic EFI fixtures | Tests are not equivalent to a real clean installation |
+| Windows offline recovery workflow | On a separate Windows 11 PC, five sequential PowerShell wrapper actions — Inspect, Backup, Prepare, VerifyBackup, RestoreOffline — succeeded against a synthetic EFI; re-verified restored copy and unchanged source hashes | No live ESP, BCD or EFI was touched; not a live boot test |
+| Source control | Shared hardware profile/installer sources and docs published; separate private EFI not included | Clean public clone and deterministic ZIP verified |
 
 ## Critical limitations
 
