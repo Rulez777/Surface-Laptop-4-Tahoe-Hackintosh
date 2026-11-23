@@ -49,6 +49,14 @@ jobs:
         run: |
           python scripts/build_offline_kit.py --out kit-a.zip --verify-only
           python -c "import hashlib,pathlib; h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest(); assert h('kit-a.zip') == h('kit-b.zip'), 'Non-deterministic package'"
+      - name: Upload non-personal offline toolkit artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SL4-offline-preparation-toolkit
+          path: kit-a.zip
+          if-no-files-found: error
+          retention-days: 30
       - name: Windows PowerShell entry point (read-only pin check)
         if: runner.os == 'Windows'
         shell: powershell

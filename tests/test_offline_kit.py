@@ -15,6 +15,7 @@ class OfflineKitTests(unittest.TestCase):
     def test_file_allowlist_has_no_personal_efi(self):
         paths=kit.files()
         self.assertNotIn("EFI/OC/config.plist",paths)
+        self.assertIn("scripts/build_offline_kit.py",paths)
         self.assertFalse(any(p.endswith("config.plist") or p.endswith("bootmgfw.efi") for p in paths))
         self.assertTrue(all(p.startswith(("README.md","docs/","scripts/","data/","packages/")) for p in paths))
 

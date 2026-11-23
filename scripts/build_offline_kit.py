@@ -26,6 +26,7 @@ SELECT=[
 "docs/VALIDATED-METAL-SL4.md",
 "docs/MEDIA.md",
 "scripts/Start-SL4.ps1",
+"scripts/build_offline_kit.py",
 "scripts/start_sl4_macos.sh",
 "scripts/sl4_setup.py",
 "scripts/sl4_inventory.py",
