@@ -24,7 +24,7 @@ jobs:
     runs-on: macos-15-intel
     timeout-minutes: 35
     env:
-      BSWORK: ${{ runner.temp }}/bigsurface-sl4
+      BSWORK: ${{ github.workspace }}/bigsurface-sl4
     steps:
       - name: Check out source
         uses: actions/checkout@v4
