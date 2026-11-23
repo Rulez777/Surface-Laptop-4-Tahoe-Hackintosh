@@ -18,6 +18,7 @@ SELECT=[
 "docs/SLEEP.md",
 "docs/SYSTEM-SLEEP-RESEARCH.md",
 "docs/DMC-SLEEP-TRIAL.md",
+"docs/S0IX-INITIAL-RTC-WAKE-20261123.md",
 "docs/LINUX-SURFACE-SLEEP-PORT.md",
 "docs/BATTERY.md",
 "docs/POWER-RECOVERY.md",

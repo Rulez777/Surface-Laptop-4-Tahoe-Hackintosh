@@ -33,11 +33,11 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | CPU temperature / optional TMP=3 startup request | **Sensor working; EC effect and fan RPM unverified** ([thermal notes](docs/THERMAL-TMP3.md)) |
 | Surface Dock | **Working** |
 | Display-only sleep / screen wake with eDP Keep + Softsleep | **Working on tested SL4** (power/sleep button and lid cycle) |
-| Full system sleep (S3 / S0ix) | **Not validated; leave disabled** |
+| Full system sleep (S3 / S0ix) | **Two S0ix / RTC wake cycles confirmed (8 s and 71 s); lid/button and long-term reliability unverified. Auto sleep stays disabled.** |
 
 Verified on one Surface Laptop 4 Intel. Other models, headphone jack and untested hardware are not certified.
 
-**Wake distinction:** The built-in panel now wakes from display-only sleep with the [eDP Keep + Softsleep add-on](docs/EDP-WAKE.md). This is **not a true system-suspend fix**: the tested machine still uses `pmset sleep 0`, and an earlier S0ixStandby/SSDT-DEEPIDLE experiment was unsuccessful. Do not enable deep sleep or place the running laptop in a bag based on the display-only result. See [sleep limitations](docs/SLEEP.md).
+**Wake distinction:** The eDP Keep + Softsleep fix previously verified **display-only wake**. On 2026-11-23 the same Surface also completed **two separate real S0ix / Deep Idle RTC wakes (8 and 71 seconds)** with experimental WhateverXe DMC, S0ixStandby and SSDT-DEEPIDLE. This does **not** establish reliable lid/power-button wake, battery efficiency or overnight sleep. **Automatic sleep remains disabled** (`pmset sleep 0`) and this experimental stack is not included in the default installer. See [first S0ix cycle evidence](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) and [sleep limitations](docs/SLEEP.md).
 
 ## Installation — reproduce the tested setup
 
@@ -93,7 +93,7 @@ sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" a
 sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" rollback --esp disk0s1
 ```
 
-This only fixes **display-off / screen wake** on the tested configuration. The tested system still has full system sleep disabled; **S3 / S0ix has not been fixed or validated**. Do not change this limitation based on a successful lid/display wake. See [complete setup and recovery details](docs/EDP-WAKE.md).
+**This add-on** only fixes **display-off / screen wake**. Separately, an experimental DMC + S0ixStandby + SSDT-DEEPIDLE configuration has now completed **two short genuine Deep Idle RTC wakes (8 and 71 seconds)**. **Neither that result nor the display-only fix validates lid wake or everyday automatic sleep**. Automatic sleep remains disabled. See [RTC wake evidence](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) and [eDP recovery instructions](docs/EDP-WAKE.md).
 
 ### Browser video
 
@@ -153,7 +153,7 @@ Backups are saved in `~/Downloads/SL4-BRIGHTNESS-BACKUPS` and `~/Downloads/SL4-A
 
 ## Documentation
 
-[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Deep sleep research](docs/SYSTEM-SLEEP-RESEARCH.md) · [Uninstalled TGL DMC candidate](docs/DMC-SLEEP-TRIAL.md) · [Battery charging notes](docs/BATTERY.md) · [Low-battery CPU throttle investigation and safe AC retry](docs/POWER-RECOVERY.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
+[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Deep sleep research](docs/SYSTEM-SLEEP-RESEARCH.md) · [Experimental TGL DMC candidate](docs/DMC-SLEEP-TRIAL.md) · [First confirmed RTC wake](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) · [Battery charging notes](docs/BATTERY.md) · [Low-battery CPU throttle investigation and safe AC retry](docs/POWER-RECOVERY.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
 
 **Cross-platform preparation (experimental):** [hardware detection, private EFI backups, checksum-verified staging and offline toolkit](docs/UNIVERSAL-SETUP.md). Run the redacted scanner before selecting a hardware profile; this is not a certified one-click clean installer. For a read-only current-macOS compatibility and crash summary, run `python3 scripts/sl4_stability_audit_macos.py`.
 

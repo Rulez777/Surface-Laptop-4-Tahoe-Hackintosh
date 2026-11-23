@@ -15,7 +15,10 @@
         "MSHW0250",
         "MSHW0084"
       ],
-      "tested_storage_keywords": ["PM991", "MZ9LQ"],
+      "tested_storage_keywords": [
+        "PM991",
+        "MZ9LQ"
+      ],
       "tested_mac_os": "26.7.1",
       "opencore_version": "1.0.8",
       "tags": [
@@ -26,8 +29,11 @@
       ],
       "certified_for_automatic_esp_installation": false,
       "full_system_sleep_verified": false,
+      "short_s0ix_rtc_cycle_verified": true,
       "clean_install_verified": false,
-      "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility."
+      "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility.",
+      "short_s0ix_rtc_cycle_count": 2,
+      "longest_confirmed_s0ix_seconds": 71
     }
   ],
   "pinned_artifacts": {

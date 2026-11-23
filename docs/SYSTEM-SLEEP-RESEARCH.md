@@ -1,8 +1,8 @@
 # Deep system sleep investigation — SL4 Tiger Lake / Tahoe (2026-11-23)
 
-**Status: unresolved.** As of 2026-11-23, a separate Tiger Lake DMC v2.12 firmware-loader candidate has been compiled, source-patch and parser checked; it has **not** been installed or boot-tested on this Surface. Details: [DMC sleep trial](DMC-SLEEP-TRIAL.md). This is evidence and a fault-isolation plan, **not an installed sleep fix**. The working accelerated eDP Keep + Softsleep configuration remains intact. Never treat successful display wake as evidence of actual S3/S0ix suspend/resume.
+**Updated 2026-11-23:** experimental Intel TGL DMC 2.12 loader **booted** with S0ixStandby 0.5.8 and SSDT-DEEPIDLE. **Two real Deep Idle / RTC wake cycles succeeded (8 and 71 seconds)** without a reboot; `machdep.xcpm.deep_idle_count=2`, Metal 2 working, DMC successfully reloaded on wake. This is a narrow RTC-only success; longer sleep, lid/power-button wake, battery drain and wider hardware reliability remain unverified. Automatic sleep is disabled. See [DMC trial](DMC-SLEEP-TRIAL.md) and [RTC evidence](S0IX-INITIAL-RTC-WAKE-20261123.md).
 
-## Device and actual runtime state
+## Earlier diagnostic snapshot before the successful trial
 
 - Microsoft Surface Laptop 4 Intel 13.5-inch, i7-1185G7 / Iris Xe 8086:9A49, Samsung PM991, macOS Tahoe 26.7.1, OpenCore 1.0.8, custom WhateverXe 0.8.3 eDP Keep/Softsleep.
 - `pmset -g custom`: `sleep 0`, `displaysleep 0` on both AC and battery. AC `hibernatemode 0`; battery `hibernatemode 3`. A development `caffeinate` assertion prevents idle sleep; remote service also holds one.
@@ -10,7 +10,7 @@
 - `ioreg -p IOACPIPlane -lw0` exposes `MSHW0084` and `MSHW0250`. A bounded string search found no printed `_S3` or `S0ix` capability names, which **does not prove** the absence of any ACPI feature.
 - `sysctl kern.hibernatecount` returned 0; `kern.hibernategraphicsready` was 0 in a runtime snapshot. These values alone do not diagnose the failed resume.
 - One software-only display-off/on cycle using `pmset displaysleepnow`, then a wake assertion, advanced the eDP keep counter from 9 to 11 without a new crash diagnostic file in the brief observation window. **Physical screen light-up was not witnessed during this run.**
-- Prior system-suspend experiment enabling S0ixStandby 0.5.8 and `SSDT-DEEPIDLE` ended with a non-recovering Surface requiring a restart. Both were rolled back. No new true S3/S0ix experiment occurred during the present session.
+- Prior **2026-11-22** system-suspend experiment enabling S0ixStandby 0.5.8 and `SSDT-DEEPIDLE` ended with a non-recovering Surface requiring a restart. Both were rolled back then. A separate **2026-11-23** experiment with the new DMC loader enabled later succeeded in two real Deep Idle RTC wake cycles (8 and 71 seconds); see the linked evidence.
 - A read-only stability snapshot recorded pre-existing GPU Reset / WindowServer / kernel-panic diagnostics from prior boots. Such reports must be preserved for investigation rather than interpreted as proof the machine is now stable.
 
 ## Closely related upstream evidence (not a Surface-specific diagnosis)
