@@ -48,6 +48,8 @@ Only **System Audio Recording consent** must be approved in macOS on first run. 
 
 [**RCS Stability download and safe macOS installation / rollback guide**](docs/QUICKSTART-RCS.md). The v0.5.0 Autopilot **includes and automatically selects** this pinned RCS binary in its first graphics transition. Separate patch installation is now a legacy recovery option only; no previous macOS is required to prepare the Windows USB. No unsupported hardware receives this patch automatically. Your personal EFI and Windows installation are not included in the public package.
 
+**AV1/VP9 hardware investigation (2026-11-23):** Intel Tiger Lake supports both decode codecs, but installed Tahoe does not advertise them through VideoToolbox. The [measured codec audit](docs/VIDEO-CODECS-20261123.md) documents the remaining driver work. New Windows-first kits built from this updated source include `scripts/audit_codec_macos.py`, a read-only diagnostic (the existing v0.5.0 release ZIP is unchanged); **this is not an AV1/VP9 hardware unlock**.
+
 **Not yet certified:** indefinite gaming stability, all sleep/wake combinations, VP9/AV1 hardware decoding in Safari, other hardware models and other Tahoe builds.
 
 ### Different version or hardware

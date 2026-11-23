@@ -1,5 +1,7 @@
 # Browser video — Surface Laptop 4 Intel / macOS Tahoe
 
+**2026-11-23 hardware-codec audit:** [Intel Tiger Lake AV1/VP9 vs macOS VideoToolbox registry](VIDEO-CODECS-20261123.md). The Intel Xe-LP media block supports AV1/VP9 decoding, but on the tested macOS installation the hardware decoder API returns false and the decoder capability dictionaries are null. **No AV1/VP9 hardware fix has been validated.** New all-in-one builds from this source include a read-only diagnostic, `scripts/audit_codec_macos.py` (the existing published v0.5.0 archive is unchanged); it does not modify drivers or system settings.
+
 **Verified on one machine:** macOS Tahoe 26.7.1, Intel Iris Xe `8086:9A49`, WhateverXe 0.8.3, WhateverXe Graphics 0.4.4. Safari played a YouTube H.264 (`avc1`) stream at **1920 × 1080**. WebKit's media logs showed the video timebase advancing, hundreds of decoded frames and zero dropped frames during the recorded sample.
 
 ## Required graphics configuration
@@ -20,7 +22,7 @@ The same script is bundled in the generated `SL4-FULL-DRIVERS/macOS-Installers/`
 
 ## Browser check
 
-Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats for nerds** can reveal the active codec. The confirmed working stream used H.264 (`avc1`). This device advertises hardware H.264 and HEVC decoding but **not hardware VP9 or AV1**. Safari may select a different codec for other videos, resolutions or streams; those paths are not established by this test.
+Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats for nerds** can reveal the active codec. The confirmed working stream used H.264 (`avc1`). This macOS installation advertises hardware H.264 and HEVC decoding but **does not expose hardware VP9 or AV1**, despite the Intel GPU's documented media capabilities. Safari may select a different codec for other videos, resolutions or streams; those paths are not established by this test.
 
 If the video stalls, record the codec, resolution and whether audio continues. Check the script output, driver versions and macOS logs before changing settings. A browser/network problem and a VideoToolbox failure require different fixes.
 

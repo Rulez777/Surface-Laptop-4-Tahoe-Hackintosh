@@ -98,6 +98,13 @@ def main():
     require(hashlib.sha256(checker_target.read_bytes()).hexdigest() ==
             hashlib.sha256(video_checker.read_bytes()).hexdigest(),
             "Video checker failed to copy")
+    codec_audit = Path(__file__).with_name("audit_codec_macos.py")
+    require(codec_audit.is_file(), "Missing read-only VideoToolbox codec audit")
+    codec_audit_target = graphics_dir / codec_audit.name
+    codec_audit_target.write_bytes(codec_audit.read_bytes())
+    require(hashlib.sha256(codec_audit_target.read_bytes()).digest() ==
+            hashlib.sha256(codec_audit.read_bytes()).digest(),
+            "Codec audit failed to copy")
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
@@ -120,6 +127,7 @@ def main():
         "graphics": graphic,
         "video": {
             "validation_script": str(checker_target),
+            "codec_audit_script": str(codec_audit_target),
             "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",

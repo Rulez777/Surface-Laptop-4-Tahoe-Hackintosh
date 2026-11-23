@@ -61,7 +61,7 @@ Do not combine this tested WhateverXe/PNLF fix with unrelated panel patches or o
 
 On the tested Tahoe 26.7.1 Surface, **Safari successfully played YouTube H.264 (`avc1`) at 1920 × 1080** using VideoToolbox hardware decoding. The official WhateverXe Graphics 0.4.4 installer had already set `/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist → AllowOnePassMetalScaling:Enabled=false`. No additional OpenCore changes were required.
 
-The [read-only media checker](../scripts/verify_video_macos.py) verifies that the same prerequisites are installed. The driver-pack builder includes the checker alongside the pinned, SHA-256 verified upstream Graphics 0.4.4 package. Codec availability is not proof that all videos can play. VP9 and AV1 hardware decoding were not advertised on the test Surface; see [media details](MEDIA.md).
+The [read-only media checker](../scripts/verify_video_macos.py) verifies that the same prerequisites are installed. The driver-pack builder includes the checker alongside the pinned, SHA-256 verified upstream Graphics 0.4.4 package. Codec availability is not proof that all videos can play. On the tested Surface, the GPU supports AV1/VP9 in silicon but macOS does not advertise their hardware decoder paths. New all-in-one packages built from this source include a separate [read-only registry audit](../scripts/audit_codec_macos.py); see [measured codec details](VIDEO-CODECS-20261123.md). **No AV1/VP9 driver fix is claimed.**
 
 ## Other hardware
 
