@@ -86,3 +86,4 @@ jobs:
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.3.0 beta" \
             --notes-file docs/RELEASE-NOTES-WINDOWS.md --prerelease
+# Validate native Windows build and publish the installer archive.
