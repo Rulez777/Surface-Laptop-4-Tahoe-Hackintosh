@@ -1,3 +1,5 @@
+> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+
 # Surface Laptop 4 Intel — driver status
 
 Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8). A driver loading is not, by itself, proof of a working device. The statuses below reflect actual hardware checks.

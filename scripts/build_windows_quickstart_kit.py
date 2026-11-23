@@ -22,6 +22,7 @@ FILES=(
  "docs/QUICKSTART-RCS.md",
  "docs/RELEASE-NOTES-RCS.md",
  "docs/RELEASE-NOTES-WINDOWS.md",
+ "docs/AUDIO-ALL-IN-ONE.md",
  "docs/INTERNAL-BOOT.md",
  "docs/SAFETY.md",
  "docs/DRIVERS.md",
@@ -32,6 +33,8 @@ FILES=(
  "data/sl4_profiles.json",
  "packages/SL4-TGL-Input-Working-v1.zip",
  "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip",
+ "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
+ "packages/SL4-RCS-Stability-0.1.0-beta.zip",
  "experiments/sl4-input/build-bigsurface-sl4.py",
  "scripts/build_sl4_input_pack.py",
  "scripts/build_efi.py",
@@ -39,6 +42,8 @@ FILES=(
  "scripts/quiet_boot.py",
  "scripts/prepare_sl4_peripherals.py",
  "scripts/enable_xe_macos.py",
+ "scripts/find_internal_esp.py",
+ "scripts/install_dolby_macos.py",
  "scripts/install_sl4_rcs_stability.py",
  "research/wex-sl4-rcs-singleport.patch",
  "scripts/xe_acceleration.py",
@@ -56,6 +61,8 @@ FILES=(
 )
 PRIVATE_TOKENS=("SystemSerialNumber","private-eFi-OC","bootmgfw.efi")
 INPUT_SHA="446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
+DOLBY_SHA="ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013"
+RCS_SHA="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
 
 def sha(contents):
     return hashlib.sha256(contents).hexdigest()
@@ -70,10 +77,16 @@ def build(out):
         if name.startswith("EFI/") or name.endswith("config.plist"):
             raise RuntimeError("Personal OpenCore file cannot be bundled")
         files[name]=src.read_bytes()
+    if sha(files["packages/SL4-RCS-Stability-0.1.0-beta.zip"])!=RCS_SHA:
+        raise RuntimeError("Surface RCS driver archive SHA-256 changed")
+    if sha(files["packages/SL4-Dolby-APOMac-Profiles-20261123.zip"])!=DOLBY_SHA:
+        raise RuntimeError("Surface Dolby speaker correction ZIP SHA-256 changed")
     if sha(files["packages/SL4-TGL-Input-Working-v1.zip"])!=INPUT_SHA:
         raise RuntimeError("Working Surface input driver ZIP SHA-256 changed")
     manifest={"format":1,"distribution":"Windows-first Tahoe installation toolkit",
               "private_efi_included":False,"installer_image_included":False,
+              "intel_rcs_integrated":True,"speaker_dolby_profile_included":True,
+              "first_use_macos_audio_capture_consent_required":True,
               "mode":"downloads official Apple Recovery and builds private EFI on Windows",
               "sha256":{path:sha(content) for path,content in sorted(files.items())}}
     files["MANIFEST.json"]=(json.dumps(manifest,sort_keys=True,indent=2)+"\n").encode()

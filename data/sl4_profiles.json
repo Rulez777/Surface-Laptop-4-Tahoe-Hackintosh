@@ -25,13 +25,15 @@
         "Metal2",
         "eDP Keep/Softsleep",
         "ALC274",
-        "Intel AX201"
+        "Intel AX201",
+        "RCS single-port integrated in first Metal boot",
+        "Dolby Clear Speech audio login EQ"
       ],
       "certified_for_automatic_esp_installation": false,
       "full_system_sleep_verified": false,
       "short_s0ix_rtc_cycle_verified": true,
       "clean_install_verified": false,
-      "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility.",
+      "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility. All-in-one v0.4.0 integrates RCS + audio but its new clean install is not yet validated end-to-end.",
       "short_s0ix_rtc_cycle_count": 2,
       "longest_confirmed_s0ix_seconds": 71,
       "usb_recovery_boot_verified": true,
@@ -57,6 +59,19 @@
       "sha256": "2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b",
       "kind": "validator_and_bootloader",
       "do_not_auto_install": true
+    },
+    "SL4-RCS-SinglePort": {
+      "path": "packages/SL4-RCS-Stability-0.1.0-beta.zip",
+      "sha256": "21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960",
+      "kind": "first_graphics_transition_included",
+      "auto_apply_on_exact_supported_mac": true
+    },
+    "SL4-Dolby-Clear-Speech": {
+      "path": "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
+      "sha256": "ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013",
+      "kind": "native_speaker_static_correction",
+      "auto_apply_on_exact_supported_mac": true,
+      "macos_tcc_approval_required": true
     }
   }
 }

@@ -1,3 +1,5 @@
+> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+
 # Intel Iris Xe acceleration on macOS Tahoe: Surface Laptop 4 Intel
 
 **Verified on 2026-11-22:** Core i7-1185G7, Iris Xe **96 EU** (`8086:9A49`, rev 01), macOS Tahoe **26.7.1**, OpenCore 1.0.8, WhateverXe 0.8.3, WhateverXe Graphics 0.4.4, AMFIAnchor 0.1.2, Lilu 1.7.2. **Metal 2 / 1536 MB dynamic VRAM / AppleIntelTGLGraphics loaded** were all observed, along with the built-in 2496×1664 eDP panel and external 2560×1440 Thunderbolt/DisplayPort monitor.

@@ -1,3 +1,5 @@
+> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+
 # Quick start — Surface Laptop 4 Intel / macOS Tahoe S0ix
 
 **Release:** SL4-S0ix-DMC-0.2.0-beta. **What works:** on the tested Surface, two genuine Deep Idle → RTC wake cycles (8 and 71 seconds), Metal 2, internal 2496×1664 display, and verified Intel DMC reload after sleep. The owner additionally reports working sleep. **Important:** a delayed RCS GPU Reset appeared after the successful tests (a matching failure existed before S0ix), and hardware S0ix/PC10 residency was not established. **What still needs testing:** long battery-only sleep, reliable lid/power-button wake, delayed GPU stability, and energy efficiency. [Investigation](POST-S0IX-GPU-RCS-RESET-20261123.md).

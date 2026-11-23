@@ -34,6 +34,11 @@ RELEASE_SHA="dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd"
 RCS_URL="https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-rcs-v0.1.0-beta/SL4-RCS-Stability-0.1.0-beta.zip"
 RCS_SHA="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
 RCS_FILENAME="SL4-RCS-Stability-0.1.0-beta.zip"
+DOLBY_FILENAME="SL4-Dolby-APOMac-Profiles-20261123.zip"
+DOLBY_SHA="ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013"
+APOMAC_URL="https://github.com/mkroplewski/APOMac/releases/download/v0.1.0/APOMac-0.1.0.dmg"
+APOMAC_FILENAME="APOMac-0.1.0.dmg"
+APOMAC_SHA="525a6adef1cbad76906d620656c93d7b1da1b3c8d6189b3f12648cfb221006fd"
 GRAPHICS_URL="https://github.com/b00t0x/WhateverXe-Graphics/releases/download/v0.4.4/WhateverXe-Graphics-0.4.4.pkg"
 GRAPHICS_SHA="f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec"
 INPUT_SHA="446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
@@ -158,7 +163,11 @@ def prepare(args):
     require(input_pack.is_file() and sha(input_pack)==INPUT_SHA,
             "Working Surface keyboard/trackpad package missing or differs")
     drivers=fetch(RELEASE_URL,cache/"SL4-S0ix-DMC-0.2.0-beta.zip",RELEASE_SHA)
-    rcs=checked_rcs_addon(fetch(RCS_URL,cache/RCS_FILENAME,RCS_SHA))
+    rcs=checked_rcs_addon(ROOT/"packages"/RCS_FILENAME)
+    apomac=fetch(APOMAC_URL,cache/APOMAC_FILENAME,APOMAC_SHA)
+    dolby=ROOT/"packages"/DOLBY_FILENAME
+    require(dolby.is_file() and sha(dolby)==DOLBY_SHA,
+            "Bundled Surface Dolby correction differs from user-tested version")
     identity=args.identity or identity_from_macserial(oc)
     require(isinstance(identity,dict) and all(x in identity for x in ("serial","mlb","uuid","rom")),
             "Missing private SMBIOS fields")
@@ -200,12 +209,16 @@ def prepare(args):
         shutil.copy2(graphics,data/graphics.name)
         shutil.copy2(input_pack,data/input_pack.name)
         shutil.copy2(rcs,data/RCS_FILENAME)
+        shutil.copy2(apomac,data/APOMAC_FILENAME)
+        shutil.copy2(dolby,data/DOLBY_FILENAME)
+        shutil.copy2(ROOT/"scripts/install_dolby_macos.py",data/"install_dolby_macos.py")
         # Official matching macOS ocvalidate and one-click graphics transition.
         with zipfile.ZipFile(oc) as oc_archive:
             validator=oc_archive.read("Utilities/ocvalidate/ocvalidate")
         (data/"ocvalidate").write_bytes(validator)
         (data/"ocvalidate").chmod(0o755)
         shutil.copy2(ROOT/"scripts/enable_xe_macos.py",data/"enable_xe_macos.py")
+        shutil.copy2(ROOT/"scripts/find_internal_esp.py",data/"find_internal_esp.py")
         shutil.copy2(ROOT/"scripts/install_brightness_macos.py",data/"install_brightness_macos.py")
         # Postinstall helper and scripts: portable and non-personal.
         shutil.copy2(ROOT/"scripts/QuickStart-Mac.command",data/"QuickStart-Mac.command")
@@ -231,6 +244,10 @@ def prepare(args):
             "bootloader_sha256":sha(efi/"OC/OpenCore.efi"),
             "driver_release_sha256":RELEASE_SHA,
             "rcs_stability_sha256":RCS_SHA,
+            "speaker_correction_sha256":DOLBY_SHA,
+            "apomac_dmg_sha256":APOMAC_SHA,
+            "main_graphics_path":"RCS-integrated on first Metal activation",
+            "macos_audio_permission_must_be_approved_by_user":True,
             "input_kexts_sha256":INPUT_SHA,
             "graphics_installer_sha256":GRAPHICS_SHA}
         (stage/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
@@ -255,9 +272,14 @@ def repair_only(args):
     require(target!=cache and target not in cache.parents and cache not in target.parents,
             "Cache and repair folder must be independent")
     cache.mkdir(parents=True,exist_ok=True)
+    oc=fetch(OC_URL,cache/"OpenCore-1.0.8-RELEASE.zip",OC_SHA)
     graphics=fetch(GRAPHICS_URL,cache/"WhateverXe-Graphics-0.4.4.pkg",GRAPHICS_SHA)
     drivers=fetch(RELEASE_URL,cache/"SL4-S0ix-DMC-0.2.0-beta.zip",RELEASE_SHA)
-    rcs=checked_rcs_addon(fetch(RCS_URL,cache/RCS_FILENAME,RCS_SHA))
+    rcs=checked_rcs_addon(ROOT/"packages"/RCS_FILENAME)
+    apomac=fetch(APOMAC_URL,cache/APOMAC_FILENAME,APOMAC_SHA)
+    dolby=ROOT/"packages"/DOLBY_FILENAME
+    require(dolby.is_file() and sha(dolby)==DOLBY_SHA,
+            "Bundled Surface Dolby correction differs from user-tested version")
     inp=ROOT/"packages/SL4-TGL-Input-Working-v1.zip"
     require(inp.is_file() and sha(inp)==INPUT_SHA,"Working keyboard/trackpad package missing")
     out=target/"SL4DATA"
@@ -267,14 +289,22 @@ def repair_only(args):
         shutil.copy2(drivers,out/drivers.name)
         shutil.copy2(inp,out/inp.name)
         shutil.copy2(rcs,out/RCS_FILENAME)
-        files=("QuickStart-Mac.command","enable_xe_macos.py","install_sl4_rcs_stability.py",
+        shutil.copy2(apomac,out/APOMAC_FILENAME)
+        shutil.copy2(dolby,out/DOLBY_FILENAME)
+        files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",
+               "install_sl4_rcs_stability.py","install_dolby_macos.py",
                "install_brightness_macos.py","install_audio_macos.py",
                "install_edp_keep_macos.py","configure_surface_trackpad.sh")
         for name in files:
             shutil.copy2(ROOT/"scripts"/name,out/name)
+        with zipfile.ZipFile(oc) as archive:
+            validator=archive.read("Utilities/ocvalidate/ocvalidate")
+        (out/"ocvalidate").write_bytes(validator)
+        (out/"ocvalidate").chmod(0o755)
         manifest={"format":1,"mode":"existing_tahoe_driver_repair",
                   "downloads":{"graphics":GRAPHICS_SHA,"dmc_s0ix":RELEASE_SHA,
-                               "native_input":INPUT_SHA,"rcs_stability":RCS_SHA},
+                               "native_input":INPUT_SHA,"rcs_stability":RCS_SHA,
+                               "speaker_correction":DOLBY_SHA,"apomac_dmg":APOMAC_SHA},
                   "windows_disk_modified":False,
                   "requires_mac_host_validation":True}
         (target/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")

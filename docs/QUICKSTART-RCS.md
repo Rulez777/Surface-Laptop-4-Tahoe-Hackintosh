@@ -1,3 +1,5 @@
+> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+
 # Surface Laptop 4 Intel — WhateverXe RCS Stability 0.1.0 beta
 
 **Post-install add-on only.** Windows-first installation remains available through the project's Windows QuickStart. Do not try to install this kext in Windows or before Tahoe and the tested graphics drivers are running.

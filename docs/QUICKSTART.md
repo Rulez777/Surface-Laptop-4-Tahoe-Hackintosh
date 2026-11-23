@@ -28,7 +28,7 @@
 zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 ```
 
-Выберите **1**. Помощник установит официальную графику WhateverXe Graphics 0.4.4 и переведёт персональный USB OpenCore в режим **Metal 2** с сохранением конфигурации для отката. Затем перезагрузите Tahoe, продолжая использовать флешку.
+Выберите **1**. Помощник **в одном проходе** установит официальную графику WhateverXe Graphics 0.4.4, настроит проверенный драйвер **RCS single-port + DMC/eDP** в EFI USB, установит APOMac и оригинальный звуковой профиль Dolby Clear Speech, добавит автозапуск APOMac и создаст резервную копию OpenCore. Отдельный патч RCS и импорт звука **не нужны**. Затем перезагрузите Tahoe, продолжая использовать флешку. При первом запуске APOMac подтвердите разрешение macOS **System Audio Recording** — только этот системный запрос нельзя автоматизировать.
 
 Драйверы **клавиатуры, тачпада и мультитач** (VoodooGPIO, VoodooSerial, VoodooInput, BigSurface и BigSurfaceHIDDriver) уже добавляются в персональную EFI ещё при подготовке Windows. Для Wi-Fi, Bluetooth, звука и яркости используйте пакет драйверов с раздела SL4DATA и [инструкцию для устройств](DRIVERS.md). Остальные компоненты можно выбрать и устанавливать раздельно, если конфигурация не совпадает с основной.
 
@@ -42,7 +42,7 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 ## Уже установлен Tahoe
 
-В Windows `QuickStart.cmd` выберите **2 — Tahoe already installed**. Будет загружен самостоятельный пакет драйверов и инструментов восстановления. В macOS можно выполнить:
+В Windows `QuickStart.cmd` выберите **2 — Tahoe already installed**. Будет загружен самостоятельный пакет драйверов и инструментов восстановления. В macOS выберите **2** в QuickStart-Mac.command — он проверит RCS и установит нужное, включая Clear Speech. Можно выполнить:
 
 ```bash
 zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
@@ -63,6 +63,8 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 **Оригинальные материалы:** <https://github.com/acidanthera/OpenCorePkg> (OpenCore и Apple Recovery), <https://github.com/b00t0x/WhateverXe>, <https://github.com/Xiashangning/BigSurface>. Требуется соблюдать лицензионные условия используемых компонентов.
 
-## RCS Stability update (2026-11-23)
+## All-in-one audio and RCS (v0.4.0, 2026-11-23)
 
 For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.
+
+Подробные проверки, ограничения Dolby и откат: [интегрированная графика и аудио](AUDIO-ALL-IN-ONE.md).

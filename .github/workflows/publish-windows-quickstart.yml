@@ -9,6 +9,7 @@ on:
       - 'README.md'
       - 'docs/QUICKSTART.md'
       - 'docs/QUICKSTART-RCS.md'
+      - 'docs/AUDIO-ALL-IN-ONE.md'
       - 'docs/RELEASE-NOTES-RCS.md'
       - 'docs/RELEASE-NOTES-WINDOWS.md'
       - 'scripts/windows_prepare_tahoe.py'
@@ -17,6 +18,11 @@ on:
       - 'scripts/prepare_sl4_peripherals.py'
       - 'scripts/enable_xe_macos.py'
       - 'scripts/install_sl4_rcs_stability.py'
+      - 'scripts/install_dolby_macos.py'
+      - 'scripts/find_internal_esp.py'
+      - 'packages/SL4-RCS-Stability-0.1.0-beta.zip'
+      - 'packages/SL4-Dolby-APOMac-Profiles-20261123.zip'
+      - 'tests/test_all_in_one.py'
       - 'research/wex-sl4-rcs-singleport.patch'
       - 'scripts/build_efi.py'
       - 'data/sl4_profiles.json'
@@ -45,16 +51,21 @@ jobs:
           $errors=$null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/QuickStart-Windows.ps1),[ref]$tokens,[ref]$errors) | Out-Null
           if ($errors.Count) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
-      - name: Run Windows Quick Start tests
-        run: python -m unittest discover -s tests -p test_windows_quickstart.py -q
+      - name: Run Windows Quick Start and all-in-one asset tests
+        run: |
+          python -m unittest discover -s tests -p test_windows_quickstart.py -q
+          python -m unittest discover -s tests -p test_all_in_one.py -q
+      - name: Validate macOS helper syntax with Python and UTF-8
+        run: |
+          python -m py_compile scripts/install_dolby_macos.py scripts/find_internal_esp.py scripts/windows_prepare_tahoe.py scripts/enable_xe_macos.py
       - name: Build and verify Windows distribution
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
           name: Windows-QuickStart-Test
-          path: SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip
+          path: SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip
           retention-days: 14
 
   release:
@@ -70,17 +81,17 @@ jobs:
         run: python -m unittest discover -s tests -q
       - name: Build signed-off source-only zip
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
-          name: SL4-Tahoe-Windows-QuickStart-v0.3.3-beta
-          path: SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip
+          name: SL4-Tahoe-Windows-QuickStart-v0.4.0-beta
+          path: SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip
           if-no-files-found: error
       - name: Publish GitHub beta release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: sl4-tahoe-v0.3.3-beta
+          TAG: sl4-tahoe-v0.4.0-beta
         shell: bash
         run: |
           set -euo pipefail
@@ -88,8 +99,8 @@ jobs:
             echo "Release exists, refuse to silently overwrite"
             exit 1
           fi
-          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.3.3-beta.zip \
+          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.4.0-beta.zip \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.3.3 beta" \
+            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.4.0 beta" \
             --notes-file docs/RELEASE-NOTES-WINDOWS.md --prerelease
 # Validate native Windows build and publish the installer archive.

@@ -134,7 +134,11 @@ function Assert-Stage([string]$folder) {
     throw 'Unrecognized prepared installer manifest'
   }
   foreach ($name in @('personal-boot\EFI\BOOT\BOOTx64.efi','personal-boot\EFI\OC\config.plist',
-                      'com.apple.recovery.boot','SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip')) {
+                      'com.apple.recovery.boot','SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip',
+                      'SL4DATA\SL4-RCS-Stability-0.1.0-beta.zip',
+                      'SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',
+                      'SL4DATA\APOMac-0.1.0.dmg',
+                      'SL4DATA\install_dolby_macos.py')) {
     if (-not (Test-Path -LiteralPath (Join-Path $abs $name))) { throw "Missing installer component: $name" }
   }
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'personal-boot\EFI\OC\OpenCore.efi') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.bootloader_sha256) {
@@ -142,6 +146,14 @@ function Assert-Stage([string]$folder) {
   }
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.driver_release_sha256) {
     throw 'Driver release checksum changed after staging'
+  }
+  foreach ($artifact in @(@('SL4DATA\SL4-RCS-Stability-0.1.0-beta.zip',$manifest.rcs_stability_sha256),
+                             @('SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',$manifest.speaker_correction_sha256),
+                             @('SL4DATA\APOMac-0.1.0.dmg',$manifest.apomac_dmg_sha256))) {
+    $f=Join-Path $abs $artifact[0]
+    if ((Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash.ToLowerInvariant() -ne $artifact[1]) {
+      throw "All-in-one component SHA-256 mismatch: $($artifact[0])"
+    }
   }
   $dmgs=Get-ChildItem -LiteralPath (Join-Path $abs 'com.apple.recovery.boot') -File -Filter '*.dmg'
   if (@($dmgs).Count -ne 1) { throw 'Missing or multiple Recovery DMGs' }
@@ -204,7 +216,10 @@ function Write-USB([string]$folder,[int]$number) {
   foreach ($name in @('EFI\BOOT\BOOTx64.efi','EFI\OC\config.plist','com.apple.recovery.boot')) {
     if (-not (Test-Path -LiteralPath (Join-Path $bootLetter $name))) { throw "USB verification failed: $name" }
   }
-  if (-not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-S0ix-DMC-0.2.0-beta.zip'))) {
+  if (-not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-S0ix-DMC-0.2.0-beta.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-RCS-Stability-0.1.0-beta.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-Dolby-APOMac-Profiles-20261123.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'APOMac-0.1.0.dmg'))) {
     throw 'Postinstall data not copied'
   }
   Write-Host ''

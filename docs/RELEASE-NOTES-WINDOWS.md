@@ -1,4 +1,4 @@
-# Surface Laptop 4 — Windows Quick Start v0.3.3 beta
+# Surface Laptop 4 — Windows Quick Start v0.4.0 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.
 
@@ -15,6 +15,17 @@ Already running Tahoe? Press **2** to prepare the driver repair kit. For other r
 **Primary profile:** Surface Laptop 4 13.5-inch Intel Core i7-1185G7, Iris Xe 8086:9A49. Supported versions and components are selected by the setup; other hardware profiles require advanced customization.
 
 [**Quick Start guide**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/main/docs/QUICKSTART.md) · [**Project README**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh)
+
+## v0.4.0 beta — integrated RCS graphics and Dolby Clear Speech
+
+- The **Windows-first ZIP itself includes** the verified Intel Iris Xe `SL4-RCS-Stability-0.1.0-beta.zip` and the Surface ALC274 Dolby speaker FIR/presets. No external manual patch download or audio conversion.
+- Windows wizard obtains the official APOMac 0.1.0 DMG pinned to SHA-256 and stages it alongside the official Graphics donor, original DMC/S0ix release and RCS-verified binary.
+- **QuickStart-Mac option 1** stages the RCS single-port WhateverXe (rather than the old DMC-only kext) into the first Metal-accelerated USB EFI with validated donor and hardware ID; applies the `-wex-sl4-rcs-singleport` flag and stores full OC backups.
+- The **same option 1** installs APOMac, binds the exact Windows Dolby derived Clear Speech profile to the built-in Surface output, leaves its reported preferred −3 dB preamp unchanged and registers a login item.
+- **QuickStart-Mac option 2** repairs an already installed system: check active RCS first, otherwise use the guarded existing installer and full backup, then install the sound profile. All assets are SHA-256-checked; wrong hardware/OS fails closed.
+- The user must manually approve the first **System Audio Recording** macOS privacy prompt. No automated TCC circumvention.
+- Windows and macOS recovery environments are still independent; private SMBIOS, Windows EFI, Steam and boot order are never shipped as public assets.
+- Tested individual Intel RCS fix and audio profile on one reference Surface; a fresh complete v0.4.0 installation has not yet been verified, so release remains **beta**. Full guide: [AUDIO-ALL-IN-ONE.md](AUDIO-ALL-IN-ONE.md).
 
 ## v0.3.3 beta — stable RCS driver available from Windows
 
