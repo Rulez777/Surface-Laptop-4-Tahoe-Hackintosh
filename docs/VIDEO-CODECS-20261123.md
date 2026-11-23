@@ -165,6 +165,70 @@ video engine utilization; even a returned session success would need
 decoded-frame checks plus GPU/media engine telemetry. They do not change
 existing eDP/DMC/RCS/WhateverXe/S0ix/Safari configuration.
 
+## Native local AV1/VP9 software compatibility, beyond browsers
+
+An additional signed macOS media application was validated:
+**IINA 1.5.1**, bundle `com.colliderli.iina`, notarized Developer ID
+`Hechen Li (67CQ77V27R)`. Source DMG, 113092405 bytes, was pinned at
+SHA-256 `f414507ec60bcfeda3a9f539f74470253e31b619d031e7a9e9a71519da1598cd`.
+
+On the physical Surface, an independent native C harness linked via the
+app's own `libmpv.2.dylib` (with the path scoped to its temporary binary)
+successfully decoded **real AV1 MP4 1920×1080** and **VP9 WebM 1920×1080**
+from the existing samples to EOF with zero playback errors. The harness
+explicitly forced `hwdec=no`, `vo=null` and `ao=null`; this
+is only a software codec test, **not a graphics-rendering or hardware-
+acceleration test**. An actual frame count was not collected by this test.
+
+The project now includes `scripts/install_local_video_player_macos.py`
+(opt-in; SHA-pinned official release, macOS signature/notarization required),
+`scripts/iina_libmpv_decode_probe.c` and
+`scripts/test_local_video_player_macos.py`. New Windows-first and offline
+kits carry the source files and a new advanced macOS menu option **6**.
+
+The full sanitized result is saved at [IINA libmpv AV1/VP9 reference report](reports/sl4-iina-software-playback-20261123.json).
+
+The Safari default and working Metal/RCS/S0ix, audio, EFI, VideoToolbox
+and Windows installation remain untouched. IINA is a separate app; it
+does not make AV1/VP9 available to all other system applications or unlock
+the Intel fixed-function media hardware.
+
+## Third-party driver feasibility and non-install decision
+
+Compared upstream source on 2026-11-23, **without installing any
+third-party kext or driver bundle on Surface**:
+
+1. [VPXFixUp](https://github.com/medkintos/VPXFixUp) addresses
+   `hwgva-id`/board-ID and WebKit/Firefox sandbox property reads on
+   **Kaby Lake, Coffee Lake and Comet Lake**. Its author has not
+   validated Tiger Lake `8086:9A49`. A direct, unsandboxed VideoToolbox
+   client on this Surface already returns `kVTCouldNotFindVideoDecoderErr`
+   for AV1, so a browser sandbox patch cannot create a missing AV1 decoder.
+   No kernel extension was installed.
+2. [VP8MetalDecoder](https://github.com/medkintos/VP8MetalDecoder)
+   advertises VP9 acceleration through Metal compute, not Intel's AV1
+   fixed-function media engine. Source review found
+   `src/VPXMetalDecoder.m` **allocates** `_coeffBuffer` at line 75
+   and **dispatches** 4×4 inverse transform with it at line 160,
+   but nowhere fills that buffer from compressed bitstream coefficients.
+   Header parsing and empty coefficient buffers are insufficient to
+   reconstruct a true VP9 decoded frame. Do not install or advertise
+   this prototype as verified full VP9 decoding.
+3. [IrisXe-macos-driver](https://github.com/zep245/IrisXe-macos-driver)
+   independently claims working AV1 fixed-function decoding via
+   **NMXGPU/i915, Mesa ANV and Vulkan Video**, but it is a *replacement*
+   display/Metal/kernel driver stack. Its VP9 hardware decode is
+   documented to hang and is disabled by default. No such driver
+   was installed on this Surface; it is not qualified for our
+   WhateverXe eDP/DMC/RCS/S0ix stack.
+
+Conclusion: no verified drop-in Intel AV1/VP9 hardware decoder is
+currently available for the *installed* AppleIntelTGLGraphicsVADriver.
+Future work requires an actual compatible Intel VA decoder factory
+with a real media-engine decode/frame correctness check, or an
+independently validated, reversible graphics transition. Metal
+shader processing and libmpv software playback do not satisfy this goal.
+
 ## Current engineering conclusion
 
 The Tiger Lake media engine supports AV1 and VP9 decoding in hardware, but

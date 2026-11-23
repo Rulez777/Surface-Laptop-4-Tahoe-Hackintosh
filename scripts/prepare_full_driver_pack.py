@@ -114,7 +114,10 @@ def main():
             "Browser fallback helper failed to copy")
     for name in ("probe_video_session_macos.c",
                  "probe_real_asset_sessions_macos.m",
-                 "run_codec_hw_probes_macos.py"):
+                 "run_codec_hw_probes_macos.py",
+                 "install_local_video_player_macos.py",
+                 "iina_libmpv_decode_probe.c",
+                 "test_local_video_player_macos.py"):
         source = Path(__file__).with_name(name)
         require(source.is_file(), "Missing native codec probe source: " + name)
         destination = graphics_dir / name
@@ -146,6 +149,8 @@ def main():
             "validation_script": str(checker_target),
             "codec_audit_script": str(codec_audit_target),
             "optional_mozilla_fallback_installer": str(browser_helper_target),
+            "optional_iina_local_video_installer": str(graphics_dir / "install_local_video_player_macos.py"),
+            "optional_iina_libmpv_test": str(graphics_dir / "test_local_video_player_macos.py"),
             "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",

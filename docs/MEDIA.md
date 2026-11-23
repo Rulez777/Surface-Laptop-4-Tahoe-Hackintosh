@@ -55,6 +55,48 @@ Samples: `https://test-videos.co.uk/` (Big Buck Bunny 10-second AV1 MP4 / VP9 We
 
 The Windows-first all-in-one now includes **opt-in**, no-admin `install_media_fallback_macos.py` for the same software fallback. In macOS Terminal with the full project checkout, run a **single command**: `python3 scripts/install_media_fallback_macos.py --install`. Or launch `QuickStart-Mac.command --media-fallback` from a newly built `SL4DATA` installer package, or choose advanced menu **4**. No change to the normal installer path or default browser. `--check --json` reports an existing verified Firefox without installing anything. It always refuses unsigned, unnotarized or non-Mozilla app bundles.
 
+## Verified native local-file playback (IINA 1.5.1)
+
+On this Surface, the official [IINA](https://iina.io/) 1.5.1 DMG was
+downloaded and its checksum, Developer ID signature and Gatekeeper
+notarization were verified:
+
+- Release: `https://github.com/iina/iina/releases/download/v1.5.1/IINA.v1.5.1.dmg`
+- DMG SHA-256: `f414507ec60bcfeda3a9f539f74470253e31b619d031e7a9e9a71519da1598cd`
+- Signed publisher: `Developer ID Application: Hechen Li (67CQ77V27R)`
+- Bundle identifier: `com.colliderli.iina`
+- Installed independently at `~/Applications/IINA.app`, with no
+  default application associations changed.
+
+For reproducible **real local file decode**, the C tool
+`scripts/iina_libmpv_decode_probe.c` and its Python runner
+`scripts/test_local_video_player_macos.py` load the signed app's own
+`libmpv.2.dylib` with a temporary, explicitly scoped rpath. They request
+`vo=null`, `ao=null`, `hwdec=no`, and run the selected video to EOF.
+
+| Source file | libmpv selected codec | Resolution | File finished | Decoder error |
+| --- | --- | --- | --- | --- |
+| AV1 MP4 | Alliance for Open Media AV1 | 1920×1080 | Yes | 0 |
+| VP9 WebM | Google VP9 | 1920×1080 | Yes | 0 |
+
+The complete machine-readable result is available as [local IINA playback evidence](reports/sl4-iina-software-playback-20261123.json).
+
+The harness does not claim to have measured individual frame counts or
+actual graphical on-screen rendering. It tests **software** decoding,
+not hardware decode. The previously documented Firefox tests independently
+confirmed actual decoded frames at 1080p.
+
+In a new Windows-first or recovery all-in-one installer, **menu 6** or
+`QuickStart-Mac.command --media-local-player` downloads the **SHA-pinned**
+notarized IINA release after an explicit user opt-in. Alternatively run
+`python3 scripts/install_local_video_player_macos.py --install` from a
+project checkout. Existing IINA installations are never overwritten. It
+does not modify Safari, QuickTime, VideoToolbox or the Intel GPU stack.
+
+On a Mac with IINA and the two sample files already downloaded, repeat
+the engine test with this **single command**:
+`python3 scripts/test_local_video_player_macos.py --assets ~/Downloads/SL4-Media-Tests-20261123/av1-1080.mp4 ~/Downloads/SL4-Media-Tests-20261123/vp9-1080.webm`.
+
 ## Limitations
 
 - Additional controlled tests of local files in a dedicated WebKit view (the engine used by Safari) confirmed **H.264, HEVC and VP8 playback** at 480×270, 24 fps. VP9 did not advance or render frames, and AV1 returned `NotSupportedError`. This is **not universal browser video compatibility** or guaranteed performance for other resolutions, codecs, protected media, fullscreen scaling or hardware revisions.
