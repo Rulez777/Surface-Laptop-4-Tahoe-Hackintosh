@@ -1,0 +1,55 @@
+name: Surface RCS GPU Reset read-only audit
+
+on:
+  push:
+    paths:
+      - 'scripts/audit_rcs_gpu_resets_macos.py'
+      - 'scripts/QuickStart-Mac.command'
+      - 'scripts/build_offline_kit.py'
+      - 'scripts/build_windows_quickstart_kit.py'
+      - 'scripts/windows_prepare_tahoe.py'
+      - 'scripts/prepare_full_driver_pack.py'
+      - 'tests/test_rcs_gpu_reset_audit.py'
+      - 'docs/RCS-POSTPATCH-RESET-20261123.md'
+      - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
+      - '.github/workflows/rcs-diagnostics.yml'
+  pull_request:
+    paths:
+      - 'scripts/audit_rcs_gpu_resets_macos.py'
+      - 'scripts/QuickStart-Mac.command'
+      - 'scripts/build_offline_kit.py'
+      - 'scripts/build_windows_quickstart_kit.py'
+      - 'scripts/windows_prepare_tahoe.py'
+      - 'scripts/prepare_full_driver_pack.py'
+      - 'tests/test_rcs_gpu_reset_audit.py'
+      - 'docs/RCS-POSTPATCH-RESET-20261123.md'
+      - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
+      - '.github/workflows/rcs-diagnostics.yml'
+  workflow_dispatch:
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and unit-test safe RCS report parser
+        run: |
+          python3 -m py_compile scripts/audit_rcs_gpu_resets_macos.py
+          python3 -m unittest discover -v -s tests -p test_rcs_gpu_reset_audit.py
+      - name: Run full non-hardware regression suite
+        run: python3 -m unittest discover -q -s tests
+      - name: Verify both installer archives (source files, no personal EFI)
+        run: |
+          python3 scripts/build_windows_quickstart_kit.py --out /tmp/sl4-rcs-win.zip
+          python3 scripts/build_windows_quickstart_kit.py --verify-only --out /tmp/sl4-rcs-win.zip
+          python3 scripts/build_offline_kit.py --out /tmp/sl4-rcs-offline.zip
+          python3 scripts/build_offline_kit.py --verify-only --out /tmp/sl4-rcs-offline.zip
+
+  macos-script:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate QuickStart syntax and no real hardware requirement
+        run: |
+          zsh -n scripts/QuickStart-Mac.command
+          python3 -m unittest discover -v -s tests -p test_rcs_gpu_reset_audit.py

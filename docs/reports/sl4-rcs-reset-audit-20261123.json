@@ -1,0 +1,160 @@
+{
+  "checked_at_local": "2026-11-23T23:59:45",
+  "current_boot_state": {
+    "boot_flag_enabled": {
+      "-allow3d": true,
+      "-disablegfxfirmware": true,
+      "-wex-sl4-rcs-singleport": true,
+      "-wex-sl4-tgl-dmc": true,
+      "-wex-tgl-edp-keep": true,
+      "-wex-tgl-edp-softsleep": true,
+      "-wex-tgl-gpurec": true,
+      "-wex-tgl-gpurec-halt": false,
+      "-wex-tgl-no-posh": true,
+      "-wex-tgl-nomc": false,
+      "-wex-tgl-stampfix": true
+    },
+    "io_registry_ready": {
+      "SL4DMCLocalInitVerified": true,
+      "SL4DMCLocalWakeHookReady": true,
+      "SL4RCSSinglePortReady": true,
+      "TGLGpuRecReady": true,
+      "TGLNoPOSHReady": true,
+      "TGLRCSTLBPreparserReady": true,
+      "TGLStampFixReady": true
+    },
+    "rcs_tlb_preparser": {
+      "marker": 133,
+      "reservations": 855763,
+      "write_entries": 825033,
+      "write_returns": 825033
+    },
+    "recovery": {
+      "counters": {
+        "extras_fixes": 1,
+        "halt_not_ready": 0,
+        "kick_skips": 0,
+        "last_rcu": 1,
+        "last_status": 1073763600,
+        "list_invalid": 0,
+        "own_fixes": 0,
+        "pocs88_after": 0,
+        "pocs88_before": 8,
+        "pocs_after": 0,
+        "pocs_before": 1076568064,
+        "pre_fix_rcu": 0,
+        "pre_fix_reads": 1,
+        "resets": 1,
+        "sibling_halts": 0,
+        "sibling_not_ready": 0,
+        "sibling_replays": 1,
+        "sibling_restores": 1,
+        "sibling_resubmits": 0,
+        "sibling_resumes": 0,
+        "stamp_declined": 45,
+        "stamp_fixes": 0,
+        "stamp_last": 0,
+        "whitelist_fixes": 0
+      },
+      "flags": {
+        "gpu_register_recovery": true,
+        "orphan_stamp_fix": true,
+        "sibling_halt": false
+      },
+      "revision": 2,
+      "status": "decoded",
+      "warning": "Counters are cumulative for the current boot; reset counts are not sufficient proof of end-to-end display recovery"
+    },
+    "status": "ok"
+  },
+  "drivers_modified": false,
+  "efi_modified": false,
+  "events": [
+    {
+      "application": "Spectator 3",
+      "attribution_limit": "Application field is an event label, not proof of submitter or cause",
+      "context_id": "355",
+      "event_local_time": "2026-11-23T17:13:45",
+      "graphics_hardware": "Intel Iris Xe Graphics",
+      "last_context_switch_reason": "ELEMENT_SWITCH | ACTIVE_TO_IDLE",
+      "last_instruction": "0x7b000008",
+      "os_version": "Mac OS X Version 26.7.1 (Build 25G241)",
+      "other_engines": {
+        "bcs": "- NOT enabled - idle",
+        "ccs": "- NOT enabled - idle",
+        "vcs0": "- NOT enabled - idle",
+        "vcs2": "- NOT enabled - idle"
+      },
+      "rcs": {
+        "raw": "- busy - in a batch buffer\t <-- Appears hung",
+        "status": "hung"
+      },
+      "rcs_batch_addr": "0x74de01c1",
+      "rcs_ring_head": "0x02c01628",
+      "rcs_ring_tail": "0x00001780",
+      "scheduler": "Host PreemptiveMultiple channels per index",
+      "signature": "813"
+    },
+    {
+      "application": "Spectator 3",
+      "attribution_limit": "Application field is an event label, not proof of submitter or cause",
+      "context_id": "355",
+      "event_local_time": "2026-11-23T17:13:59",
+      "graphics_hardware": "Intel Iris Xe Graphics",
+      "last_context_switch_reason": "ELEMENT_SWITCH | WAIT_ON_SEMAPHORE | WAIT_ON_SCANLINE",
+      "last_instruction": "0x7a000204",
+      "os_version": "Mac OS X Version 26.7.1 (Build 25G241)",
+      "other_engines": {
+        "bcs": "- NOT enabled - idle",
+        "ccs": "- NOT enabled - idle",
+        "vcs0": "- NOT enabled - idle",
+        "vcs2": "- NOT enabled - idle"
+      },
+      "rcs": {
+        "raw": "- busy - in a batch buffer\t <-- Appears hung",
+        "status": "hung"
+      },
+      "rcs_batch_addr": "0x46de9169",
+      "rcs_ring_head": "0x00003418",
+      "rcs_ring_tail": "0x00003630",
+      "scheduler": "Host PreemptiveMultiple channels per index",
+      "signature": "813"
+    },
+    {
+      "application": "WindowServer",
+      "attribution_limit": "Application field is an event label, not proof of submitter or cause",
+      "context_id": "6",
+      "event_local_time": "2026-11-23T23:32:09",
+      "graphics_hardware": "Intel Iris Xe Graphics",
+      "last_context_switch_reason": "ELEMENT_SWITCH | WAIT_ON_SEMAPHORE | WAIT_ON_SCANLINE",
+      "last_instruction": "0x7a000204",
+      "os_version": "Mac OS X Version 26.7.1 (Build 25G241)",
+      "other_engines": {
+        "bcs": "- NOT enabled - idle",
+        "ccs": "- NOT enabled - idle",
+        "vcs0": "- NOT enabled - idle",
+        "vcs2": "- NOT enabled - idle"
+      },
+      "rcs": {
+        "raw": "- busy - in a batch buffer\t <-- Appears hung",
+        "status": "hung"
+      },
+      "rcs_batch_addr": "0x4302d81d",
+      "rcs_ring_head": "0x24e01978",
+      "rcs_ring_tail": "0x00001a10",
+      "scheduler": "Host PreemptiveMultiple channels per index",
+      "signature": "813"
+    }
+  ],
+  "gpu_reset_count": 3,
+  "interpretation": "RCS hang(s) observed; patch activation alone does not prevent GPU reset.",
+  "rcs_hang_count": 3,
+  "rcs_patch_active_now": true,
+  "rcs_patch_stability_proven": false,
+  "read_only": true,
+  "repeated_rcs_signatures": {
+    "0x7a000204|ELEMENT_SWITCH | WAIT_ON_SEMAPHORE | WAIT_ON_SCANLINE": 2,
+    "0x7b000008|ELEMENT_SWITCH | ACTIVE_TO_IDLE": 1
+  },
+  "window_hours": 8.0
+}

@@ -90,6 +90,10 @@ repair_existing() {
     check_assets
     if /usr/sbin/ioreg -p IOService -l -w0 2>/dev/null | /usr/bin/grep -q '"SL4RCSSinglePortReady" = Yes'; then
         print "RCS single-port patch is already active; keeping the working EFI untouched."
+        print "WARNING: RCS 0.1.0 is a partial mitigation. Loaded/Ready is not proof of stability."
+        if [[ -f "$base/audit_rcs_gpu_resets_macos.py" ]]; then
+            python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 || true
+        fi
     else
         esp="$(python3 "$base/find_internal_esp.py")"
         print "Internal EFI detected: $esp. Running fail-closed RCS preflight."
@@ -174,6 +178,7 @@ show_advanced_menu() {
     print "  1) First Tahoe installation"
     print "  2) Already installed Tahoe — repair RCS / audio"
     print "  3) Read-only audio and brightness inspection"
+    print "  7) Read-only RCS GPU reset audit (no EFI or driver changes)"
     print "  0) Exit"
     read "choice?Choose: "
     case "$choice" in
@@ -188,6 +193,7 @@ show_advanced_menu() {
             sudo python3 "$audio" inspect --esp "$esp"
             sudo python3 "$brightness" inspect --esp "$esp"
             ;;
+        7) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
         0) exit 0 ;;
         *) print -u2 "Unknown option"; exit 4 ;;
     esac
@@ -198,5 +204,6 @@ case "${1:---auto}" in
     --auto-first) install_from_usb; arm_postboot_check ;;
     --auto-repair) repair_existing ;;
     --menu) show_advanced_menu ;;
-    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu]"; exit 3 ;;
+    --rcs-audit) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--rcs-audit]"; exit 3 ;;
 esac
