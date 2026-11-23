@@ -19,7 +19,7 @@ PROFILES = HERE / "data" / "sl4_profiles.json"
 
 
 def run(argv, *, timeout=30):
-    p = subprocess.run(argv, check=False, capture_output=True, timeout=timeout, text=True)
+    p = subprocess.run(argv, check=False, capture_output=True, timeout=timeout, text=True, encoding="utf-8", errors="replace")
     if p.returncode:
         raise RuntimeError("Probe failed: " + argv[0] + " (" + str(p.returncode) + ")")
     return p.stdout
@@ -64,6 +64,8 @@ def normalize_inventory(data):
 def windows_inventory():
     script = r'''
 $ErrorActionPreference="Stop"
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+$OutputEncoding = [Console]::OutputEncoding
 $computer=Get-CimInstance Win32_ComputerSystem
 $cpu=Get-CimInstance Win32_Processor | Select-Object -First 1
 $gpu=@(Get-CimInstance Win32_VideoController | Select-Object Name,PNPDeviceID)

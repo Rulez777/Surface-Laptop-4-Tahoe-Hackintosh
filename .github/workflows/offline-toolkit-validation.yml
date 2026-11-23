@@ -1,0 +1,46 @@
+name: Offline toolkit safety and reproducibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - 'data/**'
+      - 'docs/**'
+      - 'packages/**'
+      - 'README.md'
+      - '.github/workflows/offline-toolkit-validation.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cross-platform-tests:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Portable unit tests (mocked EFI, no real ESP)
+        run: python -m unittest discover -s tests -q
+      - name: Build first deterministic offline package
+        run: python scripts/build_offline_kit.py --out kit-a.zip
+      - name: Build second deterministic offline package
+        run: python scripts/build_offline_kit.py --out kit-b.zip
+      - name: Verify package integrity and reproducibility
+        run: |
+          python scripts/build_offline_kit.py --out kit-a.zip --verify-only
+          python -c "import hashlib,pathlib; h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest(); assert h('kit-a.zip') == h('kit-b.zip'), 'Non-deterministic package'"
+      - name: Windows PowerShell entry point (read-only pin check)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-SL4.ps1 -Action VerifyPins
