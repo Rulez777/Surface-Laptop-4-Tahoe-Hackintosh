@@ -8,7 +8,7 @@
 - Reads CPU-die sensor `TC0D` via `SMCProcessor.kext`; requires a plausible temperature below 80 °C before making a single TMP=3 request.
 - On launch, waits for surface drivers and sends **one** request. Repeats after a detected **true system resume** using the macOS monotonic clock that excludes system sleep. Checks every five seconds; retries only while the request is pending.
 - **Does not detect a simple display/backlight wake** as a system resume. System S3/S0ix is not confirmed working on our machine, so this path remains unvalidated.
-- Does not auto-switch modes when AC adapter is plugged/unplugged; does not directly edit CPU power limits, fan RPM, OpenCore, macOS boot arguments or Windows settings. The indirect EC effects of TMP=3 remain unverified. Mode 4 is deliberately not used.
+- The root TMP3 daemon itself does not auto-switch modes when AC adapter is plugged/unplugged; it does not directly edit CPU power limits, fan RPM, OpenCore, macOS boot arguments or Windows settings. An optional *user-level* [AC reconnect watcher](../scripts/thermal/sl4_ac_retrigger.py) can restart this exact existing daemon once after a stable battery-to-AC transition, with sensor checks and cooldown. It does not set EC profiles directly, does not validate fan control, and is not a confirmed remedy for firmware CPU throttling; see [power recovery](POWER-RECOVERY.md). The indirect EC effects of TMP=3 remain unverified. Mode 4 is deliberately not used.
 - IOKit success only means the request was sent to BigSurface. BigSurface may report success even when an internal EC operation fails. No claim of verified fan actuation is made.
 
 ## Source files

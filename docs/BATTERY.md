@@ -4,7 +4,8 @@
 
 ## Observed behavior
 
-- The Surface switched from battery power to AC; charging was reported near 49%.
+- On 2026-11-23 morning, the Surface started at **22%** with a recognized 60 W AC charger, charged steadily to **52%**, and then returned to **AC connected / not charging**. This repeats the earlier ~52% cap and is strongly consistent with firmware Battery Limit (still not read from UEFI). No macOS low-power toggle was active, but a separate severe CPU-frequency regression (counter proxy ~0.58 GHz) persisted at 52%; the cap alone is not proven to cause this CPU behavior.
+- During an earlier period the Surface switched from battery power to AC; charging was reported near 49%.
 - Later, macOS showed AC connected at **52%**, **not charging**. `system_profiler SPPowerDataType` reported `Condition: Normal`, cycle count 110, `Fully Charged: No`, `Charging: No`.
 - A contemporaneous `AppleSmartBattery` reading reported `ExternalConnected=Yes`, `IsCharging=No`, `FullyCharged=No`, `InstantAmperage=0`, current capacity **2811** and max capacity **5626** in SMC-reported units. This corresponds to roughly half of the present max battery capacity, despite UI rounding to 52%.
 - `PermanentFailureStatus=0` was visible. This alone does not rule out other charging or firmware issues.

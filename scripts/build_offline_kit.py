@@ -18,6 +18,7 @@ SELECT=[
 "docs/SLEEP.md",
 "docs/SYSTEM-SLEEP-RESEARCH.md",
 "docs/BATTERY.md",
+"docs/POWER-RECOVERY.md",
 "docs/THERMAL-TMP3.md",
 "docs/UNIVERSAL-SETUP.md",
 "docs/VALIDATION-20261123.md",
@@ -33,6 +34,7 @@ SELECT=[
 "scripts/sl4_setup.py",
 "scripts/sl4_inventory.py",
 "scripts/sl4_stability_audit_macos.py",
+"scripts/audit_power_macos.py",
 "scripts/audit_sleep_macos.py",
 "scripts/dvmt60.py",
 "scripts/quiet_boot.py",
@@ -49,6 +51,7 @@ SELECT=[
 "scripts/thermal/sl4_tmp3_service.py",
 "scripts/thermal/sl4_thermal_guard.py",
 "scripts/thermal/sl4_thermal_test.py",
+"scripts/thermal/sl4_ac_retrigger.py",
 "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip",
 ]
 FORBIDDEN=("SystemUUID","SystemSerialNumber","MLB","bootmgfw.efi","config.plist","SMBIOS")
