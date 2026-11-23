@@ -16,6 +16,7 @@ SELECT=[
 "data/sl4_profiles.json",
 "docs/EDP-WAKE.md",
 "docs/SLEEP.md",
+"docs/SYSTEM-SLEEP-RESEARCH.md",
 "docs/THERMAL-TMP3.md",
 "docs/UNIVERSAL-SETUP.md",
 "docs/VALIDATION-20261123.md",

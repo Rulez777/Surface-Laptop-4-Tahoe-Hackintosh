@@ -32,6 +32,8 @@ Keep independent Windows Boot Manager recovery, preserve a full private OC backu
 
 On macOS, from a repository clone, run `python3 scripts/audit_sleep_macos.py --output "$HOME/Downloads/sl4-sleep-audit.json"`. This uses only `pmset` and `ioreg` queries. It cannot enable sleep, write EFI, or claim a physical wake is successful. It refuses to overwrite an existing snapshot, and does not capture personal SMBIOS identifiers.
 
+See [deep sleep investigation and evidence](SYSTEM-SLEEP-RESEARCH.md) for the ACPI/WhateverXe hypotheses and the required supervised recovery gate.
+
 ## Open work
 
 Confirm repeatable display-only wake across multiple short and extended cycles, docked/undocked, AC/battery, lid close/open and power button. Investigate actual system power transitions separately, with persistent logs and reliable fallback.

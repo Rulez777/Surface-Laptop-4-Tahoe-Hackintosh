@@ -153,7 +153,7 @@ Backups are saved in `~/Downloads/SL4-BRIGHTNESS-BACKUPS` and `~/Downloads/SL4-A
 
 ## Documentation
 
-[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
+[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Deep sleep research](docs/SYSTEM-SLEEP-RESEARCH.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
 
 **Cross-platform preparation (experimental):** [hardware detection, private EFI backups, checksum-verified staging and offline toolkit](docs/UNIVERSAL-SETUP.md). Run the redacted scanner before selecting a hardware profile; this is not a certified one-click clean installer. For a read-only current-macOS compatibility and crash summary, run `python3 scripts/sl4_stability_audit_macos.py`.
 
