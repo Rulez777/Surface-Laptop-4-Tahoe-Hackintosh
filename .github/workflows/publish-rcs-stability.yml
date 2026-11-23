@@ -1,0 +1,111 @@
+name: Publish tested Surface Intel RCS stability beta
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-rcs-stability.yml'
+      - 'research/wex-sl4-rcs-singleport.patch'
+      - 'research/wex-sl4-edp-base.patch'
+      - 'research/wex-tgl-dmc-supervised.patch'
+      - 'scripts/build_sl4_rcs_release.py'
+      - 'scripts/install_sl4_rcs_stability.py'
+      - 'scripts/inspect_tgl_dmc.py'
+      - 'scripts/generate_tgl_dmc_trial_header.py'
+      - 'tests/test_rcs_stability.py'
+      - 'docs/QUICKSTART-RCS.md'
+      - 'docs/RELEASE-NOTES-RCS.md'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: sl4-rcs-stability-release
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run all offline validation tests
+        run: python -m unittest discover -s tests -q
+      - name: Reject accidental personal EFI or SMBIOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ei '(^EFI/|config\.plist$|bootmgfw\.efi$|\.p12$|SMBIOS.*\.plist$)'; then
+            echo "::error::Private boot configuration or credentials must not be published"
+            exit 1
+          fi
+  release:
+    name: Rebuild known-good Intel kext and publish verified ZIP
+    needs: validate
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Checkout byte-pinned WhateverXe/Lilu/MacKernelSDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/b00t0x/WhateverXe.git "$RUNNER_TEMP/wex"
+          git -C "$RUNNER_TEMP/wex" checkout --detach f26a36880c49ea1063393d943527808c0f38feca
+          git clone https://github.com/acidanthera/MacKernelSDK.git "$RUNNER_TEMP/sdk"
+          git -C "$RUNNER_TEMP/sdk" checkout --detach 3f750085caa17ec3a7880f11c11bf4f48cd6a164
+          git clone https://github.com/acidanthera/Lilu.git "$RUNNER_TEMP/lilu"
+          git -C "$RUNNER_TEMP/lilu" checkout --detach e4748cc081bf060302c7d3c44a643ce1d11b7e1d
+          ln -s "$RUNNER_TEMP/sdk" "$RUNNER_TEMP/wex/MacKernelSDK"
+          mkdir -p "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources"
+          ln -s "$RUNNER_TEMP/lilu/Lilu/Headers" "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources/Headers"
+          ln -s "$RUNNER_TEMP/lilu/Lilu/Library" "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources/Library"
+          cd "$RUNNER_TEMP/wex"
+          patch --batch -p1 < "$GITHUB_WORKSPACE/research/wex-sl4-edp-base.patch"
+          patch --batch -p1 < "$GITHUB_WORKSPACE/research/wex-tgl-dmc-supervised.patch"
+          patch --batch -p1 < "$GITHUB_WORKSPACE/research/wex-sl4-rcs-singleport.patch"
+      - name: Fetch and verify original Tiger Lake DMC, build the RCS kext
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" https://raw.githubusercontent.com/naups/i915-firmware/main/i915/tgl_dmc_ver2_12.bin
+          echo '3c013ef0ad96ba73aee8e5bd04a8e27cc9b1c6e9183b1a83ce124485f325afca  '"$RUNNER_TEMP/tgl_dmc_ver2_12.bin" | shasum -a 256 -c -
+          python scripts/inspect_tgl_dmc.py "$RUNNER_TEMP/tgl_dmc_ver2_12.bin"
+          python scripts/generate_tgl_dmc_trial_header.py "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" --out "$RUNNER_TEMP/wex/WhateverXe/kern_sl4_dmc_trial_data.hpp"
+          python "$RUNNER_TEMP/wex/tools/build.py" --release --output "$RUNNER_TEMP/build"
+          python -c 'from pathlib import Path;import hashlib;b=bytearray(Path("'"$RUNNER_TEMP"'/build/WhateverXe.kext/Contents/MacOS/WhateverXe").read_bytes());assert len(b)==1893968; b[1160:1176]=bytes(16);assert hashlib.sha256(b).hexdigest()=="e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21","Different RCS executable: refusing untested build"'
+      - name: Obtain matching official OpenCore 1.0.8 validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o "$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip
+          echo '2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b  '"$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" | shasum -a 256 -c -
+          unzip -p "$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" Utilities/ocvalidate/ocvalidate > "$RUNNER_TEMP/ocvalidate"
+          chmod 755 "$RUNNER_TEMP/ocvalidate"
+          echo 'c76f907d5caad299889a2314ae68f03cd8538ad53f65a3c2c7c95ae0d0bb0b38  '"$RUNNER_TEMP/ocvalidate" | shasum -a 256 -c -
+      - name: Build byte-verified deterministic public release and test ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_sl4_rcs_release.py --wex "$RUNNER_TEMP/build/WhateverXe.kext" --ocvalidate "$RUNNER_TEMP/ocvalidate" --license-wex "$RUNNER_TEMP/wex/LICENSE.txt" --out SL4-RCS-Stability-0.1.0-beta.zip
+          python scripts/build_sl4_rcs_release.py --verify-only --out SL4-RCS-Stability-0.1.0-beta.zip
+          SL4_RCS_RELEASE_ZIP="$PWD/SL4-RCS-Stability-0.1.0-beta.zip" python -m unittest discover -s tests -p test_rcs_stability.py -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SL4-RCS-Stability-0.1.0-beta
+          path: SL4-RCS-Stability-0.1.0-beta.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish immutable beta release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: sl4-rcs-v0.1.0-beta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists: refusing to replace tested public asset"
+            exit 1
+          fi
+          gh release create "$TAG" SL4-RCS-Stability-0.1.0-beta.zip --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Surface Laptop 4 | Iris Xe RCS Stability 0.1.0 beta" --notes-file docs/RELEASE-NOTES-RCS.md --prerelease

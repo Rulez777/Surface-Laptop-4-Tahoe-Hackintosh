@@ -1,0 +1,209 @@
+--- a/WhateverXe/kern_xe.cpp
++++ b/WhateverXe/kern_xe.cpp
+@@ -95,6 +95,7 @@
+ #include <Headers/kern_cpu.hpp>
+ #include <Headers/kern_file.hpp>
+ #include <Headers/kern_iokit.hpp>
++#include "kern_sl4_rcs_singleport.hpp"
+ 
+ #include <IOKit/pci/IOPCIDevice.h>
+ #include <IOKit/IOMemoryDescriptor.h>
+@@ -11769,6 +11770,16 @@
+   if (ready) ready=patcher.routeMultiple(index,&route,1,address,size);
+   IORegistryEntry::getRegistryRoot()->setProperty("WhateverXeNoAccelGuardReady",ready);
+   patcher.clearError();return ready;
++ }
++ // Surface 9A49 / Tahoe: opt-in RCS single-port + preemption mitigation.
++ // Exact donor signatures and five symbol offsets must match before activation.
++ if(tglRequested && tglActive && tglDeviceId==0x9A49 &&
++    checkKernelArgument("-allow3d") &&
++    checkKernelArgument("-wex-sl4-rcs-singleport")) {
++    const bool ready=SL4RCS::install(patcher,currentGraphics,index,address,size);
++    if(auto root=IORegistryEntry::getRegistryRoot())
++        root->setProperty("SL4RCSSinglePortReady",ready);
++    SYSLOG("igfx","SL4 RCS single-port/preemption patch ready=%u",ready);
+  }
+  if(checkKernelArgument("-wex-sl4-tgl-dmc"))routeSL4DMCWake(patcher,index,address,size);
+  const bool surfaceABIReady=tglInstallSonomaSurfaceABI(patcher,index,address,size,false);
+--- /dev/null
++++ b/WhateverXe/kern_sl4_rcs_singleport.hpp
+@@ -0,0 +1,179 @@
++// SL4-specific mitigation for the Tiger Lake 0x9A49 RCS preemption/Execlist
++// deadlock observed in gpuRestart reports on Tahoe 26.7.1.
++// Adapted from the measured single-port RCS / preemption work in
++// yankedi/HP-Elite-Dragonfly-G2-Hackintosh pcfix27 (2026-11-06).
++// Fail closed on any donor mismatch. Only installed with
++// -wex-sl4-rcs-singleport. Does NOT modify firmware, display clock, or sleep.
++#ifndef SL4_RCS_SINGLEPORT_HPP
++#define SL4_RCS_SINGLEPORT_HPP
++#include <stdint.h>
++#include <string.h>
++
++namespace SL4RCS {
++static volatile bool active = false;
++static mach_vm_address_t orgUpdateOptions = 0;
++static mach_vm_address_t orgRcsAllow = 0;
++static mach_vm_address_t orgRcsIsAllowed = 0;
++static mach_vm_address_t orgDequeue = 0;
++static mach_vm_address_t orgEvalWait = 0;
++static volatile uint32_t suppressedPreempt = 0;
++static volatile uint32_t deferredPort0 = 0;
++static volatile uint32_t rejectedPort1 = 0;
++static bool live() { return __atomic_load_n(&active, __ATOMIC_ACQUIRE); }
++static bool isKernelPtr(const void *ptr) {
++    return ptr && (reinterpret_cast<uintptr_t>(ptr)>>47)==0x1ffffULL;
++}
++static void disablePreempt(void *that) {
++    if(!live() || !isKernelPtr(that)) return;
++    auto *cs = static_cast<uint8_t *>(that);
++    auto *c28 = *reinterpret_cast<uint8_t **>(cs+0x28);
++    if(!isKernelPtr(c28) || c28[0]!=0) return; // RCS only
++    if(cs[0x1c50] || cs[0x1c5d]) {
++        cs[0x1c50]=0; cs[0x1c5d]=0;
++        __atomic_fetch_add(&suppressedPreempt,1,__ATOMIC_RELAXED);
++    }
++    auto *scheduler = *reinterpret_cast<uint8_t **>(cs+0x20);
++    if(isKernelPtr(scheduler)) scheduler[0x0c]&=~0x04u;
++}
++static void wrapUpdateOptions(void *that) {
++    FunctionCast(wrapUpdateOptions,orgUpdateOptions)(that);
++    if(live() && isKernelPtr(that))
++        static_cast<uint8_t *>(that)[0x0c] &= ~0x04u;
++}
++static void wrapAllowPreemption(void *that) {
++    if(!live()) {
++        FunctionCast(wrapAllowPreemption,orgRcsAllow)(that);
++        return;
++    }
++    if(isKernelPtr(that)) {
++        auto *cs = static_cast<uint8_t *>(that);
++        cs[0x1c50]=0; cs[0x1c5d]=0;
++        auto *scheduler=*reinterpret_cast<uint8_t **>(cs+0x20);
++        if(isKernelPtr(scheduler)) scheduler[0x0c]&=~0x04u;
++    }
++    __atomic_fetch_add(&suppressedPreempt,1,__ATOMIC_RELAXED);
++}
++static bool wrapIsPreemptionAllowed(const void *that) {
++    if(!live())
++        return FunctionCast(wrapIsPreemptionAllowed,orgRcsIsAllowed)(that);
++    if(isKernelPtr(that)) {
++        auto *cs=const_cast<uint8_t *>(static_cast<const uint8_t *>(that));
++        cs[0x1c50]=0; cs[0x1c5d]=0;
++    }
++    return false;
++}
++static void wrapDequeue(void *that,uint32_t flags) {
++    disablePreempt(that);
++    if(live() && isKernelPtr(that)) {
++        auto *cs=static_cast<uint8_t *>(that);
++        auto *c28=*reinterpret_cast<uint8_t **>(cs+0x28);
++        if(isKernelPtr(c28) && c28[0]==0) {
++            const uint32_t bank=*reinterpret_cast<uint32_t *>(cs+0x50);
++            if(bank<=1) {
++                const uint64_t port0=*reinterpret_cast<uint64_t *>(cs+0x30+static_cast<uint64_t>(bank)*16);
++                if(port0 || !cs[0x1c3c]) {
++                    __atomic_fetch_add(&deferredPort0,1,__ATOMIC_RELAXED);
++                    return;
++                }
++            }
++        }
++    }
++    FunctionCast(wrapDequeue,orgDequeue)(that,flags);
++}
++static uint64_t wrapEvalWait(void *that,const bool *threshold,bool x,bool y) {
++    if(live() && isKernelPtr(that)) {
++        auto *cs=static_cast<uint8_t *>(that);
++        auto *c28=*reinterpret_cast<uint8_t **>(cs+0x28);
++        if(isKernelPtr(c28) && c28[0]==0) {
++            x=false;
++            const uint32_t bank=*reinterpret_cast<uint32_t *>(cs+0x50);
++            if(bank<=1 && *reinterpret_cast<uint64_t *>(cs+0x30+static_cast<uint64_t>(1-bank)*16)) {
++                __atomic_fetch_add(&rejectedPort1,1,__ATOMIC_RELAXED);
++                return 0;
++            }
++        }
++    }
++    return FunctionCast(wrapEvalWait,orgEvalWait)(that,threshold,x,y);
++}
++
++// Exact signatures from AppleIntelTGLGraphics 16.0.0 / SHA-256
++// 6c8ab6cce50b9529679ee4fdf5b1c37d091677d945076f41cb4b7f8196c51449.
++// Verified unique at file offsets 0x3D5D0 and 0x3B971 on this Surface.
++// Original code is left unchanged if either byte sequence has moved.
++static constexpr uint8_t findWork[] {
++  0x49,0x8b,0x06,0x48,0x8b,0x80,0xb8,0x00,0x00,0x00,0x48,0x8b,
++  0xb4,0x24,0x80,0x00,0x00,0x00,0x39,0x70,0x20,0x75,0x07
++};
++static constexpr uint8_t replaceWork[] {
++  0x48,0x8b,0x44,0x24,0x50,0x4c,0x89,0xa0,0x40,0x40,0x00,0x00,
++  0xe9,0x87,0x01,0x00,0x00,0x90,0x90,0x90,0x90,0x90,0x90
++};
++static constexpr uint8_t findWait[] {
++  0x42,0x89,0x84,0x33,0x18,0x14,0x00,0x00,0x41,0xf6,0xc1,0x08,
++  0x75,0x10,0x4d,0x85,0xdb,0x74,0x0b
++};
++static constexpr uint8_t replaceWait[] {
++  0x42,0x89,0x84,0x33,0x18,0x14,0x00,0x00,0x41,0xf6,0xc1,0x28,
++  0x75,0x10,0x4d,0x85,0xdb,0x74,0x0b
++};
++static_assert(sizeof(findWork)==sizeof(replaceWork),"Work patch length mismatch");
++static_assert(sizeof(findWait)==sizeof(replaceWait),"Wait patch length mismatch");
++
++// Returns false and leaves the original driver behavior if a guard fails.
++static bool install(KernelPatcher &patcher,KernelPatcher::KextInfo *donor,
++                    size_t index,mach_vm_address_t base,size_t size) {
++    if(!donor || size<0x3da00 || base==0) return false;
++    auto *work=reinterpret_cast<uint8_t *>(base+0x3d5d0);
++    auto *wait=reinterpret_cast<uint8_t *>(base+0x3b971);
++    if(memcmp(work,findWork,sizeof(findWork)) ||
++       memcmp(wait,findWait,sizeof(findWait))) return false;
++    // Verify the complete symbol map before touching executable memory.
++    struct Symbol {const char *name; mach_vm_address_t off;};
++    static const Symbol symbols[] {
++      {"__ZN12IGScheduler513updateOptionsEv",0x385e0},
++      {"__ZN32IGHardwareRenderCommandStreamer515allowPreemptionEv",0x3d9a6},
++      {"__ZNK32IGHardwareRenderCommandStreamer519isPreemptionAllowedEv",0x3d9d2},
++      {"__ZN26IGHardwareCommandStreamer515dequeueExecListEj",0x3b3b6},
++      {"__ZN26IGHardwareCommandStreamer513evalWaitQueueEPKbbb",0x3b4ee}
++    };
++    bool exact=true;
++    for(const auto &s: symbols) {
++        exact = exact && patcher.solveSymbol<mach_vm_address_t>(
++            index,s.name,base,size)==base+s.off;
++        patcher.clearError();
++    }
++    if(!exact) return false;
++    KernelPatcher::RouteRequest routes[] {
++      {symbols[0].name,wrapUpdateOptions,orgUpdateOptions},
++      {symbols[1].name,wrapAllowPreemption,orgRcsAllow},
++      {symbols[2].name,wrapIsPreemptionAllowed,orgRcsIsAllowed},
++      {symbols[3].name,wrapDequeue,orgDequeue},
++      {symbols[4].name,wrapEvalWait,orgEvalWait}
++    };
++    if(!patcher.routeMultiple(index,routes,arrsize(routes),base,size)) {
++        patcher.clearError();
++        return false;
++    }
++    patcher.clearError();
++    KernelPatcher::LookupPatch p1 {donor,findWork,replaceWork,sizeof(findWork),1};
++    patcher.applyLookupPatch(&p1,work,sizeof(findWork)+1);
++    bool ok=patcher.getError()==KernelPatcher::Error::NoError &&
++            !memcmp(work,replaceWork,sizeof(replaceWork));
++    patcher.clearError();
++    if(!ok) return false;
++    KernelPatcher::LookupPatch p2 {donor,findWait,replaceWait,sizeof(findWait),1};
++    patcher.applyLookupPatch(&p2,wait,sizeof(findWait)+1);
++    ok=patcher.getError()==KernelPatcher::Error::NoError &&
++       !memcmp(wait,replaceWait,sizeof(replaceWait));
++    patcher.clearError();
++    if(!ok) {
++        KernelPatcher::LookupPatch undo {donor,replaceWork,findWork,sizeof(findWork),1};
++        patcher.applyLookupPatch(&undo,work,sizeof(findWork)+1);
++        patcher.clearError();
++        return false;
++    }
++    __atomic_store_n(&active,true,__ATOMIC_RELEASE);
++    return true;
++}
++} // namespace SL4RCS
++#endif
