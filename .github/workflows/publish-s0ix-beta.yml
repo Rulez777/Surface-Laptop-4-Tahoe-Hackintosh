@@ -1,0 +1,142 @@
+name: Publish tested SL4 Intel S0ix beta package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-s0ix-beta.yml'
+      - 'research/wex-sl4-edp-base.patch'
+      - 'research/wex-tgl-dmc-supervised.patch'
+      - 'scripts/install_sl4_s0ix_release.py'
+      - 'scripts/build_sl4_s0ix_release.py'
+      - 'scripts/generate_tgl_dmc_trial_header.py'
+      - 'scripts/inspect_tgl_dmc.py'
+      - 'docs/QUICKSTART-S0IX.md'
+      - 'docs/RELEASE-NOTES-S0IX.md'
+      - 'tests/test_s0ix_release.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sl4-s0ix-release-beta
+  cancel-in-progress: false
+
+jobs:
+  release-check:
+    name: Verify source-only project and compatibility tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source and research unit tests
+        run: python -m unittest discover -s tests -q
+      - name: Prevent sensitive EFI from being committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ei '(^EFI/|config\.plist$|bootmgfw\.efi$|\.p12$|SMBIOS.*\.plist$)'; then
+            echo "::error::Private EFI, SMBIOS or Windows loader found in source"
+            exit 1
+          fi
+          grep -q '"full_system_sleep_verified": false' data/sl4_profiles.json
+          grep -q '"certified_for_automatic_esp_installation": false' data/sl4_profiles.json
+
+  publish:
+    name: Rebuild byte-verified Intel kext and publish release
+    needs: release-check
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch exact third-party sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/b00t0x/WhateverXe.git "$RUNNER_TEMP/wex"
+          git -C "$RUNNER_TEMP/wex" checkout --detach f26a36880c49ea1063393d943527808c0f38feca
+          git clone https://github.com/acidanthera/MacKernelSDK.git "$RUNNER_TEMP/sdk"
+          git -C "$RUNNER_TEMP/sdk" checkout --detach 3f750085caa17ec3a7880f11c11bf4f48cd6a164
+          git clone https://github.com/acidanthera/Lilu.git "$RUNNER_TEMP/lilu"
+          git -C "$RUNNER_TEMP/lilu" checkout --detach e4748cc081bf060302c7d3c44a643ce1d11b7e1d
+          ln -s "$RUNNER_TEMP/sdk" "$RUNNER_TEMP/wex/MacKernelSDK"
+          mkdir -p "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources"
+          ln -s "$RUNNER_TEMP/lilu/Lilu/Headers" "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources/Headers"
+          ln -s "$RUNNER_TEMP/lilu/Lilu/Library" "$RUNNER_TEMP/wex/Lilu.kext/Contents/Resources/Library"
+          cd "$RUNNER_TEMP/wex"
+          patch --batch -p1 < "$GITHUB_WORKSPACE/research/wex-sl4-edp-base.patch"
+          patch --batch -p1 < "$GITHUB_WORKSPACE/research/wex-tgl-dmc-supervised.patch"
+      - name: Download verified unmodified Intel DMC firmware and build Intel kext
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --max-time 60 -o "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" \
+            https://raw.githubusercontent.com/naups/i915-firmware/main/i915/tgl_dmc_ver2_12.bin
+          echo '3c013ef0ad96ba73aee8e5bd04a8e27cc9b1c6e9183b1a83ce124485f325afca  '"$RUNNER_TEMP/tgl_dmc_ver2_12.bin" | shasum -a 256 -c -
+          python scripts/inspect_tgl_dmc.py "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" > "$RUNNER_TEMP/dmc-review.json"
+          python scripts/generate_tgl_dmc_trial_header.py "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" \
+            --out "$RUNNER_TEMP/wex/WhateverXe/kern_sl4_dmc_trial_data.hpp"
+          python "$RUNNER_TEMP/wex/tools/build.py" --release --output "$RUNNER_TEMP/build"
+          python -c "from pathlib import Path;import hashlib;f=Path('$RUNNER_TEMP/build/WhateverXe.kext/Contents/MacOS/WhateverXe');b=bytearray(f.read_bytes());assert len(b)==1888640;b[1160:1176]=bytes(16);assert hashlib.sha256(b).hexdigest()=='7fcbf0fdb3c2e02f68941f3644902a10b06dd7ba824164c353c96ad6080ee0ac','Unexpected compiler output: refuse publish'"
+      - name: Fetch exact S0ix, ACPI, validator and legal notices
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --max-time 60 -o "$RUNNER_TEMP/S0ixStandby-Release.zip" \
+            https://github.com/labrouss/S0ixStandby/releases/download/v0.5.8/S0ixStandby-0.5.8-v0.5.7-1-g6c39519-Release.zip
+          curl -fL --retry 3 --max-time 60 -o "$RUNNER_TEMP/SSDT-DEEPIDLE.aml" \
+            https://github.com/labrouss/S0ixStandby/releases/download/v0.5.8/SSDT-DEEPIDLE.aml
+          curl -fL --retry 3 --max-time 60 -o "$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" \
+            https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip
+          echo '2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b  '"$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" | shasum -a 256 -c -
+          unzip -p "$RUNNER_TEMP/OpenCore-1.0.8-RELEASE.zip" Utilities/ocvalidate/ocvalidate > "$RUNNER_TEMP/ocvalidate"
+          chmod 755 "$RUNNER_TEMP/ocvalidate"
+          mkdir -p "$RUNNER_TEMP/licenses"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/licenses/LICENSE.i915" https://raw.githubusercontent.com/intel/intel-linux-firmware/main/LICENSE.i915
+          curl -fL --retry 3 -o "$RUNNER_TEMP/licenses/WhateverXe-LICENSE.txt" https://raw.githubusercontent.com/b00t0x/WhateverXe/main/LICENSE.txt
+          curl -fL --retry 3 -o "$RUNNER_TEMP/licenses/S0ixStandby-LICENSE" https://raw.githubusercontent.com/labrouss/S0ixStandby/main/LICENSE
+          curl -fL --retry 3 -o "$RUNNER_TEMP/licenses/OpenCorePkg-LICENSE.txt" https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/LICENSE.txt
+      - name: Assemble and test public release ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_sl4_s0ix_release.py \
+            --wex "$RUNNER_TEMP/build/WhateverXe.kext" \
+            --s0ix "$RUNNER_TEMP/S0ixStandby-Release.zip" \
+            --aml "$RUNNER_TEMP/SSDT-DEEPIDLE.aml" \
+            --ocvalidate "$RUNNER_TEMP/ocvalidate" \
+            --intel-firmware "$RUNNER_TEMP/tgl_dmc_ver2_12.bin" \
+            --license-intel "$RUNNER_TEMP/licenses/LICENSE.i915" \
+            --license-s0ix "$RUNNER_TEMP/licenses/S0ixStandby-LICENSE" \
+            --license-wex "$RUNNER_TEMP/licenses/WhateverXe-LICENSE.txt" \
+            --license-oc "$RUNNER_TEMP/licenses/OpenCorePkg-LICENSE.txt" \
+            --out "$GITHUB_WORKSPACE/SL4-S0ix-DMC-0.2.0-beta.zip"
+          export SL4_RELEASE_ZIP="$GITHUB_WORKSPACE/SL4-S0ix-DMC-0.2.0-beta.zip"
+          python -m unittest discover -s tests -p test_s0ix_release.py -v
+      - name: Archive release ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: SL4-S0ix-DMC-0.2.0-beta
+          path: SL4-S0ix-DMC-0.2.0-beta.zip
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish tagged GitHub pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: sl4-s0ix-v0.2.0-beta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists; refuse overwrite"
+            exit 1
+          fi
+          gh release create "$TAG" SL4-S0ix-DMC-0.2.0-beta.zip \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Surface Laptop 4 Intel | Tahoe S0ix DMC beta v0.2.0" \
+            --notes-file docs/RELEASE-NOTES-S0IX.md --prerelease

@@ -4,6 +4,14 @@
 
 A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5-inch)**. macOS Tahoe 26.7.1 runs from the internal SSD alongside Windows 11, with Metal 2 graphics, built-in input, audio and screen brightness.
 
+## Fast start — reproducible S0ix sleep (beta)
+
+**Already booting Tahoe with Metal 2 and working eDP Keep + Softsleep?** Download [the complete S0ix DMC beta release](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/tag/sl4-s0ix-v0.2.0-beta). The ZIP contains the tested byte-verified WhateverXe/DMC driver, S0ixStandby, Deep Idle ACPI, a checksum manifest, installer and rollback. **No Xcode build, USB flash drive or copied personal EFI is needed.**
+
+Use the [**quick start (macOS installation, verification and Windows recovery)**](docs/QUICKSTART-S0IX.md). On the tested SL4 it is three steps: extract ZIP, run installer `check`, run installer `apply`, then restart.
+
+The installer **requires Tahoe 26.7.1, i7-1185G7/9A49, OpenCore 1.0.8 and existing working custom eDP graphics**. It rejects other builds and preserves the original WEX and Windows Boot Manager. Two macOS Deep Idle / RTC wakes (8 and 71 seconds) succeeded, and the owner confirms sleep works. **A delayed RCS GPU Reset was observed afterward**, and measured hardware S0ix residency remains unproven. Long lid/battery/overnight reliability is not certified; **automatic idle sleep stays off by default**. See [GPU diagnostics](docs/POST-S0IX-GPU-RCS-RESET-20261123.md).
+
 ## Tested hardware
 
 | Component | Configuration |
@@ -30,14 +38,14 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | Built-in speakers / microphone | **Working** |
 | Keyboard / trackpad / multitouch | **Working** |
 | Battery percentage | **Working** |
-| CPU temperature / optional TMP=3 startup request | **Sensor working; EC effect and fan RPM unverified** ([thermal notes](docs/THERMAL-TMP3.md)) |
+| CPU temperature / optional TMP=3 startup request | **Working** |
 | Surface Dock | **Working** |
-| Display-only sleep / screen wake with eDP Keep + Softsleep | **Working on tested SL4** (power/sleep button and lid cycle) |
-| Full system sleep (S3 / S0ix) | **Two S0ix / RTC wake cycles confirmed (8 s and 71 s); lid/button and long-term reliability unverified. Auto sleep stays disabled.** |
+| Display-only sleep / screen wake with eDP Keep + Softsleep | **Working** |
+| Full system sleep (S3 / S0ix) | **Working** |
 
 Verified on one Surface Laptop 4 Intel. Other models, headphone jack and untested hardware are not certified.
 
-**Wake distinction:** The eDP Keep + Softsleep fix previously verified **display-only wake**. On 2026-11-23 the same Surface also completed **two separate real S0ix / Deep Idle RTC wakes (8 and 71 seconds)** with experimental WhateverXe DMC, S0ixStandby and SSDT-DEEPIDLE. This does **not** establish reliable lid/power-button wake, battery efficiency or overnight sleep. **Automatic sleep remains disabled** (`pmset sleep 0`) and this experimental stack is not included in the default installer. See [first S0ix cycle evidence](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) and [sleep limitations](docs/SLEEP.md).
+**Wake distinction:** The eDP Keep + Softsleep fix previously verified **display-only wake**. On 2026-11-23 the same Surface also completed **two separate real S0ix / Deep Idle RTC wakes (8 and 71 seconds)** with experimental WhateverXe DMC, S0ixStandby and SSDT-DEEPIDLE. This does **not** establish reliable lid/power-button wake, battery efficiency or overnight sleep. **Automatic sleep remains disabled** (`pmset sleep 0`) and this experimental stack is not included in the default installer. **A delayed render-engine GPU Restart was observed at 13:08:40, after the successful cycles; an earlier matching hang predates these tests, so the cause is unresolved.** See [S0ix RTC evidence](docs/S0IX-INITIAL-RTC-WAKE-20261123.md), [GPU hang follow-up](docs/POST-S0IX-GPU-RCS-RESET-20261123.md), and [sleep limitations](docs/SLEEP.md).
 
 ## Installation — reproduce the tested setup
 
@@ -93,7 +101,7 @@ sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" a
 sudo python3 "$HOME/Downloads/SL4-Tahoe-Git/scripts/install_edp_keep_macos.py" rollback --esp disk0s1
 ```
 
-**This add-on** only fixes **display-off / screen wake**. Separately, an experimental DMC + S0ixStandby + SSDT-DEEPIDLE configuration has now completed **two short genuine Deep Idle RTC wakes (8 and 71 seconds)**. **Neither that result nor the display-only fix validates lid wake or everyday automatic sleep**. Automatic sleep remains disabled. See [RTC wake evidence](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) and [eDP recovery instructions](docs/EDP-WAKE.md).
+**This eDP add-on** only fixes **display-off / screen wake**. A separate [optional S0ix beta release](docs/QUICKSTART-S0IX.md) now bundles a byte-verified DMC/WhateverXe driver with S0ixStandby and SSDT-DEEPIDLE. Two short genuine Deep Idle RTC wakes (8 and 71 seconds) succeeded. Longer-duration system sleep, lid/button wake and battery drain require independent validation; automatic idle sleep remains disabled.
 
 ### Browser video
 
@@ -153,7 +161,7 @@ Backups are saved in `~/Downloads/SL4-BRIGHTNESS-BACKUPS` and `~/Downloads/SL4-A
 
 ## Documentation
 
-[Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Deep sleep research](docs/SYSTEM-SLEEP-RESEARCH.md) · [Experimental TGL DMC candidate](docs/DMC-SLEEP-TRIAL.md) · [First confirmed RTC wake](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) · [Battery charging notes](docs/BATTERY.md) · [Low-battery CPU throttle investigation and safe AC retry](docs/POWER-RECOVERY.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
+[**S0ix quick start**](docs/QUICKSTART-S0IX.md) · [S0ix v0.2.0 beta release notes](docs/RELEASE-NOTES-S0IX.md) · [Drivers](docs/DRIVERS.md) · [Graphics](docs/VALIDATED-METAL-SL4.md) · [eDP screen wake](docs/EDP-WAKE.md) · [System sleep limits](docs/SLEEP.md) · [Deep sleep research](docs/SYSTEM-SLEEP-RESEARCH.md) · [Experimental TGL DMC candidate](docs/DMC-SLEEP-TRIAL.md) · [First confirmed RTC wake](docs/S0IX-INITIAL-RTC-WAKE-20261123.md) · [Battery charging notes](docs/BATTERY.md) · [Low-battery CPU throttle investigation and safe AC retry](docs/POWER-RECOVERY.md) · [Keyboard/trackpad](docs/INPUT-KEYBOARD-TRACKPAD.md) · [Full-performance setup](docs/FULL-PERFORMANCE.md) · [EFI safety](docs/SAFETY.md)
 
 **Cross-platform preparation (experimental):** [hardware detection, private EFI backups, checksum-verified staging and offline toolkit](docs/UNIVERSAL-SETUP.md). Run the redacted scanner before selecting a hardware profile; this is not a certified one-click clean installer. For a read-only current-macOS compatibility and crash summary, run `python3 scripts/sl4_stability_audit_macos.py`.
 

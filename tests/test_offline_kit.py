@@ -22,6 +22,7 @@ class OfflineKitTests(unittest.TestCase):
         self.assertIn("docs/POWER-RECOVERY.md",paths)
         self.assertIn("docs/DMC-SLEEP-TRIAL.md",paths)
         self.assertIn("docs/S0IX-INITIAL-RTC-WAKE-20261123.md",paths)
+        self.assertIn("docs/POST-S0IX-GPU-RCS-RESET-20261123.md",paths)
         self.assertIn("scripts/inspect_tgl_dmc.py",paths)
         self.assertIn("scripts/generate_tgl_dmc_trial_header.py",paths)
         self.assertIn("research/wex-tgl-dmc-supervised.patch",paths)
