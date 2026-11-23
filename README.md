@@ -30,7 +30,7 @@ A tested OpenCore configuration for the **Microsoft Surface Laptop 4 Intel (13.5
 | Built-in speakers / microphone | **Working** |
 | Keyboard / trackpad / multitouch | **Working** |
 | Battery percentage | **Working** |
-| CPU temperature / automatic fan / performance profiles | **Working** |
+| CPU temperature / optional TMP=3 startup request | **Sensor working; EC effect and fan RPM unverified** ([thermal notes](docs/THERMAL-TMP3.md)) |
 | Surface Dock | **Working** |
 | Display-only sleep / screen wake with eDP Keep + Softsleep | **Working on tested SL4** (power/sleep button and lid cycle) |
 | Full system sleep (S3 / S0ix) | **Not validated; leave disabled** |

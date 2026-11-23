@@ -28,6 +28,10 @@ This prevents automatic idle system sleep and display-off on the tested configur
 
 Keep independent Windows Boot Manager recovery, preserve a full private OC backup, and verify the built-in screen visually. A green `ioreg` flag is not physical proof.
 
+## Read-only diagnostic snapshot
+
+On macOS, from a repository clone, run `python3 scripts/audit_sleep_macos.py --output "$HOME/Downloads/sl4-sleep-audit.json"`. This uses only `pmset` and `ioreg` queries. It cannot enable sleep, write EFI, or claim a physical wake is successful. It refuses to overwrite an existing snapshot, and does not capture personal SMBIOS identifiers.
+
 ## Open work
 
 Confirm repeatable display-only wake across multiple short and extended cycles, docked/undocked, AC/battery, lid close/open and power button. Investigate actual system power transitions separately, with persistent logs and reliable fallback.
