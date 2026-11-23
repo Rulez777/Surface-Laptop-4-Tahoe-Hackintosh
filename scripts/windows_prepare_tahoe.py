@@ -215,6 +215,10 @@ def prepare(args):
         shutil.copy2(ROOT/"scripts/auto_verify_first_boot_macos.py",data/"auto_verify_first_boot_macos.py")
         # Ship diagnostics without changing codecs, EFI or driver registrations.
         shutil.copy2(ROOT/"scripts/audit_codec_macos.py",data/"audit_codec_macos.py")
+        for name in ("probe_video_session_macos.c",
+                     "probe_real_asset_sessions_macos.m",
+                     "run_codec_hw_probes_macos.py"):
+            shutil.copy2(ROOT/"scripts"/name, data/name)
         shutil.copy2(ROOT/"scripts/install_media_fallback_macos.py",data/"install_media_fallback_macos.py")
         # Official matching macOS ocvalidate and one-click graphics transition.
         with zipfile.ZipFile(oc) as oc_archive:
@@ -300,6 +304,8 @@ def repair_only(args):
         files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",
                "install_sl4_rcs_stability.py","install_dolby_macos.py",
                "auto_verify_first_boot_macos.py","audit_codec_macos.py",
+               "probe_video_session_macos.c","probe_real_asset_sessions_macos.m",
+               "run_codec_hw_probes_macos.py",
                "install_media_fallback_macos.py",
                "install_brightness_macos.py","install_audio_macos.py",
                "install_edp_keep_macos.py","configure_surface_trackpad.sh")

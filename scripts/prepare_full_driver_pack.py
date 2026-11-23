@@ -112,6 +112,16 @@ def main():
     require(hashlib.sha256(browser_helper_target.read_bytes()).digest() ==
             hashlib.sha256(browser_helper.read_bytes()).digest(),
             "Browser fallback helper failed to copy")
+    for name in ("probe_video_session_macos.c",
+                 "probe_real_asset_sessions_macos.m",
+                 "run_codec_hw_probes_macos.py"):
+        source = Path(__file__).with_name(name)
+        require(source.is_file(), "Missing native codec probe source: " + name)
+        destination = graphics_dir / name
+        destination.write_bytes(source.read_bytes())
+        require(hashlib.sha256(destination.read_bytes()).digest() ==
+                hashlib.sha256(source.read_bytes()).digest(),
+                "Native codec probe copy/hash mismatch: " + name)
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"

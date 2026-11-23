@@ -175,6 +175,7 @@ show_advanced_menu() {
     print "  2) Already installed Tahoe — repair RCS / audio"
     print "  3) Read-only audio and brightness inspection"
     print "  4) Install notarized Firefox for AV1/VP9 software playback (no GPU driver change)"
+    print "  5) Diagnose native AV1/VP9 VideoToolbox without changing system"
     print "  0) Exit"
     read "choice?Choose: "
     case "$choice" in
@@ -190,6 +191,7 @@ show_advanced_menu() {
             sudo python3 "$brightness" inspect --esp "$esp"
             ;;
         4) python3 "$base/install_media_fallback_macos.py" --install ;;
+        5) python3 "$base/audit_codec_macos.py" --json; python3 "$base/run_codec_hw_probes_macos.py" ;;
         0) exit 0 ;;
         *) print -u2 "Unknown option"; exit 4 ;;
     esac
@@ -201,5 +203,6 @@ case "${1:---auto}" in
     --auto-repair) repair_existing ;;
     --menu) show_advanced_menu ;;
     --media-fallback) python3 "$base/install_media_fallback_macos.py" --install ;;
-    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--media-fallback]"; exit 3 ;;
+    --media-probe) python3 "$base/audit_codec_macos.py" --json; python3 "$base/run_codec_hw_probes_macos.py" ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--media-fallback|--media-probe]"; exit 3 ;;
 esac

@@ -96,6 +96,75 @@ stream and decoder/GPU telemetry.
   for the Surface's eDP/DMC/RCS fixes. **Do not install it over this system**.
   Source: https://github.com/zep245/IrisXe-macos-driver
 
+## Hardware-required decoder session probes (2026-11-23)
+
+Two new native diagnostics were compiled and run **directly on the reference
+Surface in installed Tahoe**. Both use Apple's public frameworks. They only
+create/release ephemeral sessions, never write GPU drivers or NVRAM:
+
+- `scripts/probe_video_session_macos.c`: for each FourCC, constructs an
+  empty 1920×1080 format description, then calls
+  `VTDecompressionSessionCreate` with hardware required and unrestricted.
+- `scripts/probe_real_asset_sessions_macos.m`: lets AVFoundation parse
+  actual sample metadata, then requests both session types.
+- `scripts/run_codec_hw_probes_macos.py`: compiles both into a temporary
+  directory using Apple's CLT, runs them, annotates OSStatus values, and
+  emits JSON. **No code is installed** outside that temporary directory.
+
+To repeat basic tests: `python3 scripts/run_codec_hw_probes_macos.py`
+
+New Mac QuickStart advanced menu **5** runs the basic read-only check, or use
+`QuickStart-Mac.command --media-probe`. This requires Apple's Command Line
+Tools only for compiling the temporary test binaries; a missing compiler
+causes a clear diagnostic error without changing EFI/drivers.
+
+To test downloaded local samples (one command):
+`python3 scripts/run_codec_hw_probes_macos.py --assets ~/Downloads/SL4-Media-Tests-20261123/av1-1080.mp4 ~/Downloads/SL4-Media-Tests-20261123/vp9-1080.webm`
+
+Real asset experiment:
+
+| Source | AVFoundation track | VT session without HW requirement | VT session with HW requirement |
+| --- | --- | --- | --- |
+| H.264/MP4 360p (`avc1`) | Parsed | OK (0) | -12913 |
+| HEVC/MP4 360p (`hev1`) | Parsed | -12906 | -12906 |
+| AV1/MP4 1080p (`av01`) | Parsed | **-12906** | **-12906** |
+| VP9/WebM 1080p | No video track recognized | Not attempted | Not attempted |
+
+Status codes from Apple's `VTErrors.h`:
+`-12906 = kVTCouldNotFindVideoDecoderErr`;
+`-12913 = kVTVideoDecoderNotAvailableNowErr`.
+The `hev1` FourCC is **not** the `hvc1` used in the original HEVC
+hardware-advertisement probe. The H.264 hardware-required failure also
+shows why a newly created session **without a decoded frame** cannot be
+treated as a conclusive hardware support/performance benchmark.
+Our already documented WebKit H.264/HEVC frame playback remains a
+separate validated observation.
+
+The complete machine-readable report (with no private path/identity)
+is committed as [2026-11-23 Surface session results](reports/sl4-videotoolbox-hw-session-20261123.json).
+The locally downloaded samples came from `https://test-videos.co.uk/`
+(Big Buck Bunny 10-second files). To reproduce identical sample bytes:
+
+| Sample | SHA-256 |
+| --- | --- |
+| `h264-360.mp4` (`mp4/h264/360/...10s_1MB.mp4`) | `77145c94c11f3754207499158df22406e1fe7635553c1c86dc5e881dfeb32016` |
+| `hevc-360.mp4` (`mp4/h265/360/...10s_1MB.mp4`) | `1002dc56cbc487595252b86a088cbf6ba03eb434c33c27a31ca46254310fb05b` |
+| `av1-1080.mp4` (`mp4/av1/1080/...10s_5MB.mp4`) | `a52b85edec0edd512e3a7cd14ad1cd265b81fade94119718a28cf138b71e8e8a` |
+| `vp9-1080.webm` (`webm/vp9/1080/...10s_5MB.webm`) | `3011a3d7dc742d6c0f37194ba8273e6b09b90fe768d5f11386ff140bc6745d52` |
+
+**Interpretation:** VideoToolbox cannot create a decoder for this actual
+AV1 stream even in unrestricted mode, and VP9 WebM is not recognized
+by AVFoundation as a video track. This is a driver/registration and
+framework compatibility blocker; it is not evidence that Intel silicon
+physically lacks AV1/VP9 blocks. Low-level AV1/VP9 strings in the installed
+VA library do not demonstrate functional decode factory registration.
+Software fallback Firefox still passes AV1/VP9 1080p video tests.
+
+The session diagnostics do not decode any frames and cannot establish
+video engine utilization; even a returned session success would need
+decoded-frame checks plus GPU/media engine telemetry. They do not change
+existing eDP/DMC/RCS/WhateverXe/S0ix/Safari configuration.
+
 ## Current engineering conclusion
 
 The Tiger Lake media engine supports AV1 and VP9 decoding in hardware, but

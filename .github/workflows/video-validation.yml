@@ -5,23 +5,39 @@ on:
     paths:
       - "scripts/verify_video_macos.py"
       - "scripts/audit_codec_macos.py"
+      - "scripts/probe_video_session_macos.c"
+      - "scripts/probe_real_asset_sessions_macos.m"
+      - "scripts/run_codec_hw_probes_macos.py"
       - "scripts/install_media_fallback_macos.py"
       - "scripts/prepare_full_driver_pack.py"
+      - "scripts/build_offline_kit.py"
+      - "scripts/build_windows_quickstart_kit.py"
+      - "scripts/windows_prepare_tahoe.py"
       - "tests/test_video_macos.py"
       - "tests/test_codec_audit.py"
       - "tests/test_media_fallback_macos.py"
+      - "tests/test_vt_session_probes.py"
       - "docs/VIDEO-CODECS-20261123.md"
+      - "docs/reports/sl4-videotoolbox-hw-session-20261123.json"
       - ".github/workflows/video-validation.yml"
   pull_request:
     paths:
       - "scripts/verify_video_macos.py"
       - "scripts/audit_codec_macos.py"
+      - "scripts/probe_video_session_macos.c"
+      - "scripts/probe_real_asset_sessions_macos.m"
+      - "scripts/run_codec_hw_probes_macos.py"
       - "scripts/install_media_fallback_macos.py"
       - "scripts/prepare_full_driver_pack.py"
+      - "scripts/build_offline_kit.py"
+      - "scripts/build_windows_quickstart_kit.py"
+      - "scripts/windows_prepare_tahoe.py"
       - "tests/test_video_macos.py"
       - "tests/test_codec_audit.py"
       - "tests/test_media_fallback_macos.py"
+      - "tests/test_vt_session_probes.py"
       - "docs/VIDEO-CODECS-20261123.md"
+      - "docs/reports/sl4-videotoolbox-hw-session-20261123.json"
       - ".github/workflows/video-validation.yml"
 
 jobs:
@@ -36,3 +52,15 @@ jobs:
       - run: python -m unittest discover -v -s tests -p test_video_macos.py
       - run: python -m unittest discover -v -s tests -p test_codec_audit.py
       - run: python -m unittest discover -v -s tests -p test_media_fallback_macos.py
+      - run: python -m unittest discover -v -s tests -p test_vt_session_probes.py
+
+  build-native-probes:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile portable VideoToolbox and AVFoundation probes
+        run: |
+          clang -O2 -Wall -Wextra -Werror -framework CoreFoundation -framework CoreMedia -framework VideoToolbox scripts/probe_video_session_macos.c -o /tmp/sl4-vt-session-probe
+          clang -fobjc-arc -O2 -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework VideoToolbox -framework CoreMedia scripts/probe_real_asset_sessions_macos.m -o /tmp/sl4-vt-asset-probe
+      - name: Validate standalone JSON without making hardware assertions on CI host
+        run: /tmp/sl4-vt-session-probe | python3 -m json.tool > /dev/null

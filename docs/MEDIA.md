@@ -26,6 +26,18 @@ Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats
 
 If the video stalls, record the codec, resolution and whether audio continues. Check the script output, driver versions and macOS logs before changing settings. A browser/network problem and a VideoToolbox failure require different fixes.
 
+## Native AV1/VP9 hardware decoder investigation
+
+A second hardware-codec diagnostic now comes with the project:
+`scripts/run_codec_hw_probes_macos.py`. It creates isolated VideoToolbox
+decoder sessions using Apple SDKs; unlike browser playback, these requests
+can explicitly require a hardware decoder. On the tested Surface,
+a real AV1 MP4 produced `kVTCouldNotFindVideoDecoderErr` (-12906)
+for both required-hardware and unrestricted sessions. The VP9 WebM
+sample was not recognized as a video track by AVFoundation.
+See [test matrix, limitations and reproduction](VIDEO-CODECS-20261123.md#hardware-required-decoder-session-probes-2026-11-23).
+Hardware AV1/VP9 is **still not enabled**.
+
 ## AV1/VP9 web-video fallback verified on this Surface (2026-11-23)
 
 On this exact macOS Tahoe 26.7.1 machine, Mozilla Firefox **160.0.1** was installed into `~/Applications/Firefox.app` from the official Mozilla download. The app's notarized Apple Developer ID signature was verified as **Mozilla Corporation / Team ID `43AQ936H96`**. Safari, the default browser, GPU drivers, EFI and sleep settings were left unchanged.
