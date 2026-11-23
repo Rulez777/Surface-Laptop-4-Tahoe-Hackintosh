@@ -17,6 +17,7 @@ class OfflineKitTests(unittest.TestCase):
         self.assertNotIn("EFI/OC/config.plist",paths)
         self.assertIn("scripts/build_offline_kit.py",paths)
         self.assertIn("scripts/audit_power_macos.py",paths)
+        self.assertIn("scripts/compare_power_snapshots.py",paths)
         self.assertIn("scripts/thermal/sl4_ac_retrigger.py",paths)
         self.assertIn("docs/POWER-RECOVERY.md",paths)
         self.assertFalse(any(p.endswith("config.plist") or p.endswith("bootmgfw.efi") for p in paths))

@@ -57,6 +57,8 @@ This removal is not a hardware EC reset and does not change EFI. Removal refuses
 - On 2026-11-23, a bounded **CPU-only** 35-second partial-load test (2 workers, 55% duty, automatic stop at 80 °C) completed with sensor TC0D reporting **45–56 °C** and no sensor errors. This is not a sustained full CPU/GPU test, fan-control validation or comparison with TMP=1.
 - **Not verified:** any RPM change, EC receipt, sustained CPU+GPU thermals, repeated real S3/S0ix wake, controlled power-source comparison, battery drain or any safety benefit from TMP=3.
 
+After a user-performed reboot that restored CPU performance on 2026-11-23, a second bounded 30-second CPU-only run with two workers, 55% duty and 80 °C cut-off returned 50–55 °C. Afterward the same CPU benchmark remained fast (0.19 s for 250k rounds). This is not a fan-RPM test, EC receipt check or long-term thermal validation. The reboot, not a TMP3 mode change, was correlated with the performance restoration.
+
 Read-only short CPU workload with a mandatory temperature limit (optional, avoid if the device is already hot):
 
 `python3 scripts/thermal/sl4_thermal_test.py --seconds 35 --workers 2 --duty 0.55 --limit-c 80`

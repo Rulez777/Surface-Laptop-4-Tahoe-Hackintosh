@@ -1,10 +1,10 @@
 # Surface Laptop 4 — performance collapse during low-battery charging
 
-**2026-11-23, macOS Tahoe 26.7.1, i7-1185G7 / Iris Xe 8086:9A49. Status: CPU slowdown confirmed; root cause and full physical recovery NOT YET verified.** The AC-reconnect workaround below does not bypass CPU thermal or battery safety controls.
+**2026-11-23, macOS Tahoe 26.7.1, i7-1185G7 / Iris Xe 8086:9A49. Status: CPU slowdown reproduced, then performance restored by a physically performed ordinary reboot. Root cause NOT YET verified.** The AC-reconnect workaround below does not bypass CPU thermal or battery safety controls.
 
 ## What is actually observed
 
-1. After user-reported low-battery slowdown, macOS detects **AC power**, a **60 W** charger, and positive charging current. Battery rose from **22% to 52%** during supervised read-only checks, then stopped charging while AC stayed connected. The CPU cycle proxy remained close to 0.58 GHz (approx. 719 million cycles / 1.23 CPU seconds at 50%, and **582.2 MHz** in a repeated test at 52%). Charging alone has not restored observed performance. Charging is not presently absent.
+1. After user-reported low-battery slowdown, macOS detects **AC power**, a **60 W** charger, and positive charging current. Battery rose from **22% to 52%** during supervised read-only checks, then stopped charging while AC stayed connected. The CPU cycle proxy remained close to 0.58 GHz (approx. 719 million cycles / 1.23 CPU seconds at 50%, and **582.2 MHz** in a repeated test at 52%). Charging alone did not restore observed performance before reboot. Charging was active up to the ~52% battery limit; the user performed a restart later, which restored CPU performance.
 2. `pmset -g custom` reports `lowpowermode 0` on **both** AC and battery. `pmset -g therm` shows `CPU_Speed_Limit=100`, `CPU_Scheduler_Limit=100` and all **8** logical processors available. `machdep.xcpm.lpm_enabled=0`, `cpu_thermal_level=0`, `gpu_thermal_level=0`, and 48×100 MHz configured ratio upper limits. **These settings do not measure the actual running CPU frequency.**
 3. CPU die `TC0D` consistently reads about 40–43 °C, well below a typical thermal threshold. A persistent classic CPU heat throttle is not supported by the available sensor readings.
 4. One measured 3-million-round `PBKDF2-HMAC-SHA256` operation took **12.234 seconds**. 500,000 rounds took **1.96–1.98 seconds** during subsequent checks on this machine. Comparisons with another processor are not controlled benchmarking.
@@ -12,6 +12,17 @@
 6. `BigSurface` shows `PerformanceMode = 1`. Per [the driver's README](https://github.com/Xiashangning/BigSurface), value **1 means Recommended**, **2 is Battery Saver**, **3 is Better Performance**, **4 is Best Performance**. The driver author says changing this property had **no observed effect**. `PerformanceMode=1` is not proof of a battery-saver mode, and `IORegistryEntrySetCFProperties` success is not evidence the EC applied mode 3.
 7. We restarted the existing `com.rulez777.sl4-tmp3` LaunchDaemon on 2026-11-23 around 08:22; the root service logged a fresh guarded `TMP=3` request with temperature ~41 °C. The CPU's slower benchmark rate **did not recover**. Do not claim TMP3 fixes this slowdown.
 8. Reports of Intel Surface Laptop CPUs stuck at ~0.2–0.4 GHz with normal temperatures and apparently correct software performance plans are documented (for examples, [Surface Laptop 5](https://learn.microsoft.com/en-us/answers/questions/5632485/surface-laptop-5-%28i7-1255u%29-randomly-becomes-extre) and [other Surface laptops](https://learn.microsoft.com/en-us/answers/questions/2340496/surface-laptop-4-dropping-cpu-function-to-0-2-gh-e)). Such reports raise the possibility of an EC/firmware/power-delivery clamp (e.g. PROCHOT/power limit), but **do not prove this Surface has the same fault**.
+
+## Confirmed outcome after user-performed reboot
+
+- The user reported physically restarting the Surface to clear the CPU speed cap. The boot time query indicated **2026-11-23 08:54:27 CET**, and both macOS and Desktop Commander returned online.
+- With AC connected, battery held at **52% / not charging**, `lowpowermode=0`, and `CPU_Speed_Limit=100` unchanged, the **same 250,000-round** PBKDF2-HMAC-SHA256 benchmark improved from **1.18 s before reboot** to **0.21 s after reboot** (**5.62× faster**). Counter cycles per CPU-second proxy moved from **582.2 MHz** to **3413.0 MHz**; these are approximate counter ratios, not calibrated instantaneous CPU frequency.
+- Repeating the test at 08:56:38 yielded **0.25 s** and approximate **3.19 GHz** proxy. A later same-workload measurement returned **0.19 s**, ~3.59 GHz counter proxy, after the supervised CPU-only thermal probe.
+- A safe **30-second CPU-only partial-load test**, 2 workers at 55% duty and stop threshold 80 °C, completed with `TC0D` between **50–55 °C**. There was no new GPU Reset/panic in the immediate check.
+- Metal 2, eDP Keep and Softsleep flags remained loaded after reboot; the original TMP3 root daemon and optional AC-reconnect user agent both automatically restarted. The live EFI and Windows bootloader were not touched.
+- Recovery occurred **without charging beyond 52%**, and while BigSurface still reported `PerformanceMode=1` (Recommended). This strongly indicates the slowdown was **not** a persistent macOS Low Power Mode setting. It does **not** prove the fault was EC/firmware, nor demonstrate that the AC watcher, TMP3, or Battery Limit caused or cleared it.
+- Detailed private-free comparison is generated by `python3 scripts/compare_power_snapshots.py --before <pre-reboot report.json> --after <post-reboot report.json>`. The read-only actual data was saved locally at `~/Downloads/SL4-CPU-RECOVERY-COMPARE-20261123.json` and intentionally not uploaded.
+- An ordinary reboot provides a **confirmed recovery action for this incident**, not a preventative hardware fix. Monitor for recurrence, especially after another deep discharge or power-source event, and compare against this same fixed workload.
 
 ## Actions performed without EFI or Windows changes
 

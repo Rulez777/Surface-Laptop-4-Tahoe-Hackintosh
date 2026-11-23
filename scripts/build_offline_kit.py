@@ -35,6 +35,7 @@ SELECT=[
 "scripts/sl4_inventory.py",
 "scripts/sl4_stability_audit_macos.py",
 "scripts/audit_power_macos.py",
+"scripts/compare_power_snapshots.py",
 "scripts/audit_sleep_macos.py",
 "scripts/dvmt60.py",
 "scripts/quiet_boot.py",
