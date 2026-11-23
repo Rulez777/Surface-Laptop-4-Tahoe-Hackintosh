@@ -8,10 +8,10 @@
 
 **Start on Windows. You do not need macOS installed.**
 
-1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.1-beta/SL4-Tahoe-Windows-QuickStart-v0.3.1-beta.zip) and click **Extract All**.
+1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.2-beta/SL4-Tahoe-Windows-QuickStart-v0.3.2-beta.zip) and click **Extract All**.
 2. Open the extracted folder and double-click **`QuickStart.cmd`**.
 3. Press **1 — Install Tahoe from Windows**. The assistant prepares OpenCore, downloads Apple Recovery and the driver bundle, then asks which **USB drive** to prepare.
-4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**, and select **macOS Base System** in OpenCore.
+4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**. At the **OpenCore boot menu**, use the arrow keys and **Enter** to select **macOS Base System (External)** (sometimes shown as **Recovery**). This is Apple's Recovery installer, **not** Windows Boot Manager or your existing macOS volume. New USBs show Recovery immediately, with 15 seconds to choose; on an older USB press **Space** to reveal hidden auxiliary entries.
 5. Install Tahoe into **free space for macOS** (leave Windows partitions untouched). After installation, open **`QuickStart-Mac.command`** from the USB's `SL4DATA` partition to finish graphics and drivers.
 
 **[Detailed Quick Start — click-by-click Windows → Tahoe installation](docs/QUICKSTART.md)**

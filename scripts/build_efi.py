@@ -166,6 +166,20 @@ def validate_tree(root, config):
             require((bundle / item["ExecutablePath"]).is_file(), "Missing kext executable: " + item["BundlePath"])
 
 
+def configure_installer_picker(settings):
+    """Expose Apple Recovery in a fresh installation USB OpenCore picker.
+
+    quiet_boot.edit intentionally hides auxiliary entries for installed systems.
+    Installation media instead needs macOS Base System visible without Space.
+    """
+    boot = settings["Misc"]["Boot"]
+    require(settings["Misc"]["Security"].get("ScanPolicy") == 0,
+            "Recovery USB requires unrestricted OpenCore volume scanning")
+    boot["ShowPicker"] = True
+    boot["HideAuxiliary"] = False
+    boot["Timeout"] = 15
+
+
 def main():
     cli = argparse.ArgumentParser(description="Generate personal Surface Laptop 4 EFI (i7-1185G7)")
     cli.add_argument("--serial", help="Private SMBIOS serial (manual mode)")
@@ -237,7 +251,9 @@ def main():
     if not args.verbose_boot:
         from quiet_boot import edit as quiet_profile
         quiet_profile(settings)
-        print("Quiet boot: no verbose diagnostics, 4-second picker, Ctrl+Enter can select macOS as default")
+        print("Quiet boot: no verbose diagnostics; installer picker overrides auxiliary visibility and timeout")
+    configure_installer_picker(settings)
+    print("INSTALLER PICKER: macOS Base System (Recovery) visible without Space; 15 seconds to select with arrows + Enter")
     cfg.write_bytes(plistlib.dumps(settings, sort_keys=False))
     validate_tree(root, settings)
     try:

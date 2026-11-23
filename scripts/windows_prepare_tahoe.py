@@ -209,6 +209,8 @@ def prepare(args):
         (stage/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
         print("WINDOWS PREPARE FINISHED",stage)
         print("NEXT: choose USB disk number, then QuickStart.cmd menu -> Write USB.")
+        print("FIRST BOOT: In OpenCore choose macOS Base System (External) / Recovery (arrow keys + Enter).")
+        print("Do not select Windows Boot Manager or an existing macOS system for the initial Recovery boot.")
         print("No Windows disk or EFI modified.")
     except BaseException:
         # Preserve private stage/partial downloads for deliberate recovery.

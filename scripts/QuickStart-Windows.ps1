@@ -210,7 +210,10 @@ function Write-USB([string]$folder,[int]$number) {
   Write-Host ''
   Write-Host 'USB READY. In Surface UEFI first set Secure Boot to OFF (keep Windows BitLocker recovery key).' -ForegroundColor Green
   Write-Host 'Then power off, hold Volume Down, press Power to start USB OpenCore.'
-  Write-Host 'In OpenCore choose macOS Base System (External).'
+  Write-Host 'IMPORTANT - FIRST BOOT: OpenCore shows the Recovery option by default (15-second selection window).' -ForegroundColor Yellow
+  Write-Host 'Use arrow keys and Enter to choose macOS Base System (External), sometimes labeled Recovery.'
+  Write-Host 'Do NOT choose Windows Boot Manager or an existing macOS installation for the initial Recovery boot.'
+  Write-Host 'On older USB builds only: press Space inside OpenCore if the Recovery entry is hidden.'
   Write-Host 'Install Tahoe into NEW free disk space, not Windows/EFI partitions.'
   Write-Host "After installation use the SL4DATA partition $dataLetter for drivers."
 }

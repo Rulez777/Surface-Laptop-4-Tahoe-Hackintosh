@@ -33,7 +33,10 @@
       "clean_install_verified": false,
       "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility.",
       "short_s0ix_rtc_cycle_count": 2,
-      "longest_confirmed_s0ix_seconds": 71
+      "longest_confirmed_s0ix_seconds": 71,
+      "usb_recovery_boot_verified": true,
+      "usb_recovery_boot_verified_date": "2026-11-23",
+      "usb_recovery_boot_note": "Bootable USB created in Windows Quick Start booted into Apple macOS Recovery on this Surface Laptop 4; Recovery entry required manually showing auxiliary entries on the earlier v0.3.1 picker. Installer v0.3.2 changes picker visibility; boot of a newly rebuilt v0.3.2 USB remains untested."
     }
   ],
   "pinned_artifacts": {

@@ -11,6 +11,7 @@ from unittest import mock
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"scripts"))
 import build_efi
+import quiet_boot
 import enable_xe_macos
 import windows_prepare_tahoe
 import build_windows_quickstart_kit
@@ -32,6 +33,24 @@ class WindowsQuickStartTests(unittest.TestCase):
                 self.assertNotIn("SL4-Tahoe-QuickStart/EFI/OC/config.plist",names)
             with self.assertRaisesRegex(RuntimeError,"exists"):
                 build_windows_quickstart_kit.build(out)
+
+    def test_new_usb_shows_recovery_without_space(self):
+        # Verify both regular (quiet) and diagnostic (verbose) installer paths.
+        for quiet in (False, True):
+            with self.subTest(quiet=quiet), tempfile.TemporaryDirectory() as temp:
+                efi = Path(temp)/"EFI"
+                build_efi.restore_seed(efi)
+                cfg = plistlib.loads((efi/"OC/config.plist").read_bytes())
+                cfg["ACPI"]["Add"].append({"Enabled":True, "Path":"SSDT-RTC0-SL4.aml"})
+                if quiet:
+                    quiet_boot.edit(cfg)
+                    self.assertTrue(cfg["Misc"]["Boot"]["HideAuxiliary"])
+                build_efi.configure_installer_picker(cfg)
+                boot = cfg["Misc"]["Boot"]
+                self.assertTrue(boot["ShowPicker"])
+                self.assertFalse(boot["HideAuxiliary"])
+                self.assertEqual(boot["Timeout"], 15)
+                self.assertEqual(cfg["Misc"]["Security"]["ScanPolicy"], 0)
 
     def test_known_input_archive_integrity(self):
         import hashlib
@@ -102,6 +121,8 @@ class WindowsQuickStartTests(unittest.TestCase):
         self.assertLess(ps.index('ERASE USB $number'),ps.index('Clear-Disk'))
         self.assertIn("Get-Disk -Number $number",ps)
         self.assertIn("BusType -ne 'USB'",ps)
+        self.assertIn("macOS Base System (External)",ps)
+        self.assertIn("press Space",ps)
 
 if __name__=="__main__":
     unittest.main()
