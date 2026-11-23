@@ -4,7 +4,7 @@
 
 ## 1. Запуск в Windows
 
-1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.3.2-beta/SL4-Tahoe-Windows-QuickStart-v0.3.2-beta.zip). Нажмите **«Извлечь всё»**.
+1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.4.1-beta/SL4-Tahoe-Windows-QuickStart-v0.4.1-beta.zip). Нажмите **«Извлечь всё»**.
 2. Дважды нажмите **`QuickStart.cmd`** в распакованной папке.
 3. Выберите **1 — Install Tahoe from Windows**. Помощник определит оборудование, подготовит **уникальные личные идентификаторы OpenCore**, скачает оригинальные **Apple Recovery**, OpenCore и пакеты драйверов. При необходимости предложит установить Python.
 4. Подключите **отдельную USB-флешку от 16 ГБ**, лучше от 32 ГБ. Помощник покажет только USB-диски; укажите нужный номер. На шаге записи запросит права администратора и отдельно подтвердит очистку **только выбранного USB-диска**. **Все данные на этой флешке будут удалены**. Windows на внутреннем SSD не форматируется.
@@ -63,7 +63,7 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 **Оригинальные материалы:** <https://github.com/acidanthera/OpenCorePkg> (OpenCore и Apple Recovery), <https://github.com/b00t0x/WhateverXe>, <https://github.com/Xiashangning/BigSurface>. Требуется соблюдать лицензионные условия используемых компонентов.
 
-## All-in-one audio and RCS (v0.4.0, 2026-11-23)
+## All-in-one audio and RCS (v0.4.1, 2026-11-23)
 
 For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.
 

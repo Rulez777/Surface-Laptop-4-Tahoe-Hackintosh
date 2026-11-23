@@ -1,10 +1,10 @@
-# Surface Laptop 4 — Windows Quick Start v0.4.0 beta
+# Surface Laptop 4 — Windows Quick Start v0.4.1 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.
 
 ## How to use
 
-1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.3.2-beta.zip`.
+1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.4.1-beta.zip`.
 2. Double-click `QuickStart.cmd`.
 3. Press `1` to prepare the Tahoe installer, personal OpenCore EFI, Apple Recovery, drivers and installation USB.
 4. Boot the Surface from USB. In OpenCore select **macOS Base System (External)** (or **Recovery**) with arrow keys + Enter; do not select Windows or an existing macOS entry. New installer USBs show Recovery without pressing Space. Then install Tahoe into free space and run `QuickStart-Mac.command` to enable the full Surface hardware profile.
@@ -15,6 +15,13 @@ Already running Tahoe? Press **2** to prepare the driver repair kit. For other r
 **Primary profile:** Surface Laptop 4 13.5-inch Intel Core i7-1185G7, Iris Xe 8086:9A49. Supported versions and components are selected by the setup; other hardware profiles require advanced customization.
 
 [**Quick Start guide**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/main/docs/QUICKSTART.md) · [**Project README**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh)
+
+## v0.4.1 beta — preserve verified video and sleep safety configuration
+
+- Confirms the official WhateverXe Graphics 0.4.4 postinstall sets `/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist` to `AllowOnePassMetalScaling.Enabled=false` for Tahoe. The first-boot setup now **asserts this value** immediately after package installation; it refuses to stage the new RCS driver if the H.264/HEVC compatibility prerequisite is missing.
+- Preserves the working machine's conservative **automatic sleep disabled** policy (`pmset -a sleep 0 displaysleep 0`) during the initial macOS hardware setup. The previous `pmset -g custom` output is saved in Downloads before modification. Manual display-off and supervised sleep/wake remain available; full unattended sleep reliability is not established.
+- Keeps the exact original composite RCS + DMC + eDP kext, S0ixStandby + Deep Idle SSDT, and Dolby Clear Speech. No new graphics binaries, no modified CoreMedia drivers.
+- Updates first-install and download instructions and adds offline regression tests for both compatibility protections. Tested on one reference Surface; full v0.4.1 USB clean install not yet independently validated.
 
 ## v0.4.0 beta — integrated RCS graphics and Dolby Clear Speech
 

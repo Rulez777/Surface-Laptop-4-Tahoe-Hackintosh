@@ -87,6 +87,21 @@ class AllInOneTests(unittest.TestCase):
         self.assertIn('com.sl4.apomac.autostart',installer)
         self.assertIn('kext', (ROOT/"docs/AUDIO-ALL-IN-ONE.md").read_text().lower())
 
+    def test_coremedia_and_safe_sleep_are_preserved_in_main_installer(self):
+        script=(ROOT/"scripts/QuickStart-Mac.command").read_text()
+        self.assertIn("verify_coremedia_h264",script)
+        self.assertIn("AllowOnePassMetalScaling:Enabled",script)
+        self.assertIn('[[ "$flag" == "false" ]]',script)
+        self.assertLess(script.index("verify_coremedia_h264\n    mkdir -p"),
+                        script.index('sudo python3 "$base/enable_xe_macos.py" apply'))
+        self.assertIn("safe_sleep_policy",script)
+        self.assertIn("sudo /usr/bin/pmset -a sleep 0 displaysleep 0",script)
+        self.assertIn("/usr/bin/pmset -g custom",script)
+        self.assertIn("SL4-Tahoe-pmset-before-",script)
+        # Critical: existing-install repair cannot alter the user's policy.
+        self.assertEqual(script.count("    safe_sleep_policy\n"),1)
+        self.assertIn("repair_existing() {",script)
+
     def test_windows_stage_contains_every_offline_component_and_manifest(self):
         s=(ROOT/"scripts/windows_prepare_tahoe.py").read_text()
         self.assertEqual(s.count('shutil.copy2(rcs,'),2)

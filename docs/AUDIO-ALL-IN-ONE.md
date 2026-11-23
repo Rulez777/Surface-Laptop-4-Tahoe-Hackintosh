@@ -1,6 +1,6 @@
 # Surface Laptop 4 — integrated Iris Xe RCS graphics and Dolby Clear Speech
 
-**Windows-first QuickStart v0.4.0 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
+**Windows-first QuickStart v0.4.1 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
 
 ## What happens without separate patches
 
@@ -11,6 +11,14 @@
 5. On first APOMac launch, **macOS requires user approval for System Audio Recording**. Click Allow. This TCC permission cannot be legally or reliably installed silently by a hardware utility. APOMac then processes audio and starts automatically at future logins.
 
 The app download and all individual asset digests are pinned. **No personal EFI, serial, SMBIOS, BCD or original Dolby XML** is included in the public release.
+
+## Previously verified sleep and YouTube compatibility are retained
+
+The RCS kext is compiled from upstream WhateverXe 0.8.3 plus eDP Keep/Softsleep, DMC firmware and RCS mitigation patches **in this order**; it is not an RCS-only replacement. The installer also retains `S0ixStandby 0.5.8`, `SSDT-DEEPIDLE.aml` and the previously tested eDP/DMC/GPU-recovery flags.
+
+Tahoe YouTube H.264/HEVC playback uses the original **WhateverXe Graphics 0.4.4** installer, including its Tahoe postinstall CoreMedia fix. The all-in-one verifies `AllowOnePassMetalScaling.Enabled=false` before activating the new graphics boot configuration. No promise of VP9/AV1 playback is made.
+
+The owner's existing reference installation has `pmset sleep 0 displaysleep 0`. In new first-install flows, the tool creates a private copy of the prior `pmset -g custom` output and sets **automatic system/display sleep to 0** until longer stability tests exist. It does not modify hibernate mode, Windows or the original EFI. **This deliberately does not enable unattended lid/idle sleep**: two short supervised S0ix RTC wakes cannot certify extended overnight/battery sleep. Existing-install repair leaves any custom power policy untouched.
 
 ## Verified audio reference
 
@@ -27,7 +35,7 @@ Toggle APOMac bypass with **Cmd+B**. Quit APOMac to return to native audio. For 
 - All new accelerated-kext installation is **qualified by exact Intel CPU, PCI ID, macOS 26.7.1 and donor SHA-256**. On other machines it stops without applying an unverified graphics driver.
 - The original installer USB EFI is retained. An OpenCore config backup is written on USB and an entire OC copy in the user's Downloads.
 - When repairing an already booting macOS, choose **2**. The installer checks whether `SL4RCSSinglePortReady` is active; if not, it finds exactly one internal Windows/macOS EFI and uses the reversible RCS installer with a full backup. It never blindly overwrites the Windows boot manager.
-- Other systems, unsupported firmwares and versions of macOS are not automatically certified. This integration has been tested by offline package/unit checks, but **a newly assembled v0.4.0 USB full clean install remains to be tested**.
+- Other systems, unsupported firmwares and versions of macOS are not automatically certified. This integration has been tested by offline package/unit checks, but **a newly assembled v0.4.1 USB full clean install remains to be tested**.
 - Synthetic 400,000 Metal command buffers succeeded on the reference Surface with no new GPU resets in the subsequent session. Owner's FPS increase 14→30 after several minutes is anecdotal; the mechanism is unconfirmed.
 - New audio permission may require user interaction and reapproval on fresh installations. Sound enhancement is tied to login; graphical driver is tied to OpenCore boot.
 
