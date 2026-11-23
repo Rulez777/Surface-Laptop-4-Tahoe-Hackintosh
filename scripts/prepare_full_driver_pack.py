@@ -106,6 +106,30 @@ def main():
     require(hashlib.sha256(reset_dest.read_bytes()).hexdigest() ==
             hashlib.sha256(reset_source.read_bytes()).hexdigest(),
             "RCS reset diagnostic copy failed integrity check")
+    # Independent EFI backup ZIP structure check; reads local archive only.
+    backup_source = Path(__file__).with_name("audit_rcs_recovery_backup.py")
+    require(backup_source.is_file() and not backup_source.is_symlink(), "Missing RCS backup checker")
+    backup_dest = graphics_dir / backup_source.name
+    backup_dest.write_bytes(backup_source.read_bytes())
+    require(hashlib.sha256(backup_dest.read_bytes()).hexdigest() ==
+            hashlib.sha256(backup_source.read_bytes()).hexdigest(),
+            "RCS backup checker copy failed integrity check")
+    # Read-only Mach-O LC_UUID-aware local binary equality checker.
+    cmp_source = Path(__file__).with_name("compare_macho_binary_uuids.py")
+    require(cmp_source.is_file() and not cmp_source.is_symlink(), "Missing Mach-O audit checker")
+    cmp_dest = graphics_dir / cmp_source.name
+    cmp_dest.write_bytes(cmp_source.read_bytes())
+    require(hashlib.sha256(cmp_dest.read_bytes()).hexdigest() ==
+            hashlib.sha256(cmp_source.read_bytes()).hexdigest(),
+            "Mach-O checker copy failed integrity check")
+    # Read-only RCS command ring opcode summary (no addresses exported).
+    ring_source = Path(__file__).with_name("audit_rcs_ring_patterns_macos.py")
+    require(ring_source.is_file() and not ring_source.is_symlink(), "Missing RCS ring opcode audit")
+    ring_dest = graphics_dir / ring_source.name
+    ring_dest.write_bytes(ring_source.read_bytes())
+    require(hashlib.sha256(ring_dest.read_bytes()).hexdigest() ==
+            hashlib.sha256(ring_source.read_bytes()).hexdigest(),
+            "RCS opcode diagnostic copy failed integrity check")
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"

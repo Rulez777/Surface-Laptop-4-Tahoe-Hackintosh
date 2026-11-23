@@ -142,6 +142,65 @@ class RCSResetAuditTests(unittest.TestCase):
         self.assertEqual(value["counters"]["sibling_replays"], 1)
         self.assertIn("not sufficient", value["warning"])
 
+    def test_optional_rcs_telemetry_revision1(self):
+        import struct
+        encoded = struct.pack("<7I", 1, 1024, 2230, 20, 5, 6, 1).hex()
+        decoded = audit_mod.decode_rcs_hook_telemetry(encoded)
+        self.assertEqual(decoded["revision"], 1)
+        self.assertTrue(decoded["active"])
+        self.assertEqual(decoded["counters"]["dequeue_calls"], 1024)
+        self.assertEqual(decoded["counters"]["eval_wait_calls"], 2230)
+        self.assertEqual(decoded["counters"]["preempt_suppressed"], 20)
+        self.assertEqual(decoded["counters"]["deferred_port0"], 5)
+        self.assertEqual(decoded["counters"]["rejected_port1"], 6)
+        self.assertIn("does not prove", decoded["warning"])
+
+    def test_optional_telemetry_revision2_deferral_reasons(self):
+        import struct
+        # v2: revision + v1 fields + five non-control-flow observations.
+        encoded = struct.pack("<12I", 2, 101, 70, 3, 11, 4, 1,
+                              8, 3, 90, 66, 4).hex()
+        result = audit_mod.decode_rcs_hook_telemetry(encoded)
+        self.assertEqual(result["status"], "decoded")
+        self.assertEqual(result["revision"], 2)
+        self.assertTrue(result["active"])
+        self.assertEqual(result["counters"]["deferred_occupied_port"], 8)
+        self.assertEqual(result["counters"]["deferred_not_ready"], 3)
+        self.assertEqual(result["counters"]["native_dequeue_calls"], 90)
+        self.assertEqual(result["counters"]["native_eval_wait_calls"], 66)
+        self.assertEqual(result["counters"]["other_port_busy_wait_rejections"], 4)
+        self.assertEqual(result["counters"]["deferred_port0"], 11)
+
+    def test_v2_source_patch_changes_counters_not_scheduler_conditions(self):
+        source = (ROOT / "research/wex-sl4-rcs-queue-reasons-v0.1.2.patch")\
+            .read_text(encoding="utf-8")
+        self.assertIn("values[12]", source)
+        self.assertIn("deferredOccupiedPort", source)
+        self.assertIn("deferredNotReady", source)
+        self.assertIn("nativeDequeueCalls", source)
+        self.assertIn("nativeEvalWaitCalls", source)
+        self.assertIn("waitOtherPortBusy", source)
+        self.assertIn("if(port0)", source)
+        self.assertNotIn("sudo ", source)
+        # No experimental kernel binary is made part of this public patch.
+        self.assertNotIn("Contents/MacOS/WhateverXe", source)
+
+    def test_telemetry_absent_or_bad_layout_not_misrepresented(self):
+        import struct
+        self.assertIsNone(audit_mod.decode_rcs_hook_telemetry(None))
+        self.assertIsNone(audit_mod.decode_rcs_hook_telemetry("non-hex"))
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry("ff")["status"],
+                         "unknown_revision_or_layout")
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<7I", 2, 0, 0, 0, 0, 0, 1).hex())["status"],
+            "unknown_revision_or_layout")
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<7I", 1, 0, 0, 0, 0, 0, 2).hex())["status"],
+            "unknown_revision_or_layout")
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<12I", 1, *([0]*11)).hex())["status"],
+            "unknown_revision_or_layout")
+
     def test_unknown_recovery_layout_not_false_counts(self):
         self.assertIsNone(audit_mod.decode_recovery_live(None))
         self.assertIsNone(audit_mod.decode_recovery_live("zz"))
@@ -151,6 +210,42 @@ class RCSResetAuditTests(unittest.TestCase):
         self.assertEqual(audit_mod.decode_recovery_live(
             struct.pack("<26I", *words).hex())["status"],
             "unknown_revision_or_layout")
+
+    def test_optional_live_telemetry_end_to_end_mock(self):
+        import struct
+        raw = struct.pack("<7I", 1, 18, 21, 5, 1, 2, 1).hex()
+        registry = ('  |   "SL4RCSSinglePortReady" = Yes\n'
+                    '  |   "SL4RCSHookTelemetryLive" = <' + raw + '>\n'
+                    '  |   "TGLGpuRecReady" = Yes\n')
+        def fake_run(command, **_kwargs):
+            if command[0].endswith("ioreg"):
+                return registry
+            return "boot-args\\t-allow3d -wex-sl4-rcs-singleport"
+        with mock.patch.object(audit_mod.sys, "platform", "darwin"), \
+             mock.patch.object(audit_mod, "read_command", side_effect=fake_run):
+            data = audit_mod.current_hardware_state()
+        hooks = data["rcs_scheduler_hooks"]
+        self.assertEqual(hooks["status"], "decoded")
+        self.assertTrue(hooks["active"])
+        self.assertEqual(hooks["counters"]["dequeue_calls"], 18)
+        self.assertEqual(hooks["counters"]["eval_wait_calls"], 21)
+        self.assertTrue(data["io_registry_ready"]["SL4RCSSinglePortReady"])
+
+    def test_instrumentation_patch_is_source_only(self):
+        patch = (ROOT / "research/wex-sl4-rcs-hook-telemetry-v0.1.1.patch") \
+            .read_text(encoding="utf-8")
+        self.assertEqual(patch.count("--- a/"), 2)
+        self.assertEqual(patch.count("+++ b/"), 2)
+        for marker in ("kern_sl4_rcs_singleport.hpp", "kern_xe.cpp",
+                       "SL4RCSHookTelemetryLive",
+                       "observedDequeue", "observedEvalWait",
+                       "OSSerializer::forTarget"):
+            self.assertIn(marker, patch)
+        self.assertNotIn("SL4GpuRec", patch)
+        # A telemetry release never ships a ready-to-install kext image.
+        self.assertNotIn("Contents/MacOS/WhateverXe", patch)
+        for dangerous in ("nvram", "pmset", "csrutil", "boot-args="):
+            self.assertNotIn(dangerous, patch)
 
     def test_registry_properties_and_boot_args_no_leak(self):
         registry = '\n'.join((
@@ -175,6 +270,7 @@ class RCSResetAuditTests(unittest.TestCase):
         self.assertTrue(state["boot_flag_enabled"]["-allow3d"])
         self.assertEqual(state["rcs_tlb_preparser"]["write_returns"], 3)
         self.assertNotIn("SystemSerialNumber", json.dumps(state))
+        self.assertIsNone(state["rcs_scheduler_hooks"])
         self.assertNotIn("PRIVATE_DO_NOT_OUTPUT", json.dumps(state))
 
     def test_report_directory_is_required(self):

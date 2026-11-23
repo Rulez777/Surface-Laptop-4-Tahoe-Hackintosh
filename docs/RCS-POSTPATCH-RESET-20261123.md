@@ -120,6 +120,16 @@ candidate driver pack. It requires no administrator access.
 The sanitized reference result is in
 [sl4-rcs-reset-audit-20261123.json](reports/sl4-rcs-reset-audit-20261123.json).
 
+## Experimental hook-use telemetry (not installed)
+
+A separate [source-only instrumentation proposal](RCS-HOOK-TELEMETRY-EXPERIMENT.md)
+adds read-only counters to the existing RCS scheduler hooks and a versioned
+IORegistry property. The source-only experimental kext compiles in isolation,
+but is **not** installed on the reference Surface and does not solve the
+RCS hang. The read-only GPU reset audit will report the optional counters
+only when a future separately verified RCS kernel build publishes them;
+current RCS v0.1.0 reports them as unavailable.
+
 ## Acceptance criteria for a real driver fix
 
 1. Preserve Metal 2, display brightness, DMC/eDP, working manual and

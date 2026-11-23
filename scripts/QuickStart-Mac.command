@@ -179,6 +179,7 @@ show_advanced_menu() {
     print "  2) Already installed Tahoe — repair RCS / audio"
     print "  3) Read-only audio and brightness inspection"
     print "  7) Read-only RCS GPU reset audit (no EFI or driver changes)"
+    print "  8) Check backup EFI ZIP for missing files (read only)"
     print "  0) Exit"
     read "choice?Choose: "
     case "$choice" in
@@ -194,6 +195,7 @@ show_advanced_menu() {
             sudo python3 "$brightness" inspect --esp "$esp"
             ;;
         7) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
+        8) read "archive?Path to your existing EFI backup ZIP: "; python3 "$base/audit_rcs_recovery_backup.py" --archive "$archive" ;;
         0) exit 0 ;;
         *) print -u2 "Unknown option"; exit 4 ;;
     esac
@@ -205,5 +207,6 @@ case "${1:---auto}" in
     --auto-repair) repair_existing ;;
     --menu) show_advanced_menu ;;
     --rcs-audit) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
-    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--rcs-audit]"; exit 3 ;;
+    --rcs-recovery-check) [[ "${2:-}" != "" ]] || { print -u2 "Pass your existing EFI backup ZIP path"; exit 3; }; python3 "$base/audit_rcs_recovery_backup.py" --archive "$2" ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--rcs-audit|--rcs-recovery-check ZIP]"; exit 3 ;;
 esac
