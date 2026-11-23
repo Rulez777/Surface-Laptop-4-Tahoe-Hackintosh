@@ -54,6 +54,13 @@ This removal is not a hardware EC reset and does not change EFI. Removal refuses
 - `launchctl` reports `com.rulez777.sl4-tmp3` running after startup.
 - Log entries record one TMP=3 request after launch, with CPU-die readings between 43 °C and 73 °C across previous boots. No daemon errors were found in the sampled error log.
 - On 2026-11-23, `--inspect` passed and a read-only check read CPU die 49 °C. The current installed source hashes match the manifest.
-- **Not verified:** any RPM change, EC receipt, sustained loaded thermals, repeated real S3/S0ix wake, change of power source, battery drain or any safety benefit from TMP=3.
+- On 2026-11-23, a bounded **CPU-only** 35-second partial-load test (2 workers, 55% duty, automatic stop at 80 °C) completed with sensor TC0D reporting **45–56 °C** and no sensor errors. This is not a sustained full CPU/GPU test, fan-control validation or comparison with TMP=1.
+- **Not verified:** any RPM change, EC receipt, sustained CPU+GPU thermals, repeated real S3/S0ix wake, controlled power-source comparison, battery drain or any safety benefit from TMP=3.
+
+Read-only short CPU workload with a mandatory temperature limit (optional, avoid if the device is already hot):
+
+`python3 scripts/thermal/sl4_thermal_test.py --seconds 35 --workers 2 --duty 0.55 --limit-c 80`
+
+The Linux Surface platform driver and BigSurface upstream do not establish a separate direct fan-RPM interface for Surface Laptop 4; requests are performance profiles only, and BigSurface notes that observable effects of PerformanceMode were not established. Sources: https://github.com/Xiashangning/BigSurface and https://github.com/torvalds/linux/blob/master/drivers/platform/surface/surface_aggregator_registry.c
 
 Do not replace the platform's built-in thermal protection or assume this software prevents overheating. See [sleep status](SLEEP.md) before making changes to macOS sleep settings.

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "Non-secret compatibility profile. No personal EFI, serials, MLB, ROM or UUID.",
+  "profiles": [
+    {
+      "id": "surface-laptop-4-intel-i7-1185g7-13-tahoe",
+      "status": "existing_install_verified_on_one_machine",
+      "manufacturer": "Microsoft Corporation",
+      "model_keywords": [
+        "Surface Laptop 4"
+      ],
+      "cpu_keyword": "i7-1185G7",
+      "gpu_pci_id": "8086:9a49",
+      "acpi_ids": [
+        "MSHW0250",
+        "MSHW0084"
+      ],
+      "tested_storage_keywords": ["PM991", "MZ9LQ"],
+      "tested_mac_os": "26.7.1",
+      "opencore_version": "1.0.8",
+      "tags": [
+        "Metal2",
+        "eDP Keep/Softsleep",
+        "ALC274",
+        "Intel AX201"
+      ],
+      "certified_for_automatic_esp_installation": false,
+      "full_system_sleep_verified": false,
+      "clean_install_verified": false,
+      "note": "Other SL4 SKUs, firmware builds and SSDs require independent manual validation; inventory matching is not proof of compatibility."
+    }
+  ],
+  "pinned_artifacts": {
+    "WhateverXe-EDP-KeepSoftsleep": {
+      "path": "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip",
+      "sha256": "42664cbf1ebd3a4a169daa1adceb4e470adcdeddf691ff557e0ca06b83efa301",
+      "kind": "postinstall_optional",
+      "do_not_auto_install": true
+    },
+    "WhateverXe-Graphics-0.4.4": {
+      "url": "https://github.com/b00t0x/WhateverXe-Graphics/releases/download/v0.4.4/WhateverXe-Graphics-0.4.4.pkg",
+      "sha256": "f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec",
+      "kind": "macos_pkg",
+      "do_not_auto_install": true
+    },
+    "OpenCore-1.0.8": {
+      "url": "https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenCore-1.0.8-RELEASE.zip",
+      "sha256": "2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b",
+      "kind": "validator_and_bootloader",
+      "do_not_auto_install": true
+    }
+  }
+}
