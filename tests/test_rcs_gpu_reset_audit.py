@@ -155,6 +155,36 @@ class RCSResetAuditTests(unittest.TestCase):
         self.assertEqual(decoded["counters"]["rejected_port1"], 6)
         self.assertIn("does not prove", decoded["warning"])
 
+    def test_optional_telemetry_revision2_deferral_reasons(self):
+        import struct
+        # v2: revision + v1 fields + five non-control-flow observations.
+        encoded = struct.pack("<12I", 2, 101, 70, 3, 11, 4, 1,
+                              8, 3, 90, 66, 4).hex()
+        result = audit_mod.decode_rcs_hook_telemetry(encoded)
+        self.assertEqual(result["status"], "decoded")
+        self.assertEqual(result["revision"], 2)
+        self.assertTrue(result["active"])
+        self.assertEqual(result["counters"]["deferred_occupied_port"], 8)
+        self.assertEqual(result["counters"]["deferred_not_ready"], 3)
+        self.assertEqual(result["counters"]["native_dequeue_calls"], 90)
+        self.assertEqual(result["counters"]["native_eval_wait_calls"], 66)
+        self.assertEqual(result["counters"]["other_port_busy_wait_rejections"], 4)
+        self.assertEqual(result["counters"]["deferred_port0"], 11)
+
+    def test_v2_source_patch_changes_counters_not_scheduler_conditions(self):
+        source = (ROOT / "research/wex-sl4-rcs-queue-reasons-v0.1.2.patch")\
+            .read_text(encoding="utf-8")
+        self.assertIn("values[12]", source)
+        self.assertIn("deferredOccupiedPort", source)
+        self.assertIn("deferredNotReady", source)
+        self.assertIn("nativeDequeueCalls", source)
+        self.assertIn("nativeEvalWaitCalls", source)
+        self.assertIn("waitOtherPortBusy", source)
+        self.assertIn("if(port0)", source)
+        self.assertNotIn("sudo ", source)
+        # No experimental kernel binary is made part of this public patch.
+        self.assertNotIn("Contents/MacOS/WhateverXe", source)
+
     def test_telemetry_absent_or_bad_layout_not_misrepresented(self):
         import struct
         self.assertIsNone(audit_mod.decode_rcs_hook_telemetry(None))
@@ -166,6 +196,9 @@ class RCSResetAuditTests(unittest.TestCase):
             "unknown_revision_or_layout")
         self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
             struct.pack("<7I", 1, 0, 0, 0, 0, 0, 2).hex())["status"],
+            "unknown_revision_or_layout")
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<12I", 1, *([0]*11)).hex())["status"],
             "unknown_revision_or_layout")
 
     def test_unknown_recovery_layout_not_false_counts(self):

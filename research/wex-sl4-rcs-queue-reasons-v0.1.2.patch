@@ -1,0 +1,65 @@
+--- a/WhateverXe/kern_sl4_rcs_singleport.hpp
++++ b/WhateverXe/kern_sl4_rcs_singleport.hpp
+@@ -23,18 +23,30 @@
+ // scheduler hooks execute at all, independently of branch-only counters.
+ static volatile uint32_t observedDequeue = 0;
+ static volatile uint32_t observedEvalWait = 0;
++// Revision 2: split the two distinct reasons for deferring a dequeue,
++// and count calls that actually reached the native Intel implementation.
++// No change to scheduling decisions, branch conditions or GPU commands.
++static volatile uint32_t deferredOccupiedPort = 0;
++static volatile uint32_t deferredNotReady = 0;
++static volatile uint32_t nativeDequeueCalls = 0;
++static volatile uint32_t nativeEvalWaitCalls = 0;
++static volatile uint32_t waitOtherPortBusy = 0;
+ // IORegistry serialized on request; no timer, logging or persistent writes.
+-// v1: revision, dequeue calls, eval-wait calls, preempt suppression,
+-// deferred port0, rejected port1, active flag (all little-endian uint32).
++// v2: 12 uint32. All are boot-cumulative and may wrap.
+ static bool telemetrySerialize(void *,void *,OSSerialize *serializer) {
+-    uint32_t values[7] {
+-        1,
++    uint32_t values[12] {
++        2,
+         __atomic_load_n(&observedDequeue,__ATOMIC_RELAXED),
+         __atomic_load_n(&observedEvalWait,__ATOMIC_RELAXED),
+         __atomic_load_n(&suppressedPreempt,__ATOMIC_RELAXED),
+         __atomic_load_n(&deferredPort0,__ATOMIC_RELAXED),
+         __atomic_load_n(&rejectedPort1,__ATOMIC_RELAXED),
+-        __atomic_load_n(&active,__ATOMIC_ACQUIRE) ? 1U : 0U
++        __atomic_load_n(&active,__ATOMIC_ACQUIRE) ? 1U : 0U,
++        __atomic_load_n(&deferredOccupiedPort,__ATOMIC_RELAXED),
++        __atomic_load_n(&deferredNotReady,__ATOMIC_RELAXED),
++        __atomic_load_n(&nativeDequeueCalls,__ATOMIC_RELAXED),
++        __atomic_load_n(&nativeEvalWaitCalls,__ATOMIC_RELAXED),
++        __atomic_load_n(&waitOtherPortBusy,__ATOMIC_RELAXED)
+     };
+     auto data=OSData::withBytes(values,sizeof(values));
+     if(!data)return false;
+@@ -97,11 +109,14 @@
+                 const uint64_t port0=*reinterpret_cast<uint64_t *>(cs+0x30+static_cast<uint64_t>(bank)*16);
+                 if(port0 || !cs[0x1c3c]) {
+                     __atomic_fetch_add(&deferredPort0,1,__ATOMIC_RELAXED);
++                    if(port0) __atomic_fetch_add(&deferredOccupiedPort,1,__ATOMIC_RELAXED);
++                    else __atomic_fetch_add(&deferredNotReady,1,__ATOMIC_RELAXED);
+                     return;
+                 }
+             }
+         }
+     }
++    if(live())__atomic_fetch_add(&nativeDequeueCalls,1,__ATOMIC_RELAXED);
+     FunctionCast(wrapDequeue,orgDequeue)(that,flags);
+ }
+ static uint64_t wrapEvalWait(void *that,const bool *threshold,bool x,bool y) {
+@@ -114,9 +129,11 @@
+             const uint32_t bank=*reinterpret_cast<uint32_t *>(cs+0x50);
+             if(bank<=1 && *reinterpret_cast<uint64_t *>(cs+0x30+static_cast<uint64_t>(1-bank)*16)) {
+                 __atomic_fetch_add(&rejectedPort1,1,__ATOMIC_RELAXED);
++                __atomic_fetch_add(&waitOtherPortBusy,1,__ATOMIC_RELAXED);
+                 return 0;
+             }
+         }
+     }
++    if(live())__atomic_fetch_add(&nativeEvalWaitCalls,1,__ATOMIC_RELAXED);
+     return FunctionCast(wrapEvalWait,orgEvalWait)(that,threshold,x,y);
+ }

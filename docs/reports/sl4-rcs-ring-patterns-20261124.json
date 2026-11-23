@@ -1,0 +1,223 @@
+{
+  "driver_modified": false,
+  "efi_modified": false,
+  "gpu_reset_reports_analysed": 12,
+  "read_only": true,
+  "records": [
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:11:07",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 1,
+        "mi_arbitration_enable": 1,
+        "pipe_control_0x7a000004": 3,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x7a000204"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:11:27",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 1,
+        "mi_arbitration_enable": 1,
+        "pipe_control_0x7a000004": 4,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x0e009002"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:11:37",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:11:53",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:12:46",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:13:00",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-22T23:13:13",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-23T00:53:55",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 1,
+        "mi_arbitration_enable": 1,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 1
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 43,
+      "reported_ipehr": "0x03800000"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-23T13:08:40",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 1,
+        "mi_arbitration_enable": 1,
+        "pipe_control_0x7a000004": 3,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x7a000204"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-23T17:13:45",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x7b000008"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-23T17:13:59",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 0,
+        "mi_arbitration_enable": 0,
+        "pipe_control_0x7a000004": 2,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 2
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x7a000204"
+    },
+    {
+      "arbitration_disable_enable_counts_equal": true,
+      "event_local": "2026-11-23T23:32:09",
+      "interpretation_limit": "Counts show observed command words, not which instruction caused a wait, whether arb pairs are balanced over the full ring or whether hardware returned from a GPU reset.",
+      "known_opcodes": {
+        "mi_arbitration_disable": 2,
+        "mi_arbitration_enable": 2,
+        "pipe_control_0x7a000004": 4,
+        "pipe_control_0x7a000204": 2
+      },
+      "pipe_control_0x7a000204_flags": {
+        "0x40107021": 1,
+        "0x50107021": 1
+      },
+      "rcs_dump_available": true,
+      "rcs_dword_count": 99,
+      "reported_ipehr": "0x7a000204"
+    }
+  ],
+  "stability_fix_proven": false
+}

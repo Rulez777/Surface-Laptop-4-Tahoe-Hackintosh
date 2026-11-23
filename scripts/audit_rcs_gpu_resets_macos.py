@@ -192,25 +192,37 @@ def decode_rcs_hook_telemetry(hex_value: str | None) -> dict | None:
         data = bytes.fromhex(hex_value)
     except ValueError:
         return None
-    if len(data) != 28:
+    # v1: 7 words, v2: 12 words. Never silently reinterpret a new layout.
+    if len(data) not in (28, 48):
         return {"status": "unknown_revision_or_layout", "length": len(data)}
-    fields = struct.unpack("<7I", data)
-    if fields[0] != 1 or fields[6] not in (0, 1):
+    fields = struct.unpack("<" + str(len(data)//4) + "I", data)
+    if (fields[0] != (1 if len(data) == 28 else 2)
+            or fields[6] not in (0, 1)):
         return {"status": "unknown_revision_or_layout",
                 "revision": fields[0]}
+    counters = {
+        "dequeue_calls": fields[1],
+        "eval_wait_calls": fields[2],
+        "preempt_suppressed": fields[3],
+        "deferred_port0": fields[4],
+        "rejected_port1": fields[5],
+    }
+    if fields[0] == 2:
+        counters.update({
+            "deferred_occupied_port": fields[7],
+            "deferred_not_ready": fields[8],
+            "native_dequeue_calls": fields[9],
+            "native_eval_wait_calls": fields[10],
+            "other_port_busy_wait_rejections": fields[11],
+        })
     return {
         "status": "decoded",
         "revision": fields[0],
         "active": bool(fields[6]),
-        "counters": {
-            "dequeue_calls": fields[1],
-            "eval_wait_calls": fields[2],
-            "preempt_suppressed": fields[3],
-            "deferred_port0": fields[4],
-            "rejected_port1": fields[5],
-        },
+        "counters": counters,
         "warning": ("Counters are opt-in and cumulative since boot; "
-                    "hook activity alone does not prove GPU stability"),
+                    "hook activity alone does not prove GPU stability. "
+                    "Concurrent snapshots need not have internally equal sums."),
     }
 
 

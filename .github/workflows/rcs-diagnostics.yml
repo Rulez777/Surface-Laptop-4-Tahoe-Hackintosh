@@ -4,6 +4,12 @@ on:
   push:
     paths:
       - 'scripts/audit_rcs_gpu_resets_macos.py'
+      - 'scripts/audit_rcs_recovery_backup.py'
+      - 'scripts/compare_macho_binary_uuids.py'
+      - 'scripts/audit_rcs_ring_patterns_macos.py'
+      - 'tests/test_rcs_ring_patterns.py'
+      - 'tests/test_rcs_recovery_backup.py'
+      - 'tests/test_macho_comparison.py'
       - 'scripts/QuickStart-Mac.command'
       - 'scripts/build_offline_kit.py'
       - 'scripts/build_windows_quickstart_kit.py'
@@ -13,11 +19,20 @@ on:
       - 'docs/RCS-POSTPATCH-RESET-20261123.md'
       - 'docs/RCS-HOOK-TELEMETRY-EXPERIMENT.md'
       - 'research/wex-sl4-rcs-hook-telemetry-v0.1.1.patch'
+      - 'research/wex-sl4-rcs-queue-reasons-v0.1.2.patch'
+      - 'docs/reports/sl4-rcs-ring-patterns-20261124.json'
+      - 'docs/RCS-GPU-STABILITY-MASTER-PLAN.md'
       - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
       - '.github/workflows/rcs-diagnostics.yml'
   pull_request:
     paths:
       - 'scripts/audit_rcs_gpu_resets_macos.py'
+      - 'scripts/audit_rcs_recovery_backup.py'
+      - 'scripts/compare_macho_binary_uuids.py'
+      - 'scripts/audit_rcs_ring_patterns_macos.py'
+      - 'tests/test_rcs_ring_patterns.py'
+      - 'tests/test_rcs_recovery_backup.py'
+      - 'tests/test_macho_comparison.py'
       - 'scripts/QuickStart-Mac.command'
       - 'scripts/build_offline_kit.py'
       - 'scripts/build_windows_quickstart_kit.py'
@@ -27,6 +42,9 @@ on:
       - 'docs/RCS-POSTPATCH-RESET-20261123.md'
       - 'docs/RCS-HOOK-TELEMETRY-EXPERIMENT.md'
       - 'research/wex-sl4-rcs-hook-telemetry-v0.1.1.patch'
+      - 'research/wex-sl4-rcs-queue-reasons-v0.1.2.patch'
+      - 'docs/reports/sl4-rcs-ring-patterns-20261124.json'
+      - 'docs/RCS-GPU-STABILITY-MASTER-PLAN.md'
       - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
       - '.github/workflows/rcs-diagnostics.yml'
   workflow_dispatch:
