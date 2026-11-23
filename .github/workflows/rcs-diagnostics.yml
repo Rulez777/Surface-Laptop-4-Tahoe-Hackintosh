@@ -11,6 +11,8 @@ on:
       - 'scripts/prepare_full_driver_pack.py'
       - 'tests/test_rcs_gpu_reset_audit.py'
       - 'docs/RCS-POSTPATCH-RESET-20261123.md'
+      - 'docs/RCS-HOOK-TELEMETRY-EXPERIMENT.md'
+      - 'research/wex-sl4-rcs-hook-telemetry-v0.1.1.patch'
       - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
       - '.github/workflows/rcs-diagnostics.yml'
   pull_request:
@@ -23,6 +25,8 @@ on:
       - 'scripts/prepare_full_driver_pack.py'
       - 'tests/test_rcs_gpu_reset_audit.py'
       - 'docs/RCS-POSTPATCH-RESET-20261123.md'
+      - 'docs/RCS-HOOK-TELEMETRY-EXPERIMENT.md'
+      - 'research/wex-sl4-rcs-hook-telemetry-v0.1.1.patch'
       - 'docs/reports/sl4-rcs-reset-audit-20261123.json'
       - '.github/workflows/rcs-diagnostics.yml'
   workflow_dispatch:

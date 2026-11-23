@@ -1,0 +1,67 @@
+--- a/WhateverXe/kern_sl4_rcs_singleport.hpp
++++ b/WhateverXe/kern_sl4_rcs_singleport.hpp
+@@ -19,6 +19,29 @@
+ static volatile uint32_t suppressedPreempt = 0;
+ static volatile uint32_t deferredPort0 = 0;
+ static volatile uint32_t rejectedPort1 = 0;
++// Additional read-only v0.1.1 candidate counters. These track whether the
++// scheduler hooks execute at all, independently of branch-only counters.
++static volatile uint32_t observedDequeue = 0;
++static volatile uint32_t observedEvalWait = 0;
++// IORegistry serialized on request; no timer, logging or persistent writes.
++// v1: revision, dequeue calls, eval-wait calls, preempt suppression,
++// deferred port0, rejected port1, active flag (all little-endian uint32).
++static bool telemetrySerialize(void *,void *,OSSerialize *serializer) {
++    uint32_t values[7] {
++        1,
++        __atomic_load_n(&observedDequeue,__ATOMIC_RELAXED),
++        __atomic_load_n(&observedEvalWait,__ATOMIC_RELAXED),
++        __atomic_load_n(&suppressedPreempt,__ATOMIC_RELAXED),
++        __atomic_load_n(&deferredPort0,__ATOMIC_RELAXED),
++        __atomic_load_n(&rejectedPort1,__ATOMIC_RELAXED),
++        __atomic_load_n(&active,__ATOMIC_ACQUIRE) ? 1U : 0U
++    };
++    auto data=OSData::withBytes(values,sizeof(values));
++    if(!data)return false;
++    const bool ok=data->serialize(serializer);
++    data->release();
++    return ok;
++}
+ static bool live() { return __atomic_load_n(&active, __ATOMIC_ACQUIRE); }
+ static bool isKernelPtr(const void *ptr) {
+     return ptr && (reinterpret_cast<uintptr_t>(ptr)>>47)==0x1ffffULL;
+@@ -63,6 +86,7 @@
+     return false;
+ }
+ static void wrapDequeue(void *that,uint32_t flags) {
++    if(live())__atomic_fetch_add(&observedDequeue,1,__ATOMIC_RELAXED);
+     disablePreempt(that);
+     if(live() && isKernelPtr(that)) {
+         auto *cs=static_cast<uint8_t *>(that);
+@@ -81,6 +105,7 @@
+     FunctionCast(wrapDequeue,orgDequeue)(that,flags);
+ }
+ static uint64_t wrapEvalWait(void *that,const bool *threshold,bool x,bool y) {
++    if(live())__atomic_fetch_add(&observedEvalWait,1,__ATOMIC_RELAXED);
+     if(live() && isKernelPtr(that)) {
+         auto *cs=static_cast<uint8_t *>(that);
+         auto *c28=*reinterpret_cast<uint8_t **>(cs+0x28);
+--- a/WhateverXe/kern_xe.cpp
++++ b/WhateverXe/kern_xe.cpp
+@@ -11777,8 +11777,15 @@
+     checkKernelArgument("-allow3d") &&
+     checkKernelArgument("-wex-sl4-rcs-singleport")) {
+     const bool ready=SL4RCS::install(patcher,currentGraphics,index,address,size);
+-    if(auto root=IORegistryEntry::getRegistryRoot())
++    if(auto root=IORegistryEntry::getRegistryRoot()) {
+         root->setProperty("SL4RCSSinglePortReady",ready);
++        if(ready) {
++            if(auto live=OSSerializer::forTarget(nullptr,SL4RCS::telemetrySerialize)) {
++                root->setProperty("SL4RCSHookTelemetryLive",live);
++                live->release();
++            }
++        }
++    }
+     SYSLOG("igfx","SL4 RCS single-port/preemption patch ready=%u",ready);
+  }
+  if(checkKernelArgument("-wex-sl4-tgl-dmc"))routeSL4DMCWake(patcher,index,address,size);

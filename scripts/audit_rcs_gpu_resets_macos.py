@@ -179,6 +179,41 @@ def decode_recovery_live(hex_value: str | None) -> dict | None:
     }
 
 
+def decode_rcs_hook_telemetry(hex_value: str | None) -> dict | None:
+    """Decode opt-in v0.1.1 *candidate* hook usage telemetry, if present.
+
+    Missing means the reference Surface has the stock v0.1.0 RCS patch.
+    This is NOT GPU-reset telemetry and does not imply successful scheduling.
+    """
+    if not hex_value:
+        return None
+    try:
+        import struct
+        data = bytes.fromhex(hex_value)
+    except ValueError:
+        return None
+    if len(data) != 28:
+        return {"status": "unknown_revision_or_layout", "length": len(data)}
+    fields = struct.unpack("<7I", data)
+    if fields[0] != 1 or fields[6] not in (0, 1):
+        return {"status": "unknown_revision_or_layout",
+                "revision": fields[0]}
+    return {
+        "status": "decoded",
+        "revision": fields[0],
+        "active": bool(fields[6]),
+        "counters": {
+            "dequeue_calls": fields[1],
+            "eval_wait_calls": fields[2],
+            "preempt_suppressed": fields[3],
+            "deferred_port0": fields[4],
+            "rejected_port1": fields[5],
+        },
+        "warning": ("Counters are opt-in and cumulative since boot; "
+                    "hook activity alone does not prove GPU stability"),
+    }
+
+
 def current_hardware_state():
     if sys.platform != "darwin":
         return {"status": "not_macos"}
@@ -192,6 +227,7 @@ def current_hardware_state():
         props[key] = (value == "Yes") if value is not None else None
     live = match(r'"TGLGpuRecLive"\s*=\s*<([0-9a-fA-F]+)>', out)
     prep = match(r'"TGLRCSTLBPreparserLive"\s*=\s*<([0-9a-fA-F]+)>', out)
+    rcs_hooks = match(r'"SL4RCSHookTelemetryLive"\s*=\s*<([0-9a-fA-F]+)>', out)
     preparser = None
     if prep is not None:
         try:
@@ -214,7 +250,8 @@ def current_hardware_state():
     # Never return full IORegistry/NVRAM logs: may contain SMBIOS or serials.
     return {"status": "ok", "boot_flag_enabled": flag_states,
             "io_registry_ready": props, "recovery": decode_recovery_live(live),
-            "rcs_tlb_preparser": preparser}
+            "rcs_tlb_preparser": preparser,
+            "rcs_scheduler_hooks": decode_rcs_hook_telemetry(rcs_hooks)}
 
 
 def audit(directory, *, since_hours, now=None, hardware=True):
@@ -268,6 +305,11 @@ def main(argv=None):
                       f"RCS={ev['rcs']['status']} IPEHR={ev['last_instruction']} "
                       f"reason={ev['last_context_switch_reason']}")
             print("RCS PATCH ACTIVE NOW:", result["rcs_patch_active_now"])
+            hook = result["current_boot_state"].get("rcs_scheduler_hooks")
+            if hook and hook.get("status") == "decoded":
+                print("OPTIONAL RCS SCHEDULER HOOK COUNTERS:", hook["counters"])
+            else:
+                print("OPTIONAL RCS SCHEDULER HOOK COUNTERS: unavailable (old RCS build)")
             recovery = result["current_boot_state"].get("recovery")
             if recovery and recovery.get("status") == "decoded":
                 print("GPU RECOVERY COUNTERS:", recovery["counters"])
