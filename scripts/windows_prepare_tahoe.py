@@ -212,6 +212,7 @@ def prepare(args):
         shutil.copy2(apomac,data/APOMAC_FILENAME)
         shutil.copy2(dolby,data/DOLBY_FILENAME)
         shutil.copy2(ROOT/"scripts/install_dolby_macos.py",data/"install_dolby_macos.py")
+        shutil.copy2(ROOT/"scripts/auto_verify_first_boot_macos.py",data/"auto_verify_first_boot_macos.py")
         # Official matching macOS ocvalidate and one-click graphics transition.
         with zipfile.ZipFile(oc) as oc_archive:
             validator=oc_archive.read("Utilities/ocvalidate/ocvalidate")
@@ -248,6 +249,8 @@ def prepare(args):
             "apomac_dmg_sha256":APOMAC_SHA,
             "main_graphics_path":"RCS-integrated on first Metal activation",
             "macos_audio_permission_must_be_approved_by_user":True,
+            "macos_autopilot_first_boot_check":True,
+            "manual_os_recovery_install_still_required":True,
             "input_kexts_sha256":INPUT_SHA,
             "graphics_installer_sha256":GRAPHICS_SHA}
         (stage/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
@@ -293,6 +296,7 @@ def repair_only(args):
         shutil.copy2(dolby,out/DOLBY_FILENAME)
         files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",
                "install_sl4_rcs_stability.py","install_dolby_macos.py",
+               "auto_verify_first_boot_macos.py",
                "install_brightness_macos.py","install_audio_macos.py",
                "install_edp_keep_macos.py","configure_surface_trackpad.sh")
         for name in files:

@@ -45,7 +45,7 @@ class WindowsQuickStartTests(unittest.TestCase):
         self.assertTrue(windows_prepare_tahoe.RCS_URL.endswith("/SL4-RCS-Stability-0.1.0-beta.zip"))
         self.assertEqual(windows_prepare_tahoe.RCS_SHA,
                          "21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960")
-        self.assertIn("1) First Tahoe installation: Metal 2 + RCS fix",
+        self.assertIn("choose_automatic_action",
                       (ROOT/"scripts/QuickStart-Mac.command").read_text())
         self.assertIn("-wex-sl4-rcs-singleport",enable_xe_macos.STARTUP_ARGS)
         self.assertEqual(enable_xe_macos.DMC_PATH,"WhateverXe-SL4-RCS-STABILITY.kext")

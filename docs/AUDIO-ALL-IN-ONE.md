@@ -1,6 +1,8 @@
 # Surface Laptop 4 — integrated Iris Xe RCS graphics and Dolby Clear Speech
 
-**Windows-first QuickStart v0.4.2 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
+**Windows-first QuickStart v0.5.0 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.
+
+For the new Windows/Mac automatic mode and unavoidable Apple recovery/permission confirmations, read [Autopilot v0.5.0](AUTOPILOT.md).
 
 ## What happens without separate patches
 

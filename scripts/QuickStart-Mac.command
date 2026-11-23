@@ -32,7 +32,8 @@ check_assets() {
     verify "$base/$APOMAC" "$expected_apomac"
     verify "$base/WhateverXe-Graphics-0.4.4.pkg" "$expected_graphics"
     [[ -f "$base/ocvalidate" && -f "$base/enable_xe_macos.py" &&
-       -f "$base/install_dolby_macos.py" ]] || {
+       -f "$base/install_dolby_macos.py" &&
+       -f "$base/auto_verify_first_boot_macos.py" ]] || {
         print -u2 "Incomplete all-in-one hardware installer on SL4DATA."
         return 4
     }
@@ -104,24 +105,98 @@ repair_existing() {
     install_audio
     print "ONE-CLICK REPAIR READY. No need to install RCS or audio separately."
 }
-print "Surface Laptop 4 Intel — Windows-first Tahoe all-in-one hardware setup"
-print "  1) First Tahoe installation: Metal 2 + RCS fix + peripherals + Dolby Clear Speech"
-print "  2) Already installed Tahoe: apply missing RCS fix + Dolby Clear Speech"
-print "  3) Advanced read-only audio and brightness inspection"
-print "  0) Exit"
-read "choice?Choose: "
-case "$choice" in
-    1) install_from_usb ;;
-    2) repair_existing ;;
-    3)
-        esp="$(python3 "$base/find_internal_esp.py")"
-        audio="$base/drivers/install_audio_macos.py"
-        brightness="$base/drivers/install_brightness_macos.py"
-        [[ -f "$audio" ]] || audio="$base/install_audio_macos.py"
-        [[ -f "$brightness" ]] || brightness="$base/install_brightness_macos.py"
-        sudo python3 "$audio" inspect --esp "$esp"
-        sudo python3 "$brightness" inspect --esp "$esp"
-        ;;
-    0) exit 0 ;;
-    *) print -u2 "Unknown option"; exit 4 ;;
+# Detect first installation vs existing accelerated Tahoe. User can still open
+# the advanced menu deliberately with --menu. Nothing touches a different
+# computer; all asset, donor and OpenCore preflight remains mandatory.
+graphics_loaded() {
+    /usr/sbin/system_profiler SPDisplaysDataType 2>/dev/null | /usr/bin/grep -q 'Metal Support: Metal 2'
+}
+rcs_ready() {
+    /usr/sbin/ioreg -p IOService -l -w0 2>/dev/null | /usr/bin/grep -q '"SL4RCSSinglePortReady" = Yes'
+}
+usb_efi_ready() {
+    [[ -f /Volumes/MACOS-OC/EFI/OC/config.plist &&
+       -f /Volumes/MACOS-OC/EFI/BOOT/BOOTx64.efi ]]
+}
+usb_staged() {
+    [[ -f /Volumes/MACOS-OC/EFI/OC/config.plist ]] || return 1
+    /usr/libexec/PlistBuddy -c 'Print :Kernel:Add' /Volumes/MACOS-OC/EFI/OC/config.plist 2>/dev/null |
+        /usr/bin/grep -q 'WhateverXe-SL4-RCS-STABILITY.kext'
+}
+arm_postboot_check() {
+    local script="$base/auto_verify_first_boot_macos.py"
+    [[ -f "$script" ]] || {
+       print -u2 "Missing auto verification helper: $script"
+       return 24
+    }
+    python3 "$script" install --source "$base"
+    print "After the next successful accelerated macOS login, the verification agent will check RCS, DMC, screen wake and video automatically."
+}
+choose_automatic_action() {
+    if rcs_ready || graphics_loaded; then
+        print "AUTO DETECT: existing accelerated Tahoe — check RCS and Dolby without reinstalling graphics."
+        repair_existing
+        if rcs_ready; then
+            python3 "$base/auto_verify_first_boot_macos.py" check --source "$base" || true
+        fi
+        return
+    fi
+    if usb_efi_ready; then
+        if usb_staged; then
+            print "AUTO DETECT: graphics stage already prepared on USB; reboot from that USB to activate RCS."
+            return
+        fi
+        print "AUTO DETECT: first Tahoe boot, setting up original Surface hardware."
+        # Root permission is requested once and cached; macOS TCC audio consent
+        # remains an explicit first-use click, never bypassed.
+        sudo -v
+        install_from_usb
+        arm_postboot_check
+        return
+    fi
+    print -u2 "Could not identify a verified accelerated Tahoe or Windows-prepared MACOS-OC USB. Mount MACOS-OC and SL4DATA, then retry; nothing changed."
+    return 20
+}
+inspect_automatic_action() {
+    if rcs_ready || graphics_loaded; then
+        print "AUTO_ROUTE=repair_existing (existing accelerated Tahoe)"
+    elif usb_efi_ready && usb_staged; then
+        print "AUTO_ROUTE=pending_reboot (USB already staged)"
+    elif usb_efi_ready; then
+        print "AUTO_ROUTE=install_from_usb (fresh Tahoe)"
+    else
+        print "AUTO_ROUTE=blocked (requires Windows-prepared MACOS-OC USB)"
+    fi
+    print "INSPECTION_ONLY: no EFI, power policy, audio or app changes."
+}
+show_advanced_menu() {
+    print "Surface Laptop 4 Intel — advanced macOS setup"
+    print "  1) First Tahoe installation"
+    print "  2) Already installed Tahoe — repair RCS / audio"
+    print "  3) Read-only audio and brightness inspection"
+    print "  0) Exit"
+    read "choice?Choose: "
+    case "$choice" in
+        1) install_from_usb; arm_postboot_check ;;
+        2) repair_existing ;;
+        3)
+            esp="$(python3 "$base/find_internal_esp.py")"
+            audio="$base/drivers/install_audio_macos.py"
+            brightness="$base/drivers/install_brightness_macos.py"
+            [[ -f "$audio" ]] || audio="$base/install_audio_macos.py"
+            [[ -f "$brightness" ]] || brightness="$base/install_brightness_macos.py"
+            sudo python3 "$audio" inspect --esp "$esp"
+            sudo python3 "$brightness" inspect --esp "$esp"
+            ;;
+        0) exit 0 ;;
+        *) print -u2 "Unknown option"; exit 4 ;;
+    esac
+}
+case "${1:---auto}" in
+    --auto) choose_automatic_action ;;
+    --inspect-auto) inspect_automatic_action ;;
+    --auto-first) install_from_usb; arm_postboot_check ;;
+    --auto-repair) repair_existing ;;
+    --menu) show_advanced_menu ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu]"; exit 3 ;;
 esac

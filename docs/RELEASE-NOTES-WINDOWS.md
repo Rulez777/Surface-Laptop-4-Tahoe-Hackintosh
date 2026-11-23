@@ -1,20 +1,29 @@
-# Surface Laptop 4 — Windows Quick Start v0.4.2 beta
+# Surface Laptop 4 — Windows Quick Start v0.5.0 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.
 
 ## How to use
 
-1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.4.2-beta.zip`.
+1. Download and extract `SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip`.
 2. Double-click `QuickStart.cmd`.
-3. Press `1` to prepare the Tahoe installer, personal OpenCore EFI, Apple Recovery, drivers and installation USB.
+3. Default Autopilot prepares OpenCore, Recovery, drivers and a suitable USB; it always requires exact disk-erase confirmation.
 4. Boot the Surface from USB. In OpenCore select **macOS Base System (External)** (or **Recovery**) with arrow keys + Enter; do not select Windows or an existing macOS entry. New installer USBs show Recovery without pressing Space. Then install Tahoe into free space and run `QuickStart-Mac.command` to enable the full Surface hardware profile.
-5. Press `5` in Windows Quick Start to complete internal-SSD OpenCore dual boot, preserving Windows.
+5. After accelerated macOS boots, the login agent validates the hardware. Run the same `QuickStart.cmd` in Windows with USB connected to automatically enter the validated internal EFI staging step (with user authorization).
 
-Already running Tahoe? Press **2** to prepare the driver repair kit. For other recovery variants use **3 — Advanced / Experiments**.
+Already running Tahoe? Open **QuickStart-Advanced.cmd** and choose **2** for repairs, **3** for advanced recovery options.
 
 **Primary profile:** Surface Laptop 4 13.5-inch Intel Core i7-1185G7, Iris Xe 8086:9A49. Supported versions and components are selected by the setup; other hardware profiles require advanced customization.
 
 [**Quick Start guide**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/blob/main/docs/QUICKSTART.md) · [**Project README**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh)
+
+## v0.5.0 beta — automatic Windows-first installer orchestration
+
+- `QuickStart.cmd` runs **Auto** by default; no Windows menu step. It prepares Recovery, personal EFI and pinned RCS + eDP/DMC/S0ix + Dolby as a single dependency-checked workflow; automatically selects a uniquely eligible USB disk, but requires explicit `ERASE USB N` plus administrator confirmation before any erase.
+- The macOS helper now **autodetects first install / already-running accelerated Tahoe**, keeps advanced manual modes behind `--menu`, installs APOMac and Clear Speech without separate driver selections.
+- A user-owned `com.sl4.autoverify` LaunchAgent checks actual accelerated RCS, DMC, eDP/Softsleep, S0ix, Metal 2, CoreMedia and the static Dolby speaker correction after the next reboot. It writes a ready marker to the USB **only when the real first boot passes**. Never runs as root or changes power settings.
+- Starting the same Windows CMD again with the verified USB detects the stage, independently verifies EFI configuration and exact RCS binary SHA-256, and directs the existing internal OpenCore/BCD backup workflow. Privileged EFI work and new boot-entry selection still require explicit approval.
+- Still mandatory: choose Surface UEFI USB boot; use Apple's Recovery GUI to safely choose the macOS target partition and set up a user; approve macOS administrator prompts and protected APOMac System Audio Recording. **This does not perform silent/unattended macOS installation or bypass Apple TCC.**
+- Adds automated workflow tests and a new `docs/AUTOPILOT.md` guide. The accelerated driver and Dolby binary hashes remain unchanged, as does the default non-mutating macOS `pmset` behavior. Real fresh USB/Recovery-to-Tahoe installation not yet certified.
 
 ## v0.4.2 beta — preserve working sleep and screen wake (critical correction)
 

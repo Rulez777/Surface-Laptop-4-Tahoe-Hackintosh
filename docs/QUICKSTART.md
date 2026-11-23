@@ -4,10 +4,10 @@
 
 ## 1. Запуск в Windows
 
-1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.4.2-beta/SL4-Tahoe-Windows-QuickStart-v0.4.2-beta.zip). Нажмите **«Извлечь всё»**.
+1. [Скачайте **Quick Start для Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.0-beta/SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip). Нажмите **«Извлечь всё»**.
 2. Дважды нажмите **`QuickStart.cmd`** в распакованной папке.
-3. Выберите **1 — Install Tahoe from Windows**. Помощник определит оборудование, подготовит **уникальные личные идентификаторы OpenCore**, скачает оригинальные **Apple Recovery**, OpenCore и пакеты драйверов. При необходимости предложит установить Python.
-4. Подключите **отдельную USB-флешку от 16 ГБ**, лучше от 32 ГБ. Помощник покажет только USB-диски; укажите нужный номер. На шаге записи запросит права администратора и отдельно подтвердит очистку **только выбранного USB-диска**. **Все данные на этой флешке будут удалены**. Windows на внутреннем SSD не форматируется.
+3. **Выбирать режим не нужно** — автосценарий начинается сразу. Помощник определит оборудование, подготовит **уникальные личные идентификаторы OpenCore**, скачает оригинальные **Apple Recovery**, OpenCore и пакеты драйверов. При необходимости предложит установить Python.
+4. Подключите **отдельную USB-флешку от 16 ГБ**, лучше от 32 ГБ. Если подходящий USB-диск ровно один, он выбирается автоматически. При нескольких USB программа спросит номер. На шаге записи запросит права администратора и отдельно подтвердит очистку **только выбранного USB-диска**. **Все данные на этой флешке будут удалены**. Windows на внутреннем SSD не форматируется.
 5. По завершении появятся **MACOS-OC** (загрузчик + Apple Recovery) и **SL4DATA** (драйверы и инструменты). Не копируйте персональную `EFI/OC/config.plist` в открытые репозитории.
 
 Программа готовит Apple Recovery, а не распространяет копию macOS. Во время самой установки требуется интернет: **предпочтительно USB-Ethernet или док-станция с проводным подключением**. Wi-Fi Intel AX201 может ещё не работать в среде Recovery.
@@ -28,13 +28,13 @@
 zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 ```
 
-Выберите **1**. Помощник **в одном проходе** установит официальную графику WhateverXe Graphics 0.4.4, настроит проверенный драйвер **RCS single-port + DMC/eDP** в EFI USB, установит APOMac и оригинальный звуковой профиль Dolby Clear Speech, добавит автозапуск APOMac и создаст резервную копию OpenCore. Отдельный патч RCS и импорт звука **не нужны**. Затем перезагрузите Tahoe, продолжая использовать флешку. При первом запуске APOMac подтвердите разрешение macOS **System Audio Recording** — только этот системный запрос нельзя автоматизировать.
+**Никаких пунктов выбирать не нужно:** помощник сам отличает первую установку от исправления готовой macOS и **в одном проходе** установит официальную графику WhateverXe Graphics 0.4.4, настроит проверенный драйвер **RCS single-port + DMC/eDP** в EFI USB, установит APOMac и оригинальный звуковой профиль Dolby Clear Speech, добавит автозапуск APOMac и создаст резервную копию OpenCore. Отдельный патч RCS и импорт звука **не нужны**. Затем перезагрузите Tahoe, продолжая использовать флешку. При первом запуске APOMac подтвердите разрешение macOS **System Audio Recording** — только этот системный запрос нельзя автоматизировать.
 
 Драйверы **клавиатуры, тачпада и мультитач** (VoodooGPIO, VoodooSerial, VoodooInput, BigSurface и BigSurfaceHIDDriver) уже добавляются в персональную EFI ещё при подготовке Windows. Для Wi-Fi, Bluetooth, звука и яркости используйте пакет драйверов с раздела SL4DATA и [инструкцию для устройств](DRIVERS.md). Остальные компоненты можно выбрать и устанавливать раздельно, если конфигурация не совпадает с основной.
 
 ## 4. Загрузка без флешки (Windows + macOS)
 
-Убедившись, что Tahoe действительно запускается через USB, вернитесь в **Windows** и снова откройте `QuickStart.cmd`, выберите **5 — Finish installation / Internal OpenCore**.
+После успешной загрузки Tahoe с исправленными драйверами автоматический агент проверит состояние macOS и запишет метку готовности на SL4DATA. Вернитесь в **Windows**, оставьте USB подключённым и вновь запустите тот же `QuickStart.cmd`. Он автоматически перейдёт к настройке внутреннего OpenCore после проверки SHA-256, резервного копирования Windows и вашего подтверждения.
 
 Помощник проверит USB OpenCore, отдельно сохранит BCD и загрузчик Windows, установит `EFI/OC` во внутреннюю EFI и при согласии создаст **отдельный пункт OpenCore**. `EFI/Microsoft` и исходная запись загрузки Windows сохраняются. При следующем включении выберите macOS/OpenCore в меню прошивки.
 
@@ -42,7 +42,7 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 ## Уже установлен Tahoe
 
-В Windows `QuickStart.cmd` выберите **2 — Tahoe already installed**. Будет загружен самостоятельный пакет драйверов и инструментов восстановления. В macOS выберите **2** в QuickStart-Mac.command — он проверит RCS и установит нужное, включая Clear Speech. Можно выполнить:
+В Windows откройте `QuickStart-Advanced.cmd` и выберите **2 — Tahoe already installed**. Будет загружен самостоятельный пакет драйверов и инструментов восстановления. В macOS запустите QuickStart-Mac.command без параметров — он автоматически проверит RCS и установит недостающие компоненты, включая Clear Speech. Можно выполнить:
 
 ```bash
 zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
@@ -52,7 +52,7 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 ## Advanced: другие версии и эксперименты
 
-Выберите **3 — Advanced / Experiments** в Windows Quick Start для настройки источника Apple Recovery и экспериментальных драйверов. Рабочий профиль Surface Laptop 4 13.5″ — Intel i7-1185G7 и Iris Xe 8086:9A49. Другие версии Tahoe, Surface и периферия могут требовать собственной EFI и подбора драйверов — программа сохраняет возможность ручной настройки, не выдавая одну EFI за универсальную для всех ПК.
+Откройте `QuickStart-Advanced.cmd` и выберите **3 — Advanced / Experiments** для настройки источника Apple Recovery и экспериментальных драйверов. Рабочий профиль Surface Laptop 4 13.5″ — Intel i7-1185G7 и Iris Xe 8086:9A49. Другие версии Tahoe, Surface и периферия могут требовать собственной EFI и подбора драйверов — программа сохраняет возможность ручной настройки, не выдавая одну EFI за универсальную для всех ПК.
 
 ## Куда сохраняются данные
 
@@ -63,12 +63,14 @@ zsh "/Volumes/SL4DATA/QuickStart-Mac.command"
 
 **Оригинальные материалы:** <https://github.com/acidanthera/OpenCorePkg> (OpenCore и Apple Recovery), <https://github.com/b00t0x/WhateverXe>, <https://github.com/Xiashangning/BigSurface>. Требуется соблюдать лицензионные условия используемых компонентов.
 
-## All-in-one audio and RCS (v0.4.1, 2026-11-23)
+## Integrated audio and RCS (v0.5.0, 2026-11-23)
 
-For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.
+For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The integrated RCS fix addresses a tested GPU render-queue hang and is staged with eDP/DMC/S0ix in the first Metal transition. Windows QuickStart 0.5.0 already includes the RCS binary and Dolby profile; a separate driver installer is not needed. It does not add VP9/AV1 hardware decoding, and checks exact CPU, GPU, Tahoe, donor hashes and rollback data.
 
 Подробные проверки, ограничения Dolby и откат: [интегрированная графика и аудио](AUDIO-ALL-IN-ONE.md).
 
 ## Sleep and screen wake, corrected in v0.4.2
 
 Установщик **не меняет** настройки питания macOS (`pmset`), не отключает автоматический сон и не подменяет его таймеры. Используются проверенные eDP Keep/Softsleep, DMC, S0ixStandby и RCS, сохраняя возможность пробуждения экрана после закрытия/открытия крышки и кнопкой питания. После первого запуска проверьте сон/пробуждение на своём устройстве. v0.4.1 ошибочно менял таймеры и не должен использоваться для новой установки.
+
+Полный маршрут автоматизации, обязательные подтверждения и действия после перезагрузки: [Autopilot](AUTOPILOT.md). В расширенное меню Windows можно попасть запуском `QuickStart.cmd advanced`; режим Mac — `QuickStart-Mac.command --menu`. Полностью без участия человека установить macOS, выбрать безопасный диск и обойти запросы конфиденциальности Apple нельзя.

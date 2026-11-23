@@ -16,6 +16,7 @@ ROOT=Path(__file__).resolve().parents[1]
 OUTDIR="SL4-Tahoe-QuickStart"
 FILES=(
  "QuickStart.cmd",
+ "QuickStart-Advanced.cmd",
  "README.md",
  "docs/QUICKSTART.md",
  "docs/QUICKSTART-S0IX.md",
@@ -23,6 +24,7 @@ FILES=(
  "docs/RELEASE-NOTES-RCS.md",
  "docs/RELEASE-NOTES-WINDOWS.md",
  "docs/AUDIO-ALL-IN-ONE.md",
+ "docs/AUTOPILOT.md",
  "docs/INTERNAL-BOOT.md",
  "docs/SAFETY.md",
  "docs/DRIVERS.md",
@@ -44,6 +46,7 @@ FILES=(
  "scripts/enable_xe_macos.py",
  "scripts/find_internal_esp.py",
  "scripts/install_dolby_macos.py",
+ "scripts/auto_verify_first_boot_macos.py",
  "scripts/install_sl4_rcs_stability.py",
  "research/wex-sl4-rcs-singleport.patch",
  "scripts/xe_acceleration.py",
@@ -87,6 +90,10 @@ def build(out):
               "private_efi_included":False,"installer_image_included":False,
               "intel_rcs_integrated":True,"speaker_dolby_profile_included":True,
               "first_use_macos_audio_capture_consent_required":True,
+              "automatic_windows_usb_preparation":True,
+              "auto_macos_hardware_mode":True,
+              "auto_postboot_verification":True,
+              "apple_recovery_ui_install_requires_user":True,
               "mode":"downloads official Apple Recovery and builds private EFI on Windows",
               "sha256":{path:sha(content) for path,content in sorted(files.items())}}
     files["MANIFEST.json"]=(json.dumps(manifest,sort_keys=True,indent=2)+"\n").encode()

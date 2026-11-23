@@ -3,7 +3,7 @@
 # USB writing is an independent, administrator-confirmed action.
 [CmdletBinding()]
 param(
-  [ValidateSet('Menu','Prepare','WriteUSB','Repair','Experimental','InternalBoot')][string]$Mode='Menu',
+  [ValidateSet('Auto','Menu','Prepare','WriteUSB','Repair','Experimental','InternalBoot')][string]$Mode='Menu',
   [string]$StageFolder='',
   [int]$UsbDiskNumber=-1,
   [ValidateSet('latest','default')][string]$OsSelection='latest',
@@ -85,7 +85,7 @@ function Confirm-Surface-Hardware {
     if ($accept -ne 'Y') { throw 'Experimental build cancelled' }
   }
 }
-function Prepare-Installation {
+function Prepare-Installation([switch]$AutoUSB) {
   Assert-Windows
   Confirm-Surface-Hardware
   $py=Get-Python
@@ -110,13 +110,40 @@ function Prepare-Installation {
   if ($LASTEXITCODE -ne 0) { throw 'Tahoe preparation failed; see Python output' }
   Write-Host "Preparation complete: $out" -ForegroundColor Green
   Write-Host 'USB can be prepared next, or this staged folder can be preserved for another computer.'
-  $confirm=Read-Host 'Write prepared files to an empty USB drive now? (Y/N)'
-  if ($confirm -eq 'Y') {
+  if ($AutoUSB) {
+    # Never assume which disk is safe to erase. Choose from USB-only candidates.
+    # The destructive command still requires an exact disk-specific confirmation.
+    $candidates=@(Get-Disk | Where-Object { $_.BusType -eq 'USB' -and
+      -not $_.IsBoot -and -not $_.IsSystem -and -not $_.IsOffline -and
+      -not $_.IsReadOnly -and $_.Size -ge 14GB })
+    if ($candidates.Count -eq 0) {
+      Write-Host 'No eligible USB drive detected. Staged setup preserved; connect a 16+ GB USB and use advanced menu 4.' -ForegroundColor Yellow
+      return
+    }
     Show-USB-Choices
-    $value=Read-Host 'Enter the USB disk number (never C: or internal SSD)'
-    $number=0
-    if (-not [int]::TryParse($value,[ref]$number)) { throw 'Invalid disk number' }
+    $number=-1
+    if ($candidates.Count -eq 1) {
+      $number=[int]$candidates[0].Number
+      Write-Host "Detected one compatible USB drive, disk $number. It still requires explicit erase confirmation." -ForegroundColor Yellow
+    } else {
+      $value=Read-Host 'Multiple USB disks: enter the exact disk number to prepare'
+      if (-not [int]::TryParse($value,[ref]$number) -or
+          @($candidates | Where-Object { $_.Number -eq $number }).Count -ne 1) {
+        throw 'No unique eligible USB disk selected. Nothing was erased.'
+      }
+    }
     Write-USB -folder $out -number $number
+    Write-Host 'Automatic Windows preparation complete. The next mandatory step is Apple Recovery on the Surface.' -ForegroundColor Green
+    Write-Host 'After Tahoe setup, open SL4DATA\QuickStart-Mac.command once; its hardware mode will be selected automatically.'
+  } else {
+    $confirm=Read-Host 'Write prepared files to an empty USB drive now? (Y/N)'
+    if ($confirm -eq 'Y') {
+      Show-USB-Choices
+      $value=Read-Host 'Enter the USB disk number (never C: or internal SSD)'
+      $number=0
+      if (-not [int]::TryParse($value,[ref]$number)) { throw 'Invalid disk number' }
+      Write-USB -folder $out -number $number
+    }
   }
 }
 function Show-USB-Choices {
@@ -232,6 +259,54 @@ function Write-USB([string]$folder,[int]$number) {
   Write-Host 'Install Tahoe into NEW free disk space, not Windows/EFI partitions.'
   Write-Host "After installation use the SL4DATA partition $dataLetter for drivers."
 }
+function Find-Verified-MacReadyUSB {
+  # Never trust an arbitrary JSON marker on its own: independently check that
+  # its OpenCore config SHA and tested RCS binary actually exist on a USB disk.
+  $vols=@(Get-Volume -ErrorAction Stop | Where-Object {
+    $_.FileSystemLabel -eq 'SL4DATA' -and $_.FileSystem -eq 'exFAT' -and $_.DriveLetter })
+  if ($vols.Count -eq 0) { return $null }
+  if ($vols.Count -gt 1) { throw 'Multiple SL4DATA volumes; cannot select boot device automatically' }
+  $vol=$vols[0]
+  $root=([string]$vol.DriveLetter)+':\'
+  $markerPath=Join-Path $root 'SL4-AUTO-READY.json'
+  if (-not (Test-Path -LiteralPath $markerPath)) { return $null }
+  $info=Get-Content -LiteralPath $markerPath -Raw | ConvertFrom-Json
+  if ($info.schema -ne 1 -or
+      $info.stage -ne 'verified_accelerated_tahoe_boot' -or
+      $info.macos -ne '26.7.1' -or
+      $info.profile -ne 'Surface Laptop 4 Intel i7-1185G7 Iris Xe 8086:9A49' -or
+      -not $info.macos_metal2 -or
+      -not $info.s0ix_deep_idle_driver_loaded -or
+      -not $info.edp_panel_wake_hooks_ready -or
+      -not $info.coremedia_h264_hevc_fix -or
+      -not $info.dolby_clear_speech_installed -or
+      $info.power_policy_modified -ne $false -or
+      $info.windows_efi_modified -ne $false -or
+      $info.integrated_rcs_sha256 -ne 'e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21') {
+    throw 'Unexpected or incomplete Surface macOS verified-boot marker: stop'
+  }
+  $sl4Partition=Get-Partition -DriveLetter $vol.DriveLetter -ErrorAction Stop
+  $disk=Get-Disk -Number $sl4Partition.DiskNumber -ErrorAction Stop
+  if ($disk.BusType -ne 'USB' -or $disk.IsBoot -or $disk.IsSystem) {
+    throw 'Verified macOS stage marker must be on a removable USB disk'
+  }
+  $bootparts=@(Get-Partition -DiskNumber $disk.Number | Where-Object {
+      $_.DriveLetter -and (Get-Volume -Partition $_ -ErrorAction SilentlyContinue).FileSystemLabel -eq 'MACOS-OC' })
+  if ($bootparts.Count -ne 1) { throw 'Exactly one MACOS-OC partition is required on the same USB' }
+  $ocroot=([string]$bootparts[0].DriveLetter)+':\EFI\OC'
+  $conf=Join-Path $ocroot 'config.plist'
+  $kext=Join-Path $ocroot 'Kexts\WhateverXe-SL4-RCS-STABILITY.kext\Contents\MacOS\WhateverXe'
+  if (-not (Test-Path -LiteralPath $conf) -or -not (Test-Path -LiteralPath $kext)) {
+    throw 'USB EFI is missing the tested RCS driver'
+  }
+  $confsha=(Get-FileHash -LiteralPath $conf -Algorithm SHA256).Hash.ToLowerInvariant()
+  $rcssha=(Get-FileHash -LiteralPath $kext -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($confsha -ne $info.usb_oc_config_sha256 -or
+      $rcssha -ne $info.integrated_rcs_sha256) {
+    throw 'USB EFI differs from the macOS-verified Surface configuration'
+  }
+  return [PSCustomObject]@{Number=$disk.Number;Marker=$markerPath;BootVolume=$bootparts[0].DriveLetter}
+}
 function Stage-Internal-OpenCore {
   Assert-Windows
   $admin=[Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -282,7 +357,21 @@ function Prepare-Repair {
   Write-Host 'Copy SL4DATA folder into your Tahoe Downloads or a USB drive and open QuickStart-Mac.command.'
 }
 try {
-  if ($Mode -eq 'Menu') {
+  if ($Mode -eq 'Auto') {
+    Write-Host ''
+    Write-Host 'Surface Laptop 4 / macOS Tahoe AUTOMATIC setup' -ForegroundColor Cyan
+    Write-Host 'Your Windows partitions and Steam data remain untouched.'
+    Write-Host 'Only the selected USB disk may be erased, after a separate exact confirmation.'
+    $ready=Find-Verified-MacReadyUSB
+    if ($null -ne $ready) {
+      Write-Host 'Verified graphics, sleep/wake hooks, video and Dolby from the first macOS boot.' -ForegroundColor Green
+      Write-Host ('Preparing the final internal OpenCore stage from USB disk '+$ready.Number)
+      Write-Host 'The boot manager and BCD backup step still requires explicit administrator approval.'
+      Stage-Internal-OpenCore
+    } else {
+      Prepare-Installation -AutoUSB
+    }
+  } elseif ($Mode -eq 'Menu') {
     Write-Host ''
     Write-Host 'SURFACE LAPTOP 4 / macOS TAHOE - QUICK START' -ForegroundColor Cyan
     Write-Host '[1] Install Tahoe from Windows (prepares bootloader, Apple Recovery, drivers, USB)'
