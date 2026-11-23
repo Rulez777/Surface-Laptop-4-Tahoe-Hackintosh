@@ -1,5 +1,5 @@
 name: Publish Windows-first Tahoe Quick Start
-
+# Windows checks run only portable tests; Linux checks the full project suite.
 on:
   push:
     branches: [main]
