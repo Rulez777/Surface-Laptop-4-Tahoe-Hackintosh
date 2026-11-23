@@ -98,6 +98,33 @@ def main():
     require(hashlib.sha256(checker_target.read_bytes()).hexdigest() ==
             hashlib.sha256(video_checker.read_bytes()).hexdigest(),
             "Video checker failed to copy")
+    codec_audit = Path(__file__).with_name("audit_codec_macos.py")
+    require(codec_audit.is_file(), "Missing read-only VideoToolbox codec audit")
+    codec_audit_target = graphics_dir / codec_audit.name
+    codec_audit_target.write_bytes(codec_audit.read_bytes())
+    require(hashlib.sha256(codec_audit_target.read_bytes()).digest() ==
+            hashlib.sha256(codec_audit.read_bytes()).digest(),
+            "Codec audit failed to copy")
+    browser_helper = Path(__file__).with_name("install_media_fallback_macos.py")
+    require(browser_helper.is_file(), "Missing safe Mozilla browser helper")
+    browser_helper_target = graphics_dir / browser_helper.name
+    browser_helper_target.write_bytes(browser_helper.read_bytes())
+    require(hashlib.sha256(browser_helper_target.read_bytes()).digest() ==
+            hashlib.sha256(browser_helper.read_bytes()).digest(),
+            "Browser fallback helper failed to copy")
+    for name in ("probe_video_session_macos.c",
+                 "probe_real_asset_sessions_macos.m",
+                 "run_codec_hw_probes_macos.py",
+                 "install_local_video_player_macos.py",
+                 "iina_libmpv_decode_probe.c",
+                 "test_local_video_player_macos.py"):
+        source = Path(__file__).with_name(name)
+        require(source.is_file(), "Missing native codec probe source: " + name)
+        destination = graphics_dir / name
+        destination.write_bytes(source.read_bytes())
+        require(hashlib.sha256(destination.read_bytes()).digest() ==
+                hashlib.sha256(source.read_bytes()).digest(),
+                "Native codec probe copy/hash mismatch: " + name)
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
@@ -120,6 +147,10 @@ def main():
         "graphics": graphic,
         "video": {
             "validation_script": str(checker_target),
+            "codec_audit_script": str(codec_audit_target),
+            "optional_mozilla_fallback_installer": str(browser_helper_target),
+            "optional_iina_local_video_installer": str(graphics_dir / "install_local_video_player_macos.py"),
+            "optional_iina_libmpv_test": str(graphics_dir / "test_local_video_player_macos.py"),
             "tested": "Safari YouTube H.264 1080p playback on Tahoe 26.7.1, WEX 0.8.3 and Graphics 0.4.4",
             "CoreMedia_feature_flag": "AllowOnePassMetalScaling:Enabled=false, set by Graphics 0.4.4 postinstall",
             "limitations": "Only observed Safari H.264; VP9/AV1 hardware decoding and other videos not validated.",

@@ -1,0 +1,178 @@
+{
+  "device_or_driver_changed": false,
+  "hardware_decode_verified": false,
+  "interpretation": "No decoded frames or media-engine telemetry are measured. Even successful VT sessions do not prove Intel hardware decoding. If VideoToolbox reports decoder not found (-12906), it could not find an eligible decoder for that exact format on this system.",
+  "probe_version": 1,
+  "real_frame_decode_tested": false,
+  "results": {
+    "empty_format_probe": {
+      "changes_to_system": false,
+      "codecs": [
+        {
+          "api_advertised": true,
+          "codec": "H.264",
+          "format_status": 0,
+          "fourcc": "avc1",
+          "hardware_required_session_reported_hw": false,
+          "hardware_required_status": -12913,
+          "hardware_required_status_detail": {
+            "code": -12913,
+            "name": "kVTVideoDecoderNotAvailableNowErr"
+          },
+          "unrestricted_session_reported_hw": false,
+          "unrestricted_status": 0,
+          "unrestricted_status_detail": {
+            "code": 0,
+            "name": "noErr"
+          }
+        },
+        {
+          "api_advertised": true,
+          "codec": "HEVC",
+          "format_status": 0,
+          "fourcc": "hvc1",
+          "hardware_required_session_reported_hw": false,
+          "hardware_required_status": -12909,
+          "hardware_required_status_detail": {
+            "code": -12909,
+            "name": "kVTVideoDecoderBadDataErr"
+          },
+          "unrestricted_session_reported_hw": false,
+          "unrestricted_status": -12909,
+          "unrestricted_status_detail": {
+            "code": -12909,
+            "name": "kVTVideoDecoderBadDataErr"
+          }
+        },
+        {
+          "api_advertised": false,
+          "codec": "VP9",
+          "format_status": 0,
+          "fourcc": "vp09",
+          "hardware_required_session_reported_hw": false,
+          "hardware_required_status": -12906,
+          "hardware_required_status_detail": {
+            "code": -12906,
+            "name": "kVTCouldNotFindVideoDecoderErr"
+          },
+          "unrestricted_session_reported_hw": false,
+          "unrestricted_status": -12906,
+          "unrestricted_status_detail": {
+            "code": -12906,
+            "name": "kVTCouldNotFindVideoDecoderErr"
+          }
+        },
+        {
+          "api_advertised": false,
+          "codec": "AV1",
+          "format_status": 0,
+          "fourcc": "av01",
+          "hardware_required_session_reported_hw": false,
+          "hardware_required_status": -12906,
+          "hardware_required_status_detail": {
+            "code": -12906,
+            "name": "kVTCouldNotFindVideoDecoderErr"
+          },
+          "unrestricted_session_reported_hw": false,
+          "unrestricted_status": -12906,
+          "unrestricted_status_detail": {
+            "code": -12906,
+            "name": "kVTCouldNotFindVideoDecoderErr"
+          }
+        }
+      ],
+      "notes": "Session creation is not stream decode; a format may require codec-specific sample descriptions.",
+      "probe": "VideoToolbox ephemeral session creation",
+      "real_frame_decode_tested": false
+    },
+    "real_asset_probe": {
+      "assets": [
+        {
+          "allow_software": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": 0,
+            "session_created": 1,
+            "status_detail": {
+              "code": 0,
+              "name": "noErr"
+            }
+          },
+          "codec_fourcc": "avc1",
+          "path": "h264-360.mp4",
+          "real_frame_decode_tested": false,
+          "require_hardware": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": -12913,
+            "session_created": 0,
+            "status_detail": {
+              "code": -12913,
+              "name": "kVTVideoDecoderNotAvailableNowErr"
+            }
+          },
+          "video_toolbox_advertises_hardware": 1
+        },
+        {
+          "allow_software": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": -12906,
+            "session_created": 0,
+            "status_detail": {
+              "code": -12906,
+              "name": "kVTCouldNotFindVideoDecoderErr"
+            }
+          },
+          "codec_fourcc": "hev1",
+          "path": "hevc-360.mp4",
+          "real_frame_decode_tested": false,
+          "require_hardware": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": -12906,
+            "session_created": 0,
+            "status_detail": {
+              "code": -12906,
+              "name": "kVTCouldNotFindVideoDecoderErr"
+            }
+          },
+          "video_toolbox_advertises_hardware": 0
+        },
+        {
+          "allow_software": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": -12906,
+            "session_created": 0,
+            "status_detail": {
+              "code": -12906,
+              "name": "kVTCouldNotFindVideoDecoderErr"
+            }
+          },
+          "codec_fourcc": "av01",
+          "path": "av1-1080.mp4",
+          "real_frame_decode_tested": false,
+          "require_hardware": {
+            "hardware_property_reported": false,
+            "hardware_reported": false,
+            "os_status": -12906,
+            "session_created": 0,
+            "status_detail": {
+              "code": -12906,
+              "name": "kVTCouldNotFindVideoDecoderErr"
+            }
+          },
+          "video_toolbox_advertises_hardware": 0
+        },
+        {
+          "error": "AVFoundation did not recognize a video track",
+          "path": "vp9-1080.webm"
+        }
+      ],
+      "devices_or_drivers_modified": false,
+      "has_decoded_frames": false,
+      "method": "Read-only real asset format description and VideoToolbox session creation"
+    }
+  }
+}

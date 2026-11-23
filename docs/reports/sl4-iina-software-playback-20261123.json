@@ -1,0 +1,33 @@
+{
+  "driver_or_efi_changed": false,
+  "files": [
+    {
+      "codec": "Alliance for Open Media AV1",
+      "end_of_file_reached": true,
+      "filename": "av1-1080.mp4",
+      "frame_count_measured": false,
+      "hardware_acceleration": "disabled",
+      "height": 1080,
+      "playback_error": 0,
+      "software_decoded_to_eof": true,
+      "video_stream_loaded": true,
+      "width": 1920
+    },
+    {
+      "codec": "Google VP9",
+      "end_of_file_reached": true,
+      "filename": "vp9-1080.webm",
+      "frame_count_measured": false,
+      "hardware_acceleration": "disabled",
+      "height": 1080,
+      "playback_error": 0,
+      "software_decoded_to_eof": true,
+      "video_stream_loaded": true,
+      "width": 1920
+    }
+  ],
+  "hardware_decode_verified": false,
+  "installed_player": "IINA",
+  "status": "pass",
+  "video_rendered_on_screen": false
+}

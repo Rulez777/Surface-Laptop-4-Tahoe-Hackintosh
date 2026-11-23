@@ -1,5 +1,7 @@
 # Browser video — Surface Laptop 4 Intel / macOS Tahoe
 
+**2026-11-23 hardware-codec audit:** [Intel Tiger Lake AV1/VP9 vs macOS VideoToolbox registry](VIDEO-CODECS-20261123.md). The Intel Xe-LP media block supports AV1/VP9 decoding, but on the tested macOS installation the hardware decoder API returns false and the decoder capability dictionaries are null. **No AV1/VP9 hardware fix has been validated.** Calling VideoToolbox's supplemental codec registration API in a standalone diagnostic process did not enable hardware AV1 or VP9. New all-in-one builds from this source include a read-only diagnostic, `scripts/audit_codec_macos.py` (the existing published v0.5.0 archive is unchanged); it does not modify drivers or system settings.
+
 **Verified on one machine:** macOS Tahoe 26.7.1, Intel Iris Xe `8086:9A49`, WhateverXe 0.8.3, WhateverXe Graphics 0.4.4. Safari played a YouTube H.264 (`avc1`) stream at **1920 × 1080**. WebKit's media logs showed the video timebase advancing, hundreds of decoded frames and zero dropped frames during the recorded sample.
 
 ## Required graphics configuration
@@ -20,9 +22,80 @@ The same script is bundled in the generated `SL4-FULL-DRIVERS/macOS-Installers/`
 
 ## Browser check
 
-Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats for nerds** can reveal the active codec. The confirmed working stream used H.264 (`avc1`). This device advertises hardware H.264 and HEVC decoding but **not hardware VP9 or AV1**. Safari may select a different codec for other videos, resolutions or streams; those paths are not established by this test.
+Open YouTube using **Safari** and test a standard 1080p video. YouTube's **Stats for nerds** can reveal the active codec. The confirmed working stream used H.264 (`avc1`). This macOS installation advertises hardware H.264 and HEVC decoding but **does not expose hardware VP9 or AV1**, despite the Intel GPU's documented media capabilities. Safari may select a different codec for other videos, resolutions or streams; those paths are not established by this test.
 
 If the video stalls, record the codec, resolution and whether audio continues. Check the script output, driver versions and macOS logs before changing settings. A browser/network problem and a VideoToolbox failure require different fixes.
+
+## Native AV1/VP9 hardware decoder investigation
+
+A second hardware-codec diagnostic now comes with the project:
+`scripts/run_codec_hw_probes_macos.py`. It creates isolated VideoToolbox
+decoder sessions using Apple SDKs; unlike browser playback, these requests
+can explicitly require a hardware decoder. On the tested Surface,
+a real AV1 MP4 produced `kVTCouldNotFindVideoDecoderErr` (-12906)
+for both required-hardware and unrestricted sessions. The VP9 WebM
+sample was not recognized as a video track by AVFoundation.
+See [test matrix, limitations and reproduction](VIDEO-CODECS-20261123.md#hardware-required-decoder-session-probes-2026-11-23).
+Hardware AV1/VP9 is **still not enabled**.
+
+## AV1/VP9 web-video fallback verified on this Surface (2026-11-23)
+
+On this exact macOS Tahoe 26.7.1 machine, Mozilla Firefox **160.0.1** was installed into `~/Applications/Firefox.app` from the official Mozilla download. The app's notarized Apple Developer ID signature was verified as **Mozilla Corporation / Team ID `43AQ936H96`**. Safari, the default browser, GPU drivers, EFI and sleep settings were left unchanged.
+
+An **isolated Firefox WebDriver session** played real 10-second sample videos with the HTML5 `video` element. Playback time advanced beyond 2 seconds in each clip, and Firefox reported the following decoded frames and resolution:
+
+| Codec/container | Sample | Frames decoded | Dropped | Browser playback |
+| --- | --- | ---: | ---: | --- |
+| AV1/MP4 | 640 × 360 | 69 | 0 | Pass |
+| VP9/WebM | 640 × 360 | 69 | 2 | Pass |
+| AV1/MP4 | 1920 × 1080 | 68 | 0 | Pass |
+| VP9/WebM | 1920 × 1080 | 68 | 2 | Pass |
+
+Samples: `https://test-videos.co.uk/` (Big Buck Bunny 10-second AV1 MP4 / VP9 WebM, sizes 1 MB and 5 MB). These are **software playback tests**, not Intel fixed-function decoder tests. Playback at 4K, 10-bit, HDR, YouTube DRM and other applications is not established by these four samples.
+
+The Windows-first all-in-one now includes **opt-in**, no-admin `install_media_fallback_macos.py` for the same software fallback. In macOS Terminal with the full project checkout, run a **single command**: `python3 scripts/install_media_fallback_macos.py --install`. Or launch `QuickStart-Mac.command --media-fallback` from a newly built `SL4DATA` installer package, or choose advanced menu **4**. No change to the normal installer path or default browser. `--check --json` reports an existing verified Firefox without installing anything. It always refuses unsigned, unnotarized or non-Mozilla app bundles.
+
+## Verified native local-file playback (IINA 1.5.1)
+
+On this Surface, the official [IINA](https://iina.io/) 1.5.1 DMG was
+downloaded and its checksum, Developer ID signature and Gatekeeper
+notarization were verified:
+
+- Release: `https://github.com/iina/iina/releases/download/v1.5.1/IINA.v1.5.1.dmg`
+- DMG SHA-256: `f414507ec60bcfeda3a9f539f74470253e31b619d031e7a9e9a71519da1598cd`
+- Signed publisher: `Developer ID Application: Hechen Li (67CQ77V27R)`
+- Bundle identifier: `com.colliderli.iina`
+- Installed independently at `~/Applications/IINA.app`, with no
+  default application associations changed.
+
+For reproducible **real local file decode**, the C tool
+`scripts/iina_libmpv_decode_probe.c` and its Python runner
+`scripts/test_local_video_player_macos.py` load the signed app's own
+`libmpv.2.dylib` with a temporary, explicitly scoped rpath. They request
+`vo=null`, `ao=null`, `hwdec=no`, and run the selected video to EOF.
+
+| Source file | libmpv selected codec | Resolution | File finished | Decoder error |
+| --- | --- | --- | --- | --- |
+| AV1 MP4 | Alliance for Open Media AV1 | 1920×1080 | Yes | 0 |
+| VP9 WebM | Google VP9 | 1920×1080 | Yes | 0 |
+
+The complete machine-readable result is available as [local IINA playback evidence](reports/sl4-iina-software-playback-20261123.json).
+
+The harness does not claim to have measured individual frame counts or
+actual graphical on-screen rendering. It tests **software** decoding,
+not hardware decode. The previously documented Firefox tests independently
+confirmed actual decoded frames at 1080p.
+
+In a new Windows-first or recovery all-in-one installer, **menu 6** or
+`QuickStart-Mac.command --media-local-player` downloads the **SHA-pinned**
+notarized IINA release after an explicit user opt-in. Alternatively run
+`python3 scripts/install_local_video_player_macos.py --install` from a
+project checkout. Existing IINA installations are never overwritten. It
+does not modify Safari, QuickTime, VideoToolbox or the Intel GPU stack.
+
+On a Mac with IINA and the two sample files already downloaded, repeat
+the engine test with this **single command**:
+`python3 scripts/test_local_video_player_macos.py --assets ~/Downloads/SL4-Media-Tests-20261123/av1-1080.mp4 ~/Downloads/SL4-Media-Tests-20261123/vp9-1080.webm`.
 
 ## Limitations
 
