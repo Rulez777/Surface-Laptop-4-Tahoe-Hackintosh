@@ -37,7 +37,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          @('test_setup_workflow.py','test_offline_kit.py','test_stability_audit.py','test_thermal_tmp3.py','test_sleep_audit_macos.py','test_dvmt60.py','test_video_macos.py','test_power_audit_macos.py','test_ac_power_recovery.py','test_compare_power_snapshots.py') | ForEach-Object {
+          @('test_setup_workflow.py','test_offline_kit.py','test_stability_audit.py','test_thermal_tmp3.py','test_sleep_audit_macos.py','test_dvmt60.py','test_video_macos.py','test_power_audit_macos.py','test_ac_power_recovery.py','test_compare_power_snapshots.py','test_tgl_dmc_firmware.py') | ForEach-Object {
             python -m unittest discover -s tests -p $_ -q
             if ($LASTEXITCODE -ne 0) { throw "Portable test failed: $_" }
           }

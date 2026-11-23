@@ -1,0 +1,193 @@
+--- a/WhateverXe/kern_xe.cpp
++++ b/WhateverXe/kern_xe.cpp
+@@ -89,6 +89,7 @@
+ #include "kern_tgl_gpurec.hpp"
+ #include "kern_tgl_nomc.hpp"
+ #include "kern_tgl_aux_call.hpp"
++#include "kern_sl4_dmc_trial.hpp"
+ 
+ #include <Headers/kern_api.hpp>
+ #include <Headers/kern_cpu.hpp>
+@@ -11664,6 +11665,94 @@
+  IORegistryEntry::getRegistryRoot()->setProperty("TGLNoMCReady",ok);
+  return ok;
+ }
++// SL4 Tiger Lake DMC v2.12 source-only trial. All hooks fail closed on
++// unrecognized donor offsets/prologues, and are gated on -wex-sl4-tgl-dmc.
++void XE::wrapSL4DMCInit(void *controller) {
++    auto self=callbackXE;
++    if (!self) return;
++    if (self->orgSL4DMCInit)
++        FunctionCast(wrapSL4DMCInit,self->orgSL4DMCInit)(controller);
++    if (!controller)return;
++    uint32_t readback=0;
++    const bool ok=SL4DMCTrial::upload(controller,self->sl4DMCRegWrite,
++                                     self->sl4DMCRegRead,&readback);
++    auto root=IORegistryEntry::getRegistryRoot();
++    if(root) {
++        root->setProperty("SL4DMCLocalInitReadback",readback);
++        root->setProperty("SL4DMCLocalInitVerified",ok);
++    }
++    // Save only a controller whose live MMIO upload succeeded. A successful
++    // patch registration is not equivalent to a completed hardware upload.
++    if(ok)self->sl4DMCSavedFramebufferController=controller;
++}
++void XE::wrapSL4DMCWake(void *accelerator) {
++    auto self=callbackXE;
++    if(!self)return;
++    if(self->orgSL4DMCWake)
++        FunctionCast(wrapSL4DMCWake,self->orgSL4DMCWake)(accelerator);
++    bool ok=false;
++    uint32_t back=0;
++    // This pointer lifetime is not yet proven on Surface across Deep Idle;
++    // this opt-in candidate must not be installed without supervised testing.
++    if(self->sl4DMCSavedFramebufferController)
++        ok=SL4DMCTrial::upload(self->sl4DMCSavedFramebufferController,
++                               self->sl4DMCRegWrite,self->sl4DMCRegRead,&back);
++    auto root=IORegistryEntry::getRegistryRoot();
++    if(root) {
++        root->setProperty("SL4DMCLocalWakeReadback",back);
++        root->setProperty("SL4DMCLocalWakeVerified",ok);
++    }
++}
++bool XE::routeSL4DMCInit(KernelPatcher &patcher,size_t index,
++                         mach_vm_address_t address,size_t size) {
++    if(!checkKernelArgument("-wex-sl4-tgl-dmc") || !tglRequested ||
++       tglDeviceId!=0x9A49)return false;
++    constexpr const char *init="__ZN31AppleIntelFramebufferController18hwInitializeCStateEv";
++    constexpr const char *wr="__ZN31AppleIntelRegisterAccessManager19FastWriteRegister32Emj";
++    constexpr const char *rd="__ZN31AppleIntelRegisterAccessManager18FastReadRegister32Em";
++    static const uint8_t initHead[]={0x55,0x48,0x89,0xE5,0x41,0x57,0x41,0x56,0x53,0x50};
++    static const uint8_t ioHead[]={0x55,0x48,0x89,0xE5,0x48,0xFF,0x05};
++    const auto initFn=patcher.solveSymbol<mach_vm_address_t>(index,init,address,size);
++    const auto wrFn=patcher.solveSymbol<mach_vm_address_t>(index,wr,address,size);
++    const auto rdFn=patcher.solveSymbol<mach_vm_address_t>(index,rd,address,size);
++    bool qualified=size>0x5EDA0 && initFn==address+0x43972 &&
++        wrFn==address+0x5ED7E && rdFn==address+0x5ED62 &&
++        !memcmp(reinterpret_cast<void *>(initFn),initHead,sizeof(initHead)) &&
++        !memcmp(reinterpret_cast<void *>(wrFn),ioHead,sizeof(ioHead)) &&
++        !memcmp(reinterpret_cast<void *>(rdFn),ioHead,sizeof(ioHead));
++    patcher.clearError();
++    if(qualified) {
++        sl4DMCRegWrite=wrFn;sl4DMCRegRead=rdFn;
++        KernelPatcher::RouteRequest route(init,wrapSL4DMCInit,orgSL4DMCInit);
++        qualified=patcher.routeMultiple(index,&route,1,address,size);
++        patcher.clearError();
++    }
++    sl4DMCFramebufferHookReady=qualified;
++    if(auto root=IORegistryEntry::getRegistryRoot())
++        root->setProperty("SL4DMCLocalInitHookReady",qualified);
++    return qualified;
++}
++bool XE::routeSL4DMCWake(KernelPatcher &patcher,size_t index,
++                         mach_vm_address_t address,size_t size) {
++    if(!checkKernelArgument("-wex-sl4-tgl-dmc") || !tglRequested ||
++       tglDeviceId!=0x9A49)return false;
++    constexpr const char *wake="__ZN16IntelAccelerator13systemDidWakeEv";
++    static const uint8_t wakeHead[]={0x55,0x48,0x89,0xE5,0x53,0x50,0x48,0x89,0xFB};
++    const auto target=patcher.solveSymbol<mach_vm_address_t>(index,wake,address,size);
++    bool qualified=size>0x28983 && target==address+0x2897A &&
++        !memcmp(reinterpret_cast<void *>(target),wakeHead,sizeof(wakeHead));
++    patcher.clearError();
++    if(qualified) {
++        KernelPatcher::RouteRequest route(wake,wrapSL4DMCWake,orgSL4DMCWake);
++        qualified=patcher.routeMultiple(index,&route,1,address,size);
++        patcher.clearError();
++    }
++    sl4DMCWakeHookReady=qualified;
++    if(auto root=IORegistryEntry::getRegistryRoot())
++        root->setProperty("SL4DMCLocalWakeHookReady",qualified);
++    return qualified;
++}
++
+ bool tglInstallGpuRec(KernelPatcher &,size_t,mach_vm_address_t,size_t,bool,bool,bool); // -wex-tgl-gpurec
+ bool XE::processTGLAccelerator(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
+  if(adlnDetected && tglAcceleratorRequested)dsiBackingHooksReady=processDSIBackingHooks(patcher,index,address,size);
+@@ -11681,6 +11770,7 @@
+   IORegistryEntry::getRegistryRoot()->setProperty("WhateverXeNoAccelGuardReady",ready);
+   patcher.clearError();return ready;
+  }
++ if(checkKernelArgument("-wex-sl4-tgl-dmc"))routeSL4DMCWake(patcher,index,address,size);
+  const bool surfaceABIReady=tglInstallSonomaSurfaceABI(patcher,index,address,size,false);
+  IORegistryEntry::getRegistryRoot()->setProperty("TGLSonomaSurfaceAcceleratorReady",surfaceABIReady);
+  if(adlnDetected && (checkKernelArgument("-wex-adln-kernel-ctx") || adlnNativeRCSProfileRequested))adlnPrepareRCSProfile(patcher,index,address,size);
+@@ -12752,6 +12842,7 @@
+   KernelPatcher::RouteRequest lane(laneSymbol,wrapFramebufferComputeLanes,orgFramebufferComputeLanes);
+   laneReady=patcher.routeMultipleShort(index,&lane,1,address,size);patcher.clearError();
+  }
++ if(checkKernelArgument("-wex-sl4-tgl-dmc"))routeSL4DMCInit(patcher,index,address,size);
+  const bool agdc=processFramebufferAGDC(patcher,index,address,size);
+  const bool runtime=processFramebufferDonorRuntime(patcher,index,address,size);
+  framebufferTrainingHooksReady=processFramebufferTraining(patcher,index,address,size);
+--- a/WhateverXe/kern_xe.hpp
++++ b/WhateverXe/kern_xe.hpp
+@@ -123,6 +123,14 @@
+  XELP::PanelPWM adlsPanelPWM;
+  mach_vm_address_t orgADLSLightUpEDP {},orgADLSPanelBacklight {};
+  mach_vm_address_t orgTGLRegsNeedUpdate {};
++ // Experimental TGL DMC v2.12 patch, never active without explicit boot-arg.
++ bool sl4DMCFramebufferHookReady {},sl4DMCWakeHookReady {};
++ void *sl4DMCSavedFramebufferController {};
++ mach_vm_address_t orgSL4DMCInit {},orgSL4DMCWake {},sl4DMCRegWrite {},sl4DMCRegRead {};
++ static void wrapSL4DMCInit(void *controller);
++ static void wrapSL4DMCWake(void *accelerator);
++ bool routeSL4DMCInit(KernelPatcher &,size_t,mach_vm_address_t,size_t);
++ bool routeSL4DMCWake(KernelPatcher &,size_t,mach_vm_address_t,size_t);
+  mach_vm_address_t orgTGLExitWake {},orgTGLEnterWake {},orgTGLPanelPowerSoft {};
+  static bool adlsPanelPWMTarget(void *controller,void *&access,void *&power);
+  static bool adlsCapturePanelPWM(void *controller);
+--- /dev/null
++++ b/WhateverXe/kern_sl4_dmc_trial.hpp
+@@ -0,0 +1,52 @@
++#pragma once
++/* Experimental local-only Surface Laptop 4 TGL DMC v2.12 loader.
++ * This is NOT activated unless the explicitly opt-in WEX hook qualifies the
++ * donor image, and no live EFI or MMIO write is performed by the build.
++ * See scripts/inspect_tgl_dmc.py for verified fixed-size MMIO layout.
++ */
++#include <stdint.h>
++#include "kern_sl4_dmc_trial_data.hpp"
++
++namespace SL4DMCTrial {
++static constexpr uint64_t kManagerOffset=0xC40;
++static constexpr uint32_t kExpectedFirst=0x0C004040;
++static constexpr uint32_t kExpectedSSP=0x00086FC0;
++static constexpr uint32_t kExpectedEvtB4=0xC003B400;
++using WriteFn=void (*)(void *,unsigned long,uint32_t);
++using ReadFn=uint32_t (*)(void *,unsigned long);
++
++static bool upload(void *controller,uintptr_t writeAddress,uintptr_t readAddress,uint32_t *verify) {
++    if (!controller || !writeAddress || !readAddress) return false;
++    if (SL4TGLDMC::kProgramDwords!=4460 ||
++        SL4TGLDMC::kProgram[0]!=kExpectedFirst ||
++        SL4TGLDMC::kLoadAddress!=0x80000 ||
++        SL4TGLDMC::kMmioWriteCount!=9 ||
++        SL4TGLDMC::kMmioWrites[0].addr!=0x8F074 ||
++        SL4TGLDMC::kMmioWrites[0].data!=kExpectedSSP ||
++        SL4TGLDMC::kMmioWrites[1].data!=kExpectedEvtB4)
++        return false;
++    void *mgr=*reinterpret_cast<void **>(
++        reinterpret_cast<uint8_t *>(controller)+kManagerOffset);
++    if (!mgr) return false;
++    auto wr=reinterpret_cast<WriteFn>(writeAddress);
++    auto rd=reinterpret_cast<ReadFn>(readAddress);
++    // The framebuffer has already configured the display/clock powers
++    // through the original donor. We replace ONLY its DMC program.
++    for (uint32_t i=0;i<SL4TGLDMC::kProgramDwords;i++) {
++        wr(mgr,static_cast<unsigned long>(SL4TGLDMC::kLoadAddress)+4UL*i,
++           SL4TGLDMC::kProgram[i]);
++    }
++    for(uint32_t i=0;i<SL4TGLDMC::kMmioWriteCount;i++) {
++        uint32_t value=SL4TGLDMC::kMmioWrites[i].data;
++        // Validated TGL i915 DMC event correction: VBLANK_A (0x32)
++        // must be delayed-VBLANK_A (0x2e) for the HRR handler.
++        if(SL4TGLDMC::kMmioWrites[i].addr==0x8F03C &&
++           value==0xC0033200)
++            value=0xC0032E00;
++        wr(mgr,SL4TGLDMC::kMmioWrites[i].addr,value);
++    }
++    const uint32_t back=rd(mgr,0x80000);
++    if (verify)*verify=back;
++    return back==kExpectedFirst;
++}
++}

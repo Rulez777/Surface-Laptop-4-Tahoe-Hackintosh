@@ -20,8 +20,13 @@ class OfflineKitTests(unittest.TestCase):
         self.assertIn("scripts/compare_power_snapshots.py",paths)
         self.assertIn("scripts/thermal/sl4_ac_retrigger.py",paths)
         self.assertIn("docs/POWER-RECOVERY.md",paths)
+        self.assertIn("docs/DMC-SLEEP-TRIAL.md",paths)
+        self.assertIn("scripts/inspect_tgl_dmc.py",paths)
+        self.assertIn("scripts/generate_tgl_dmc_trial_header.py",paths)
+        self.assertIn("research/wex-tgl-dmc-supervised.patch",paths)
+        self.assertFalse(any(p.endswith(".bin") or p.endswith(".b64") or p.endswith("kern_sl4_dmc_trial_data.hpp") for p in paths))
         self.assertFalse(any(p.endswith("config.plist") or p.endswith("bootmgfw.efi") for p in paths))
-        self.assertTrue(all(p.startswith(("README.md","docs/","scripts/","data/","packages/")) for p in paths))
+        self.assertTrue(all(p.startswith(("README.md","docs/","scripts/","data/","packages/","research/")) for p in paths))
 
     def test_two_builds_deterministic_and_verifiable(self):
         with tempfile.TemporaryDirectory() as temp:

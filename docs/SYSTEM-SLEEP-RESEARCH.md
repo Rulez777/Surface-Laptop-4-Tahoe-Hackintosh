@@ -1,6 +1,6 @@
 # Deep system sleep investigation — SL4 Tiger Lake / Tahoe (2026-11-23)
 
-**Status: unresolved.** This is evidence and a fault-isolation plan, **not an installed sleep fix**. The working accelerated eDP Keep + Softsleep configuration remains intact. Never treat successful display wake as evidence of actual S3/S0ix suspend/resume.
+**Status: unresolved.** As of 2026-11-23, a separate Tiger Lake DMC v2.12 firmware-loader candidate has been compiled, source-patch and parser checked; it has **not** been installed or boot-tested on this Surface. Details: [DMC sleep trial](DMC-SLEEP-TRIAL.md). This is evidence and a fault-isolation plan, **not an installed sleep fix**. The working accelerated eDP Keep + Softsleep configuration remains intact. Never treat successful display wake as evidence of actual S3/S0ix suspend/resume.
 
 ## Device and actual runtime state
 
