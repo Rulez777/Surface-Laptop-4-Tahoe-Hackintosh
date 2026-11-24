@@ -84,6 +84,14 @@ observed lag, and compare with recovery counts and native calls.
 RCS TLB preparser, no-POSH, power transitions, DMC wake,
 CCS sibling reset and WindowServer context teardown.
 
+2.6a [SOURCE RISK IDENTIFIED] Generic IGScheduler5::updateOptions hook
+currently clears flag 0x04 for every kernel scheduler pointer without an
+RCS engine identity check. The v0.1.3 source-only scoped candidate and
+its unresolved lifetime/first-callback hazards are documented in
+[RCS scheduler scope research](RCS-SCHEDULER-SCOPE-RESEARCH-20261124.md).
+The host Mac was offline during this experiment, so no new hardware
+measurements or driver build were made.
+
 2.7 [TODO] Produce a precise method-level cause and a minimum
 patch with rollback; no arbitrary suppression of RCS scheduling
 or unmeasured timeouts.
@@ -108,6 +116,15 @@ conditions are modified.
 3.4 [DONE] Rebuild v0.1.2 and verify patch chain
 v0.1.0 -> v0.1.1 -> v0.1.2, test strict decoder for both
 revision 1 and 2, and validate release manifests.
+
+3.4a [SOURCE ONLY, NOT BUILT ON MAC] Proposed a v0.1.3
+generic-scheduler scope correction. It only clears bit 0x04 when
+the scheduler pointer matches a previously classified RCS scheduler.
+Layered source patch and branch-state tests pass on Windows,
+but pointer reuse/lifetime, RCS first-callback ordering, actual
+compile and kernel runtime are unverified. See
+[RCS scheduler scope research](RCS-SCHEDULER-SCOPE-RESEARCH-20261124.md).
+**Do not install or merge as a validated graphics fix.**
 
 3.5 [TODO] After an A/B-safe test environment exists, collect
 real callback counters during the affected desktop and game work,
@@ -193,7 +210,11 @@ patch into new all-in-one release. Do not silently upgrade users.
 
 ## Execution notes / next safe actions
 
-**Now**: finish source-only diagnostics/backup validation, build and
+**Now**: continue source-only cross-engine scheduler audit,
+review v0.1.3 pointer-lifetime safety, and run reproducible CI.
+When the Mac comes online, compile only in an isolated source tree and
+compare loaded baseline diagnostics; do not deploy experimental kexts.
+Prior priority: finish source-only diagnostics/backup validation, build and
 qualify v0.1.2 instrumented source, read exact donor control-flow,
 automate tests and CI, update PR #7. Do not deploy a guessed fix.
 

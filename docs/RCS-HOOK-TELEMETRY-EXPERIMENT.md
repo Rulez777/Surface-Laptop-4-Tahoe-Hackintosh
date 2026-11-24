@@ -150,6 +150,18 @@ cannot be uniquely attributed to the single-port change or treated
 as a fault signature. Compare in the
 [master plan](RCS-GPU-STABILITY-MASTER-PLAN.md).
 
+## v0.1.3 source-only scheduler-scope hypothesis (not compiled on Mac)
+
+A [separate generic-scheduler scope review](RCS-SCHEDULER-SCOPE-RESEARCH-20261124.md)
+identified that the base IGScheduler5::updateOptions wrapper in v0.1.0
+clears option bit 0x04 without confirming RCS identity. A *behavioral*
+research patch limits that write to a known RCS scheduler pointer and
+extends opt-in telemetry to revision 3 (15 uint32, 60 bytes). It is
+intentionally **not compiled, staged, installed or released** because
+the Mac is offline and pointer-lifetime/initialization hazards remain
+unverified. The new patch has only passed source-application and
+independent state-model tests on an authorized Windows development PC.
+
 ## Next engineering gate
 
 Before any runtime experiment, the candidate needs an independent,

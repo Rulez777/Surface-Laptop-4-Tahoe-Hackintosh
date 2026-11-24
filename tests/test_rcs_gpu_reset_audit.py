@@ -155,6 +155,31 @@ class RCSResetAuditTests(unittest.TestCase):
         self.assertEqual(decoded["counters"]["rejected_port1"], 6)
         self.assertIn("does not prove", decoded["warning"])
 
+    def test_optional_telemetry_revision3_scoped_scheduler(self):
+        import struct
+        encoded = struct.pack("<15I", 3, 101, 70, 3, 11, 4, 1,
+                              8, 3, 90, 66, 4, 39, 4, 35).hex()
+        result = audit_mod.decode_rcs_hook_telemetry(encoded)
+        self.assertEqual(result["status"], "decoded")
+        self.assertEqual(result["revision"], 3)
+        self.assertTrue(result["active"])
+        self.assertEqual(result["counters"]["deferred_occupied_port"], 8)
+        self.assertEqual(result["counters"]["update_options_calls"], 39)
+        self.assertEqual(result["counters"]["rcs_scheduler_updates_scoped"], 4)
+        self.assertEqual(
+            result["counters"]["updates_left_to_native_for_other_or_unknown"], 35)
+        self.assertNotIn("knownRcsScheduler", str(result))
+        self.assertNotIn("0xffffff", str(result))
+
+    def test_reject_v3_schema_mismatch(self):
+        import struct
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<15I", 2, *([0] * 14)).hex())["status"],
+            "unknown_revision_or_layout")
+        self.assertEqual(audit_mod.decode_rcs_hook_telemetry(
+            struct.pack("<15I", 3, *([0] * 5), 2, *([0] * 8)).hex())["status"],
+            "unknown_revision_or_layout")
+
     def test_optional_telemetry_revision2_deferral_reasons(self):
         import struct
         # v2: revision + v1 fields + five non-control-flow observations.

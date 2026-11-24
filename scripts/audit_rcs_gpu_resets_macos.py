@@ -180,7 +180,7 @@ def decode_recovery_live(hex_value: str | None) -> dict | None:
 
 
 def decode_rcs_hook_telemetry(hex_value: str | None) -> dict | None:
-    """Decode opt-in v0.1.1 *candidate* hook usage telemetry, if present.
+    """Decode optional versioned research hook telemetry, if present.
 
     Missing means the reference Surface has the stock v0.1.0 RCS patch.
     This is NOT GPU-reset telemetry and does not imply successful scheduling.
@@ -192,11 +192,12 @@ def decode_rcs_hook_telemetry(hex_value: str | None) -> dict | None:
         data = bytes.fromhex(hex_value)
     except ValueError:
         return None
-    # v1: 7 words, v2: 12 words. Never silently reinterpret a new layout.
-    if len(data) not in (28, 48):
+    # v1: 7 words; v2: 12 words; v3: 15 words. Reject unknown layouts.
+    expected_revisions = {28: 1, 48: 2, 60: 3}
+    if len(data) not in expected_revisions:
         return {"status": "unknown_revision_or_layout", "length": len(data)}
     fields = struct.unpack("<" + str(len(data)//4) + "I", data)
-    if (fields[0] != (1 if len(data) == 28 else 2)
+    if (fields[0] != expected_revisions[len(data)]
             or fields[6] not in (0, 1)):
         return {"status": "unknown_revision_or_layout",
                 "revision": fields[0]}
@@ -207,13 +208,19 @@ def decode_rcs_hook_telemetry(hex_value: str | None) -> dict | None:
         "deferred_port0": fields[4],
         "rejected_port1": fields[5],
     }
-    if fields[0] == 2:
+    if fields[0] >= 2:
         counters.update({
             "deferred_occupied_port": fields[7],
             "deferred_not_ready": fields[8],
             "native_dequeue_calls": fields[9],
             "native_eval_wait_calls": fields[10],
             "other_port_busy_wait_rejections": fields[11],
+        })
+    if fields[0] == 3:
+        counters.update({
+            "update_options_calls": fields[12],
+            "rcs_scheduler_updates_scoped": fields[13],
+            "updates_left_to_native_for_other_or_unknown": fields[14],
         })
     return {
         "status": "decoded",

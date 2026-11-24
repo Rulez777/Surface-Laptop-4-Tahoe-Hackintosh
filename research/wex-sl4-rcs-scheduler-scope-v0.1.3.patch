@@ -1,0 +1,93 @@
+--- a/WhateverXe/kern_sl4_rcs_singleport.hpp
++++ b/WhateverXe/kern_sl4_rcs_singleport.hpp
+@@ -31,11 +31,19 @@
+ static volatile uint32_t nativeDequeueCalls = 0;
+ static volatile uint32_t nativeEvalWaitCalls = 0;
+ static volatile uint32_t waitOtherPortBusy = 0;
++// Experimental v0.1.3: restrict global IGScheduler5 hook writes to the
++// scheduler observed from a positively identified RCS command streamer.
++// The pointer is never exposed to IORegistry. This is a source-only
++// behavioral candidate, NOT validated on the user's macOS.
++static volatile uintptr_t knownRcsScheduler = 0;
++static volatile uint32_t observedUpdateOptions = 0;
++static volatile uint32_t scopedRcsUpdateOptions = 0;
++static volatile uint32_t unrelatedOrUnknownUpdateOptions = 0;
+ // IORegistry serialized on request; no timer, logging or persistent writes.
+-// v2: 12 uint32. All are boot-cumulative and may wrap.
++// v3: 15 uint32. All are boot-cumulative and may wrap.
+ static bool telemetrySerialize(void *,void *,OSSerialize *serializer) {
+-    uint32_t values[12] {
+-        2,
++    uint32_t values[15] {
++        3,
+         __atomic_load_n(&observedDequeue,__ATOMIC_RELAXED),
+         __atomic_load_n(&observedEvalWait,__ATOMIC_RELAXED),
+         __atomic_load_n(&suppressedPreempt,__ATOMIC_RELAXED),
+@@ -46,7 +54,10 @@
+         __atomic_load_n(&deferredNotReady,__ATOMIC_RELAXED),
+         __atomic_load_n(&nativeDequeueCalls,__ATOMIC_RELAXED),
+         __atomic_load_n(&nativeEvalWaitCalls,__ATOMIC_RELAXED),
+-        __atomic_load_n(&waitOtherPortBusy,__ATOMIC_RELAXED)
++        __atomic_load_n(&waitOtherPortBusy,__ATOMIC_RELAXED),
++        __atomic_load_n(&observedUpdateOptions,__ATOMIC_RELAXED),
++        __atomic_load_n(&scopedRcsUpdateOptions,__ATOMIC_RELAXED),
++        __atomic_load_n(&unrelatedOrUnknownUpdateOptions,__ATOMIC_RELAXED)
+     };
+     auto data=OSData::withBytes(values,sizeof(values));
+     if(!data)return false;
+@@ -57,6 +68,11 @@
+ static bool live() { return __atomic_load_n(&active, __ATOMIC_ACQUIRE); }
+ static bool isKernelPtr(const void *ptr) {
+     return ptr && (reinterpret_cast<uintptr_t>(ptr)>>47)==0x1ffffULL;
++}
++static void rememberRcsScheduler(uint8_t *ptr) {
++    if(isKernelPtr(ptr))
++        __atomic_store_n(&knownRcsScheduler,
++                         reinterpret_cast<uintptr_t>(ptr),__ATOMIC_RELEASE);
+ }
+ static void disablePreempt(void *that) {
+     if(!live() || !isKernelPtr(that)) return;
+@@ -68,12 +84,28 @@
+         __atomic_fetch_add(&suppressedPreempt,1,__ATOMIC_RELAXED);
+     }
+     auto *scheduler = *reinterpret_cast<uint8_t **>(cs+0x20);
+-    if(isKernelPtr(scheduler)) scheduler[0x0c]&=~0x04u;
++    if(isKernelPtr(scheduler)) {
++        rememberRcsScheduler(scheduler);
++        scheduler[0x0c]&=~0x04u;
++    }
+ }
+ static void wrapUpdateOptions(void *that) {
++    // IGScheduler5::updateOptions() is a generic engine method. The original
++    // v0.1.0 handler cleared flag 0x04 for every scheduler, not just RCS.
++    // This candidate defaults to native behavior until a verified RCS
++    // command-streamer callback has identified its scheduler pointer.
++    const bool enabled=live();
++    if(enabled)
++        __atomic_fetch_add(&observedUpdateOptions,1,__ATOMIC_RELAXED);
+     FunctionCast(wrapUpdateOptions,orgUpdateOptions)(that);
+-    if(live() && isKernelPtr(that))
+-        static_cast<uint8_t *>(that)[0x0c] &= ~0x04u;
++    if(!enabled || !isKernelPtr(that)) return;
++    const uintptr_t target=__atomic_load_n(&knownRcsScheduler,__ATOMIC_ACQUIRE);
++    if(target && target==reinterpret_cast<uintptr_t>(that)) {
++        static_cast<uint8_t *>(that)[0x0c]&=~0x04u;
++        __atomic_fetch_add(&scopedRcsUpdateOptions,1,__ATOMIC_RELAXED);
++    } else {
++        __atomic_fetch_add(&unrelatedOrUnknownUpdateOptions,1,__ATOMIC_RELAXED);
++    }
+ }
+ static void wrapAllowPreemption(void *that) {
+     if(!live()) {
+@@ -84,7 +116,10 @@
+         auto *cs = static_cast<uint8_t *>(that);
+         cs[0x1c50]=0; cs[0x1c5d]=0;
+         auto *scheduler=*reinterpret_cast<uint8_t **>(cs+0x20);
+-        if(isKernelPtr(scheduler)) scheduler[0x0c]&=~0x04u;
++        if(isKernelPtr(scheduler)) {
++        rememberRcsScheduler(scheduler);
++        scheduler[0x0c]&=~0x04u;
++    }
+     }
+     __atomic_fetch_add(&suppressedPreempt,1,__ATOMIC_RELAXED);
+ }
