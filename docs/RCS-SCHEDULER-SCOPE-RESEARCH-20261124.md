@@ -69,6 +69,11 @@ User-space decoder strictly accepts revision 1 (28 bytes), revision 2
   window before the first RCS-specific suppression?
 - Do any other methods write the same +0x0c byte?
 
+A dedicated model test is marked as an expected failure: if a media
+scheduler reuses a stale render-scheduler pointer, pointer equality
+can misclassify it as RCS. This is a deliberate, visible release
+blocker until lifetime and invalidation are proven on the real Mac.
+
 Because these are unresolved, **DO NOT install this candidate**
 or include a compiled binary in the default Windows-first toolkit.
 Even successful compilation will not establish runtime safety.

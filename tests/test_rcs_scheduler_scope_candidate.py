@@ -127,6 +127,20 @@ class RcsSchedulerScopeTests(unittest.TestCase):
         self.assertEqual(model.rcs_scoped, 1)
         self.assertEqual(model.other_or_unknown, 1)
 
+    @unittest.expectedFailure
+    def test_stale_rcs_scheduler_pointer_reuse_must_not_affect_media(self):
+        """Known unresolved safety gate, deliberately exposed by the model.
+
+        If the render scheduler at address A is destroyed at sleep/reset
+        and later a media scheduler reuses address A, mere pointer equality
+        cannot safely distinguish the object. Until lifetime handling is
+        proven, this kernel patch is not approved for installation.
+        """
+        model = ScopeModel()
+        model.remember_verified_rcs(0x1000)
+        # Simulate RCS teardown followed by media object reuse of address.
+        self.assertEqual(model.update_options(0x1000, 0x7), 0x7)
+
     def test_inactive_patch_does_not_change_scheduler_flags(self):
         model=ScopeModel()
         model.remember_verified_rcs(7)
