@@ -33,7 +33,7 @@ class WindowsQuickStartTests(unittest.TestCase):
                 self.assertIn("SL4-Tahoe-QuickStart/scripts/install_sl4_rcs_stability.py",names)
                 self.assertIn("SL4-Tahoe-QuickStart/docs/QUICKSTART-RCS.md",names)
                 self.assertIn("SL4-Tahoe-QuickStart/research/wex-sl4-rcs-singleport.patch",names)
-                self.assertIn("SL4-Tahoe-QuickStart/packages/SL4-RCS-Stability-0.1.0-beta.zip",names)
+                self.assertIn("SL4-Tahoe-QuickStart/packages/SL4-Graphics-Performance-0.1.7-beta.zip",names)
                 self.assertIn("SL4-Tahoe-QuickStart/packages/SL4-Dolby-APOMac-Profiles-20261123.zip",names)
                 self.assertIn("SL4-Tahoe-QuickStart/scripts/install_dolby_macos.py",names)
                 self.assertIn("SL4-Tahoe-QuickStart/docs/AUDIO-ALL-IN-ONE.md",names)
@@ -42,13 +42,13 @@ class WindowsQuickStartTests(unittest.TestCase):
                 build_windows_quickstart_kit.build(out)
 
     def test_rcs_addon_pinned_and_offline_stage_only(self):
-        self.assertTrue(windows_prepare_tahoe.RCS_URL.endswith("/SL4-RCS-Stability-0.1.0-beta.zip"))
+        self.assertTrue(windows_prepare_tahoe.RCS_URL.endswith("/SL4-Graphics-Performance-0.1.7-beta.zip"))
         self.assertEqual(windows_prepare_tahoe.RCS_SHA,
-                         "21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960")
+                         "bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d")
         self.assertIn("choose_automatic_action",
                       (ROOT/"scripts/QuickStart-Mac.command").read_text())
         self.assertIn("-wex-sl4-rcs-singleport",enable_xe_macos.STARTUP_ARGS)
-        self.assertEqual(enable_xe_macos.DMC_PATH,"WhateverXe-SL4-RCS-STABILITY.kext")
+        self.assertEqual(enable_xe_macos.DMC_PATH,"WhateverXe-SL4-RCS-V017-TRIAL.kext")
         self.assertIn("install_sl4_rcs_stability.py",windows_prepare_tahoe.__file__ and
                       (ROOT/"scripts/windows_prepare_tahoe.py").read_text())
 

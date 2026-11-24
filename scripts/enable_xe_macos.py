@@ -28,11 +28,11 @@ SHA0="115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e"
 SHA1="6c8ab6cce50b9529679ee4fdf5b1c37d091677d945076f41cb4b7f8196c51449"
 RELEASE_SHA="dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd"
 BETA="SL4-S0ix-DMC-0.2.0-beta/"
-DMC_PATH="WhateverXe-SL4-RCS-STABILITY.kext"
+DMC_PATH="WhateverXe-SL4-RCS-V017-TRIAL.kext"
 LEGACY_DMC_PATH="WhateverXe-SL4-S0IX-DMC.kext"
-RCS_RELEASE_SHA="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
-RCS_ZIP_PREFIX="SL4-RCS-Stability-0.1.0-beta/"
-RCS_EXE_SHA="e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21"
+RCS_RELEASE_SHA="bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d"
+RCS_ZIP_PREFIX="SL4-Graphics-Performance-0.1.7-beta/"
+RCS_EXE_SHA="94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3"
 SLEEP_PATH="S0ixStandby.kext"
 SLEEP_AML="SSDT-DEEPIDLE.aml"
 PNLF_AML="SSDT-PNLF.aml"
@@ -40,7 +40,7 @@ STARTUP_ARGS=("-wex-tgl-no-posh","-wex-tgl-gpurec","-wex-tgl-stampfix",
               "-nodisplaysleepDC6","-noDC9","dc6config=0",
               "-wex-edp-wake-trace","-wex-tgl-edp-keep",
               "-wex-tgl-edp-softsleep","-wex-sl4-tgl-dmc",
-              "-wex-sl4-rcs-singleport")
+              "-wex-sl4-rcs-singleport","-wex-sl4-rcs-nativequeue-trial","-wex-sl4-heap-depth-trial")
 EXTRA_DRIVERS=("AppleALC.kext","SimpleHDA.kext","AirportItlwm.kext",
                "IntelBluetoothFirmware.kext","IntelBTPatcher.kext",
                "BlueToolFixup.kext","SMCProcessor.kext")
@@ -116,7 +116,7 @@ def make_active(raw,efi):
     driver=dict(previous)
     driver["Enabled"]=True
     driver["BundlePath"]=DMC_PATH
-    driver["Comment"]="Surface Laptop 4 Intel verified RCS single-port + DMC + accelerated Xe + eDP"
+    driver["Comment"]="Surface Laptop 4 Intel v0.1.7 native queue + heap depth + DMC + accelerated Xe + eDP"
     entries.insert(names.index("WhateverXe.kext")+1,driver)
     for item in EXTRA_DRIVERS:
         next(x for x in entries if x["BundlePath"]==item)["Enabled"]=True
@@ -152,7 +152,7 @@ def check_release(archive,rcs):
         prefix=RCS_ZIP_PREFIX+"payload/"+DMC_PATH+"/"
         payload=prefix+"Contents/MacOS/WhateverXe"
         m=json.loads(z.read(RCS_ZIP_PREFIX+"MANIFEST.json"))
-        require(m.get("no_private_efi") is True and m.get("release")=="SL4-RCS-Stability-0.1.0-beta",
+        require(m.get("no_private_efi") is True and m.get("release")=="SL4-Graphics-Performance-0.1.7-beta",
                 "Unexpected public RCS release identity")
         require(m["sha256"].get("payload/"+DMC_PATH+"/Contents/MacOS/WhateverXe")==RCS_EXE_SHA,
                 "RCS archive manifest binary differs from Surface-tested driver")
@@ -273,7 +273,7 @@ def apply(efi,archive,validator,rcs):
             if target.is_dir():shutil.rmtree(target)
             elif target.exists():target.unlink()
         raise
-    print("SUCCESS: RCS single-port + DMC + Metal 2, BigSurface, Intel Wi-Fi/Bluetooth, audio, brightness, Deep Idle prepared on USB.")
+    print("SUCCESS: v0.1.7 native queue + heap depth + DMC + Metal 2, BigSurface, Intel Wi-Fi/Bluetooth, audio, brightness, Deep Idle prepared on USB.")
     print("Original WhateverXe retained. USB config recovery:",restore)
     print("Personal complete OC backup:",backup)
     print("Restart from USB OpenCore; no Windows partition changed.")
@@ -283,7 +283,7 @@ def main():
     p.add_argument("mode",choices=("check","apply"))
     p.add_argument("--efi",type=Path,required=True,help="Windows-prepared USB EFI directory")
     p.add_argument("--release",type=Path,required=True)
-    p.add_argument("--rcs",type=Path,required=True,help="Pinned 0.1.0 RCS single-port driver release")
+    p.add_argument("--rcs",type=Path,required=True,help="Pinned v0.1.7 graphics performance beta")
     p.add_argument("--ocvalidate",type=Path,required=True)
     args=p.parse_args()
     efi=args.efi.resolve(strict=True)

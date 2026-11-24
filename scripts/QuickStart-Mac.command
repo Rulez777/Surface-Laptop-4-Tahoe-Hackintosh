@@ -5,12 +5,12 @@
 set -euo pipefail
 base="$(cd -- "$(dirname -- "$0")" && pwd)"
 DMC='SL4-S0ix-DMC-0.2.0-beta.zip'
-RCS='SL4-RCS-Stability-0.1.0-beta.zip'
+RCS='SL4-Graphics-Performance-0.1.7-beta.zip'
 DOLBY='SL4-Dolby-APOMac-Profiles-20261123.zip'
 APOMAC='APOMac-0.1.0.dmg'
 expected_graphics='f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec'
 expected_dmc='dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd'
-expected_rcs='21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960'
+expected_rcs='bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d'
 expected_dolby='ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013'
 expected_apomac='525a6adef1cbad76906d620656c93d7b1da1b3c8d6189b3f12648cfb221006fd'
 
@@ -33,6 +33,7 @@ check_assets() {
     verify "$base/WhateverXe-Graphics-0.4.4.pkg" "$expected_graphics"
     [[ -f "$base/ocvalidate" && -f "$base/enable_xe_macos.py" &&
        -f "$base/install_dolby_macos.py" &&
+       -f "$base/install_compute_hint_macos.py" &&
        -f "$base/auto_verify_first_boot_macos.py" ]] || {
         print -u2 "Incomplete all-in-one hardware installer on SL4DATA."
         return 4
@@ -77,8 +78,9 @@ install_from_usb() {
     mkdir -p "$tools"
     cp "$base/ocvalidate" "$tools/ocvalidate"
     chmod 755 "$tools/ocvalidate"
-    print "Staging Metal + DMC + eDP + single-port RCS fix in ONE OpenCore transition..."
+    print "Staging Metal + DMC + eDP + v0.1.7 native queue and heap-depth fixes in ONE OpenCore transition..."
     sudo python3 "$base/enable_xe_macos.py" check --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
+    sudo python3 "$base/install_compute_hint_macos.py" apply
     sudo python3 "$base/enable_xe_macos.py" apply --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
     report_sleep_policy_unchanged
     install_audio
@@ -88,9 +90,10 @@ install_from_usb() {
 repair_existing() {
     local esp workspace patch
     check_assets
-    if /usr/sbin/ioreg -p IOService -l -w0 2>/dev/null | /usr/bin/grep -q '"SL4RCSSinglePortReady" = Yes'; then
-        print "RCS single-port patch is already active; keeping the working EFI untouched."
-        print "WARNING: RCS 0.1.0 is a partial mitigation. Loaded/Ready is not proof of stability."
+    sudo python3 "$base/install_compute_hint_macos.py" check
+    if rcs_ready; then
+        print "v0.1.7 native queue and heap depth patches are already active; keeping the working EFI untouched."
+        print "WARNING: v0.1.7 is a beta. Loaded/Ready is not proof of long-term stability."
         if [[ -f "$base/audit_rcs_gpu_resets_macos.py" ]]; then
             python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 || true
         fi
@@ -100,12 +103,14 @@ repair_existing() {
         workspace="$(/usr/bin/mktemp -d "$HOME/Downloads/sl4-rcs-install.XXXXXX")"
         trap '[[ -n "${workspace:-}" && -d "$workspace" ]] && /bin/rm -rf "$workspace"' EXIT
         /usr/bin/ditto -x -k "$base/$RCS" "$workspace"
-        patch="$workspace/SL4-RCS-Stability-0.1.0-beta/install.py"
+        patch="$workspace/SL4-Graphics-Performance-0.1.7-beta/install.py"
         [[ -f "$patch" ]] || { print -u2 "RCS installer missing"; return 7; }
         sudo python3 "$patch" check --esp "$esp"
+        sudo python3 "$base/install_compute_hint_macos.py" apply
         sudo python3 "$patch" apply --esp "$esp"
         print "RCS staged in the INTERNAL EFI. Reboot needed to activate."
     fi
+    sudo python3 "$base/install_compute_hint_macos.py" apply
     install_audio
     print "ONE-CLICK REPAIR READY. No need to install RCS or audio separately."
 }
@@ -116,7 +121,9 @@ graphics_loaded() {
     /usr/sbin/system_profiler SPDisplaysDataType 2>/dev/null | /usr/bin/grep -q 'Metal Support: Metal 2'
 }
 rcs_ready() {
-    /usr/sbin/ioreg -p IOService -l -w0 2>/dev/null | /usr/bin/grep -q '"SL4RCSSinglePortReady" = Yes'
+    local props="$(/usr/sbin/ioreg -p IOService -l -w0 2>/dev/null)"
+    [[ "$props" == *'"SL4RCSNativeQueueTrialReady" = Yes'* && "$props" == *'"SL4HeapDepthTrialReady" = Yes'* ]] &&
+        /usr/bin/kmutil showloaded 2>/dev/null | /usr/bin/grep -q '1DAD98CE-CD44-3CA8-9BEE-CE65F3B47DBF'
 }
 usb_efi_ready() {
     [[ -f /Volumes/MACOS-OC/EFI/OC/config.plist &&
@@ -125,7 +132,7 @@ usb_efi_ready() {
 usb_staged() {
     [[ -f /Volumes/MACOS-OC/EFI/OC/config.plist ]] || return 1
     /usr/libexec/PlistBuddy -c 'Print :Kernel:Add' /Volumes/MACOS-OC/EFI/OC/config.plist 2>/dev/null |
-        /usr/bin/grep -q 'WhateverXe-SL4-RCS-STABILITY.kext'
+        /usr/bin/grep -q 'WhateverXe-SL4-RCS-V017-TRIAL.kext'
 }
 arm_postboot_check() {
     local script="$base/auto_verify_first_boot_macos.py"

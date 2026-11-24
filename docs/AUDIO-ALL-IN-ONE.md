@@ -1,3 +1,5 @@
+> v0.5.1 graphics beta update: the normal integrated graphics transition now uses v0.1.7 and the compute-hint adapter patch. Audio, DMC and eDP steps remain unchanged. Descriptions of RCS 0.1.0 below are historical; see GRAPHICS-PERFORMANCE-V017.md.
+
 # Surface Laptop 4 — integrated Iris Xe RCS graphics and Dolby Clear Speech
 
 **Windows-first QuickStart v0.5.0 beta.** For the tested Surface Laptop 4 Intel 13.5", i7-1185G7, Iris Xe PCI 8086:9A49, ALC274 10EC:123E, Tahoe 26.7.1.

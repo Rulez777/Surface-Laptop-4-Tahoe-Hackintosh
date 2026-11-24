@@ -162,10 +162,10 @@ function Assert-Stage([string]$folder) {
   }
   foreach ($name in @('personal-boot\EFI\BOOT\BOOTx64.efi','personal-boot\EFI\OC\config.plist',
                       'com.apple.recovery.boot','SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip',
-                      'SL4DATA\SL4-RCS-Stability-0.1.0-beta.zip',
+                      'SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',
                       'SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',
                       'SL4DATA\APOMac-0.1.0.dmg',
-                      'SL4DATA\install_dolby_macos.py')) {
+                      'SL4DATA\install_dolby_macos.py','SL4DATA\install_compute_hint_macos.py')) {
     if (-not (Test-Path -LiteralPath (Join-Path $abs $name))) { throw "Missing installer component: $name" }
   }
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'personal-boot\EFI\OC\OpenCore.efi') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.bootloader_sha256) {
@@ -174,7 +174,7 @@ function Assert-Stage([string]$folder) {
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.driver_release_sha256) {
     throw 'Driver release checksum changed after staging'
   }
-  foreach ($artifact in @(@('SL4DATA\SL4-RCS-Stability-0.1.0-beta.zip',$manifest.rcs_stability_sha256),
+  foreach ($artifact in @(@('SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',$manifest.rcs_stability_sha256),
                              @('SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',$manifest.speaker_correction_sha256),
                              @('SL4DATA\APOMac-0.1.0.dmg',$manifest.apomac_dmg_sha256))) {
     $f=Join-Path $abs $artifact[0]
@@ -244,7 +244,7 @@ function Write-USB([string]$folder,[int]$number) {
     if (-not (Test-Path -LiteralPath (Join-Path $bootLetter $name))) { throw "USB verification failed: $name" }
   }
   if (-not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-S0ix-DMC-0.2.0-beta.zip')) -or
-      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-RCS-Stability-0.1.0-beta.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-Graphics-Performance-0.1.7-beta.zip')) -or
       -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-Dolby-APOMac-Profiles-20261123.zip')) -or
       -not (Test-Path -LiteralPath (Join-Path $dataLetter 'APOMac-0.1.0.dmg'))) {
     throw 'Postinstall data not copied'
@@ -279,10 +279,12 @@ function Find-Verified-MacReadyUSB {
       -not $info.s0ix_deep_idle_driver_loaded -or
       -not $info.edp_panel_wake_hooks_ready -or
       -not $info.coremedia_h264_hevc_fix -or
+      -not $info.heap_depth_patch_ready -or
+      -not $info.compute_hint_patch_ready -or
       -not $info.dolby_clear_speech_installed -or
       $info.power_policy_modified -ne $false -or
       $info.windows_efi_modified -ne $false -or
-      $info.integrated_rcs_sha256 -ne 'e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21') {
+      $info.integrated_rcs_sha256 -ne '94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3') {
     throw 'Unexpected or incomplete Surface macOS verified-boot marker: stop'
   }
   $sl4Partition=Get-Partition -DriveLetter $vol.DriveLetter -ErrorAction Stop
@@ -295,7 +297,7 @@ function Find-Verified-MacReadyUSB {
   if ($bootparts.Count -ne 1) { throw 'Exactly one MACOS-OC partition is required on the same USB' }
   $ocroot=([string]$bootparts[0].DriveLetter)+':\EFI\OC'
   $conf=Join-Path $ocroot 'config.plist'
-  $kext=Join-Path $ocroot 'Kexts\WhateverXe-SL4-RCS-STABILITY.kext\Contents\MacOS\WhateverXe'
+  $kext=Join-Path $ocroot 'Kexts\WhateverXe-SL4-RCS-V017-TRIAL.kext\Contents\MacOS\WhateverXe'
   if (-not (Test-Path -LiteralPath $conf) -or -not (Test-Path -LiteralPath $kext)) {
     throw 'USB EFI is missing the tested RCS driver'
   }

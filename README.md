@@ -4,6 +4,10 @@
 
 **Install macOS Tahoe using Windows.** Quick Start prepares your personal OpenCore EFI, Apple macOS Recovery, compatible Surface drivers and a bootable USB. After installation, finish the macOS hardware setup and keep Windows in dual boot.
 
+## Graphics performance v0.1.7 beta
+
+[Integrated beta and GPU test results](docs/GRAPHICS-PERFORMANCE-V017.md). The Windows-first build on this branch includes the exact Surface-tested v0.1.7 driver and local compute-hint fix. It corrects missing Unity compute pipelines and stale MTLHeap depth sampling. The v0.5.0 download below is the historical recovery build; use the v0.5.1 graphics beta distribution for the new driver after CI publishes it. Until then use the graphics-fixes-v017 branch snapshot and QuickStart.cmd. Long-term stability and clean-install validation remain open.
+
 ## Quick Start
 
 **Start on Windows. You do not need macOS installed.**

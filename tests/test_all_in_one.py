@@ -17,7 +17,7 @@ import build_windows_quickstart_kit as builder
 
 class AllInOneTests(unittest.TestCase):
     def setUp(self):
-        self.rcs=ROOT/"packages/SL4-RCS-Stability-0.1.0-beta.zip"
+        self.rcs=ROOT/"packages/SL4-Graphics-Performance-0.1.7-beta.zip"
         self.dolby=ROOT/"packages/SL4-Dolby-APOMac-Profiles-20261123.zip"
 
     def test_runtimes_are_bundled_and_exactly_pinned(self):
@@ -27,7 +27,7 @@ class AllInOneTests(unittest.TestCase):
         self.assertEqual(builder.sha(self.dolby.read_bytes()),builder.DOLBY_SHA)
         self.assertTrue(windows.checked_rcs_addon(self.rcs).is_file())
         self.assertTrue(audio.read_zip(self.dolby))
-        for name in ("packages/SL4-RCS-Stability-0.1.0-beta.zip",
+        for name in ("packages/SL4-Graphics-Performance-0.1.7-beta.zip",
                      "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
                      "scripts/install_dolby_macos.py",
                      "scripts/find_internal_esp.py",
@@ -35,9 +35,9 @@ class AllInOneTests(unittest.TestCase):
             self.assertIn(name,builder.FILES)
 
     def test_graphics_stage_uses_rcs_not_legacy_dmc_binary(self):
-        self.assertEqual(graphics.DMC_PATH,"WhateverXe-SL4-RCS-STABILITY.kext")
+        self.assertEqual(graphics.DMC_PATH,"WhateverXe-SL4-RCS-V017-TRIAL.kext")
         self.assertEqual(graphics.RCS_EXE_SHA,
-                         "e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21")
+                         "94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3")
         self.assertIn("-wex-sl4-rcs-singleport",graphics.STARTUP_ARGS)
         with tempfile.TemporaryDirectory() as tmp:
             t=Path(tmp)

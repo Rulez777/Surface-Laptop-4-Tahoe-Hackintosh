@@ -21,10 +21,14 @@ on:
       - 'scripts/enable_xe_macos.py'
       - 'scripts/install_sl4_rcs_stability.py'
       - 'scripts/install_dolby_macos.py'
+      - 'scripts/install_compute_hint_macos.py'
+      - 'scripts/install_sl4_graphics_performance.py'
+      - 'tests/test_graphics_v017.py'
+      - 'docs/GRAPHICS-PERFORMANCE-V017.md'
       - 'scripts/auto_verify_first_boot_macos.py'
       - 'tests/test_autopilot.py'
       - 'scripts/find_internal_esp.py'
-      - 'packages/SL4-RCS-Stability-0.1.0-beta.zip'
+      - 'packages/SL4-Graphics-Performance-0.1.7-beta.zip'
       - 'packages/SL4-Dolby-APOMac-Profiles-20261123.zip'
       - 'tests/test_all_in_one.py'
       - 'research/wex-sl4-rcs-singleport.patch'
@@ -34,6 +38,8 @@ on:
       - 'scripts/build_windows_quickstart_kit.py'
       - 'packages/SL4-TGL-Input-Working-v1.zip'
       - 'tests/test_windows_quickstart.py'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -65,12 +71,12 @@ jobs:
           python -m py_compile scripts/auto_verify_first_boot_macos.py scripts/install_dolby_macos.py scripts/find_internal_esp.py scripts/windows_prepare_tahoe.py scripts/enable_xe_macos.py
       - name: Build and verify Windows distribution
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
           name: Windows-QuickStart-Test
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
           retention-days: 14
 
   release:
@@ -86,17 +92,18 @@ jobs:
         run: python -m unittest discover -s tests -q
       - name: Build signed-off source-only zip
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
-          name: SL4-Tahoe-Windows-QuickStart-v0.5.0-beta
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip
+          name: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
           if-no-files-found: error
       - name: Publish GitHub beta release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: sl4-tahoe-v0.5.0-beta
+          TAG: sl4-tahoe-v0.5.1-graphics-beta
         shell: bash
         run: |
           set -euo pipefail
@@ -104,8 +111,8 @@ jobs:
             echo "Release exists, refuse to silently overwrite"
             exit 1
           fi
-          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip \
+          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.0 beta" \
+            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.1 graphics beta" \
             --notes-file docs/RELEASE-NOTES-WINDOWS.md --prerelease
 # Validate native Windows build and publish the installer archive.
