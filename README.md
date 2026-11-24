@@ -6,13 +6,13 @@
 
 ## Graphics performance v0.1.7 beta
 
-[Integrated beta and GPU test results](docs/GRAPHICS-PERFORMANCE-V017.md). The Windows-first build on this branch includes the exact Surface-tested v0.1.7 driver and local compute-hint fix. It corrects missing Unity compute pipelines and stale MTLHeap depth sampling. The v0.5.0 download below is the historical recovery build; use the v0.5.1 graphics beta distribution for the new driver after CI publishes it. Until then use the graphics-fixes-v017 branch snapshot and QuickStart.cmd. Long-term stability and clean-install validation remain open.
+[Integrated beta and GPU test results](docs/GRAPHICS-PERFORMANCE-V017.md). The Windows-first v0.5.1 graphics beta includes the exact Surface-tested v0.1.7 driver and local compute-hint fix. It corrects missing Unity compute pipelines and stale MTLHeap depth sampling. The updated package is available below. [Previous v0.5.0 beta (recovery fallback)](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.0-beta/SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip). Long-term stability and clean-install validation remain open.
 
 ## Quick Start
 
 **Start on Windows. You do not need macOS installed.**
 
-1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.0-beta/SL4-Tahoe-Windows-QuickStart-v0.5.0-beta.zip) and click **Extract All**.
+1. [**Download Quick Start v0.5.1 graphics beta for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.1-graphics-beta/SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip) and click **Extract All**.
 2. Open the extracted folder and double-click **`QuickStart.cmd`**.
 3. The automatic assistant builds OpenCore, downloads Apple Recovery and all verified drivers, then detects the eligible **USB drive**; erasing it still requires confirmation.
 4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**. At the **OpenCore boot menu**, use the arrow keys and **Enter** to select **macOS Base System (External)** (sometimes shown as **Recovery**). This is Apple's Recovery installer, **not** Windows Boot Manager or your existing macOS volume. New USBs show Recovery immediately, with 15 seconds to choose; on an older USB press **Space** to reveal hidden auxiliary entries.
@@ -26,7 +26,7 @@ Want to keep the existing USB-free dual boot after installation? Follow [interna
 
 If Tahoe is already installed, open **QuickStart-Advanced.cmd** and select **2 — Tahoe already installed** to prepare a repair package. In macOS, use [Hardware and driver setup](docs/DRIVERS.md) or [the ready-made S0ix/DMC driver installer](docs/QUICKSTART-S0IX.md).
 
-### Autopilot v0.5.0 beta — fewer steps, no manual driver selection
+### Autopilot v0.5.1 graphics beta — fewer steps, no manual driver selection
 
 Start from Windows by double-clicking **`QuickStart.cmd`**. The default route now automatically prepares the complete installer and selects the only eligible USB disk (with **explicit disk erase confirmation**). After Apple's Recovery and Setup Assistant, opening `SL4DATA/QuickStart-Mac.command` **automatically chooses fresh install versus repair**. The next macOS login validates RCS/DMC/S0ix, eDP wake, Metal2, video and Dolby, then records readiness on USB. Open the same `QuickStart.cmd` in Windows again to automatically enter the existing safe internal-boot stage; the Microsoft bootloader remains backed up and the user still approves firmware changes.
 
@@ -40,17 +40,17 @@ Start from Windows by double-clicking **`QuickStart.cmd`**. The default route no
 
 **The normal Windows-first installer now includes the RCS graphics patch and original Surface Dolby speaker correction.** No separate graphics patch download, manual EFI edit or manual audio profile import.
 
-Windows QuickStart includes the byte-pinned Surface RCS driver and Dolby FIR profile, fetches and verifies the original APOMac application, and stages everything on **SL4DATA**. On Tahoe run `QuickStart-Mac.command` (automatic mode): the first accelerated boot uses verified RCS single-port + DMC/eDP; APOMac is installed with **Clear Speech** (−3 dB preamp, +1.88 dB at 2.5 kHz, device-scoped) and login autostart.
+Windows QuickStart includes the byte-pinned Surface RCS driver and Dolby FIR profile, fetches and verifies the original APOMac application, and stages everything on **SL4DATA**. On Tahoe run `QuickStart-Mac.command` (automatic mode): the first accelerated boot uses v0.1.7 native RCS queues and heap-depth fix + DMC/eDP; the installer also applies the verified local compute-hint fix; APOMac is installed with **Clear Speech** (−3 dB preamp, +1.88 dB at 2.5 kHz, device-scoped) and login autostart.
 
 Only **System Audio Recording consent** must be approved in macOS on first run. For already installed Tahoe, automatic mode checks and applies missing components. Original Windows boot data and personal EFI backups are preserved.
 
-**[All-in-one technical guide, Dolby details and rollback](docs/AUDIO-ALL-IN-ONE.md).** Clean install of the newly integrated v0.5.0 USB build has not yet been confirmed on another machine. A successful individual RCS and audio installation on the reference Surface is not proof of a fully tested fresh install.
+**[All-in-one technical guide, Dolby details and rollback](docs/AUDIO-ALL-IN-ONE.md).** Clean install of the newly integrated v0.5.1 USB build has not yet been confirmed on another machine. A successful individual RCS and audio installation on the reference Surface is not proof of a fully tested fresh install.
 
 ### Important Iris Xe graphics stability update (November 23, 2026)
 
 **Previously released RCS Stability 0.1.0 beta** mitigates some Tiger Lake Execlist context-switch/preemption hangs, but **does not fully prevent RCS GPU resets** on the reference Surface. A later reset on November 23 at 23:32 CET was confirmed with `SL4RCSSinglePortReady = Yes`; see [RCS v0.1.0 regression analysis](docs/RCS-POSTPATCH-RESET-20261123.md). After the patch, the machine booted with `SL4RCSSinglePortReady = Yes`, completed **400,000 Metal command buffers** without error and initially showed **no GPU Reset reports during a limited post-install observation** (later superseded by the 23:32 reset). The owner reported FPS rising from approximately 14 to 30 after several minutes; the exact cause of that improvement has **not** been established.
 
-[**RCS Stability download and safe macOS installation / rollback guide**](docs/QUICKSTART-RCS.md). For an immediate read-only diagnostic on an installed Mac use `zsh scripts/QuickStart-Mac.command --rcs-audit` (or advanced menu 7). This reports the current boot recovery counters separately from recorded GPU resets. The v0.5.0 Autopilot **includes and automatically selects** this pinned RCS binary in its first graphics transition. Separate patch installation is now a legacy recovery option only; no previous macOS is required to prepare the Windows USB. No unsupported hardware receives this patch automatically. Your personal EFI and Windows installation are not included in the public package.
+[**RCS Stability download and safe macOS installation / rollback guide**](docs/QUICKSTART-RCS.md). For an immediate read-only diagnostic on an installed Mac use `zsh scripts/QuickStart-Mac.command --rcs-audit` (or advanced menu 7). This reports the current boot recovery counters separately from recorded GPU resets. The historical v0.5.0 Autopilot included this RCS binary; v0.5.1 uses the tested v0.1.7 beta instead. Separate patch installation is now a legacy recovery option only; no previous macOS is required to prepare the Windows USB. No unsupported hardware receives this patch automatically. Your personal EFI and Windows installation are not included in the public package.
 
 **Not yet certified:** RCS stability under ordinary desktop use or prolonged gaming, all sleep/wake combinations, VP9/AV1 hardware decoding in Safari, other hardware models and other Tahoe builds.
 
