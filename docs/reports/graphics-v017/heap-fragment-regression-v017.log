@@ -1,0 +1,109 @@
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 512x256 10 tests=8 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 512x256 25 tests=16 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 512x256 70 tests=24 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 512x256 115 tests=32 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 1248x832 10 tests=40 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 1248x832 25 tests=48 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 1248x832 70 tests=56 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 1248x832 115 tests=64 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 2496x1664 10 tests=72 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 2496x1664 25 tests=80 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 2496x1664 70 tests=88 failures=0
+DETAIL frame=0 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=1 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=2 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=3 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=4 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=5 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+DETAIL frame=6 colorHeap=true depthHeap=true depthLeft=0.5 depthRight=1.0 colorLeft=1.0 colorRight=0.0
+DETAIL frame=7 colorHeap=true depthHeap=true depthLeft=1.0 depthRight=0.5 colorLeft=0.0 colorRight=1.0
+FORMAT 2496x1664 115 tests=96 failures=0
+RESULT tests=96 failures=0

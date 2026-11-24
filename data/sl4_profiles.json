@@ -61,8 +61,8 @@
       "do_not_auto_install": true
     },
     "SL4-RCS-SinglePort": {
-      "path": "packages/SL4-RCS-Stability-0.1.0-beta.zip",
-      "sha256": "21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960",
+      "path": "packages/SL4-Graphics-Performance-0.1.7-beta.zip",
+      "sha256": "bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d",
       "kind": "first_graphics_transition_included",
       "auto_apply_on_exact_supported_mac": true
     },

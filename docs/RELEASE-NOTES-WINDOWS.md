@@ -1,3 +1,7 @@
+# v0.5.1 graphics beta — November 24, 2026
+
+Includes exact physical Surface-tested v0.1.7 graphics kext (native RCS queue trial, heap-depth resolve) and automatic local Unity compute-hint adapter fix. Both fixes have hardware regression evidence. See GRAPHICS-PERFORMANCE-V017.md. No power-limit or sleep-policy changes. Fresh installation and prolonged stability still require hardware validation. Previous beta remains available.
+
 # Surface Laptop 4 — Windows Quick Start v0.5.0 beta
 
 Install macOS Tahoe from Windows with a guided **Quick Start**.

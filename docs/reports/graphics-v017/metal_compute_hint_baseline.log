@@ -1,0 +1,8 @@
+GPU=Intel(R) TGL Unknown, maxThreads=MTLSize(width: 1024, height: 1024, depth: 1024)
+hint=0 pipeline=PASS output=PASS max=1024
+hint=1 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}
+hint=32 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}
+hint=48 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}
+hint=64 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}
+hint=256 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}
+hint=1024 pipeline=FAIL error=Error Domain=CompilerError Code=2 "Xe compiler unsupported compute state" UserInfo={NSLocalizedDescription=Xe compiler unsupported compute state}

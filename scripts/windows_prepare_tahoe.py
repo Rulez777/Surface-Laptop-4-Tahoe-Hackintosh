@@ -31,9 +31,9 @@ OC_URL="https://github.com/acidanthera/OpenCorePkg/releases/download/1.0.8/OpenC
 OC_SHA="2011e8b7216ecb2645d97ea710df965947edd406846e92050b9bc4190be6d27b"
 RELEASE_URL="https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-s0ix-v0.2.0-beta/SL4-S0ix-DMC-0.2.0-beta.zip"
 RELEASE_SHA="dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd"
-RCS_URL="https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-rcs-v0.1.0-beta/SL4-RCS-Stability-0.1.0-beta.zip"
-RCS_SHA="21f3a54a9e870457128bb483cae9d5753178d30b44dfb2b70fed812904342960"
-RCS_FILENAME="SL4-RCS-Stability-0.1.0-beta.zip"
+RCS_URL="https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/graphics-fixes-v017/packages/SL4-Graphics-Performance-0.1.7-beta.zip"
+RCS_SHA="bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d"
+RCS_FILENAME="SL4-Graphics-Performance-0.1.7-beta.zip"
 DOLBY_FILENAME="SL4-Dolby-APOMac-Profiles-20261123.zip"
 DOLBY_SHA="ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013"
 APOMAC_URL="https://github.com/mkroplewski/APOMac/releases/download/v0.1.0/APOMac-0.1.0.dmg"
@@ -119,12 +119,12 @@ def checked_rcs_addon(path):
     require(path.is_file() and sha(path)==RCS_SHA,"Unexpected SL4 RCS addon ZIP SHA-256")
     with zipfile.ZipFile(path) as z:
         require(z.testzip() is None,"Corrupt RCS addon")
-        pre="SL4-RCS-Stability-0.1.0-beta/"
+        pre="SL4-Graphics-Performance-0.1.7-beta/"
         manifest=json.loads(z.read(pre+"MANIFEST.json"))
-        require(manifest.get("release")=="SL4-RCS-Stability-0.1.0-beta" and
+        require(manifest.get("release")=="SL4-Graphics-Performance-0.1.7-beta" and
                 manifest.get("no_private_efi") is True,"Unexpected RCS addon manifest")
-        name="payload/WhateverXe-SL4-RCS-STABILITY.kext/Contents/MacOS/WhateverXe"
-        require(manifest.get("sha256",{}).get(name)=="e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21",
+        name="payload/WhateverXe-SL4-RCS-V017-TRIAL.kext/Contents/MacOS/WhateverXe"
+        require(manifest.get("sha256",{}).get(name)=="94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3",
                 "Wrong tested RCS kext")
         for rel,expected in manifest["sha256"].items():
             require(not Path(rel).is_absolute() and ".." not in Path(rel).parts,
@@ -212,6 +212,7 @@ def prepare(args):
         shutil.copy2(apomac,data/APOMAC_FILENAME)
         shutil.copy2(dolby,data/DOLBY_FILENAME)
         shutil.copy2(ROOT/"scripts/install_dolby_macos.py",data/"install_dolby_macos.py")
+        shutil.copy2(ROOT/"scripts/install_compute_hint_macos.py",data/"install_compute_hint_macos.py")
         shutil.copy2(ROOT/"scripts/auto_verify_first_boot_macos.py",data/"auto_verify_first_boot_macos.py")
         shutil.copy2(ROOT/"scripts/audit_rcs_gpu_resets_macos.py",data/"audit_rcs_gpu_resets_macos.py")
         # Official matching macOS ocvalidate and one-click graphics transition.
@@ -296,7 +297,7 @@ def repair_only(args):
         shutil.copy2(apomac,out/APOMAC_FILENAME)
         shutil.copy2(dolby,out/DOLBY_FILENAME)
         files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",
-               "install_sl4_rcs_stability.py","install_dolby_macos.py",
+               "install_sl4_rcs_stability.py","install_dolby_macos.py","install_compute_hint_macos.py",
                "auto_verify_first_boot_macos.py",
                "audit_rcs_gpu_resets_macos.py",
                "install_brightness_macos.py","install_audio_macos.py",

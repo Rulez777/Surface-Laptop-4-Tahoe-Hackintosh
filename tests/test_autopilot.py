@@ -40,7 +40,7 @@ class AutoFlowTests(unittest.TestCase):
 
     def test_login_verifier_requires_actual_acceleration_and_leaves_efi_alone(self):
         s=(ROOT/"scripts/auto_verify_first_boot_macos.py").read_text()
-        for name in ("SL4RCSSinglePortReady","SL4DMCLocalInitVerified",
+        for name in ("SL4RCSNativeQueueTrialReady","SL4HeapDepthTrialReady","SL4DMCLocalInitVerified",
                      "TGLEDPKeepReady","TGLSoftSleepReady","IOPMDeepIdleSupported",
                      "Metal Support: Metal 2","com.labrouss.S0ixStandby",
                      "AllowOnePassMetalScaling","Surface Laptop 4 - Clear Speech",
@@ -75,7 +75,7 @@ class AutoFlowTests(unittest.TestCase):
     def test_windows_stage_includes_verifier_and_integrated_drivers(self):
         self.assertIn("scripts/auto_verify_first_boot_macos.py",bundle.FILES)
         self.assertIn("docs/AUTOPILOT.md",bundle.FILES)
-        self.assertIn("packages/SL4-RCS-Stability-0.1.0-beta.zip",bundle.FILES)
+        self.assertIn("packages/SL4-Graphics-Performance-0.1.7-beta.zip",bundle.FILES)
         self.assertIn("packages/SL4-Dolby-APOMac-Profiles-20261123.zip",bundle.FILES)
         stage=(ROOT/"scripts/windows_prepare_tahoe.py").read_text()
         self.assertIn("auto_verify_first_boot_macos.py",stage)

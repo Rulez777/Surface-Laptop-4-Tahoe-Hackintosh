@@ -19,10 +19,10 @@ import sys
 
 VERSION=1
 AGENT="com.sl4.autoverify"
-RCS_FILE="WhateverXe-SL4-RCS-STABILITY.kext/Contents/MacOS/WhateverXe"
-RCS_SHA="e50614098810302d76049788b8d0c631279f985b96d806eaed025b983f176e21"
+RCS_FILE="WhateverXe-SL4-RCS-V017-TRIAL.kext/Contents/MacOS/WhateverXe"
+RCS_SHA="94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3"
 READY_FILE="SL4-AUTO-READY.json"
-FLAGS=("SL4RCSSinglePortReady","SL4DMCLocalInitVerified","TGLEDPKeepReady",
+FLAGS=("SL4RCSNativeQueueTrialReady","SL4HeapDepthTrialReady","SL4DMCLocalInitVerified","TGLEDPKeepReady",
        "TGLSoftSleepReady","IOPMDeepIdleSupported")
 
 def insist(ok,message):
@@ -57,10 +57,10 @@ def inspected(source):
     config=plistlib.loads((oc/"config.plist").read_bytes())
     kernel=config["Kernel"]["Add"]
     enabled=[p["BundlePath"] for p in kernel if p.get("Enabled")]
-    insist(enabled.count("WhateverXe-SL4-RCS-STABILITY.kext")==1 and
+    insist(enabled.count("WhateverXe-SL4-RCS-V017-TRIAL.kext")==1 and
            enabled.count("S0ixStandby.kext")==1,"missing tested RCS+S0ix combination in EFI")
     args=" ".join(v.get("boot-args","") for v in config["NVRAM"]["Add"].values())
-    for flag in ("-wex-sl4-rcs-singleport","-wex-sl4-tgl-dmc","-wex-tgl-edp-softsleep"):
+    for flag in ("-wex-sl4-rcs-singleport","-wex-sl4-rcs-nativequeue-trial","-wex-sl4-heap-depth-trial","-wex-tgl-edp-softsleep"):
         insist(flag in args,"boot-arg missing "+flag)
     props=run("/usr/sbin/ioreg","-p","IOService","-l","-w0")
     for f in FLAGS:
@@ -70,6 +70,10 @@ def inspected(source):
     kexts=run("/usr/bin/kmutil","showloaded")
     insist("org.b00t0x.WhateverXe" in kexts and "com.labrouss.S0ixStandby" in kexts,
            "GPU/S0ix not both loaded")
+    adapter=Path("/Library/GPUBundles/XeCompilerAdapter.bundle/Contents/MacOS/adapter.dylib")
+    insist(adapter.is_file() and sha(adapter)=="50cc0fb84ffc8af995c35fe05e94e0543b8b8e7973edfd541710db93ff5e3b22",
+           "compute hint patch not installed")
+    insist("1DAD98CE-CD44-3CA8-9BEE-CE65F3B47DBF" in kexts,"wrong active v0.1.7 UUID")
     core=Path("/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist")
     insist(core.is_file() and
            plistlib.loads(core.read_bytes()).get("AllowOnePassMetalScaling",{}).get("Enabled") is False,
@@ -91,6 +95,8 @@ def inspected(source):
         "profile":"Surface Laptop 4 Intel i7-1185G7 Iris Xe 8086:9A49",
         "macos":"26.7.1",
         "integrated_rcs_sha256":RCS_SHA,
+        "heap_depth_patch_ready":True,
+        "compute_hint_patch_ready":True,
         "usb_oc_config_sha256":sha(oc/"config.plist"),
         "macos_metal2":True,
         "s0ix_deep_idle_driver_loaded":True,

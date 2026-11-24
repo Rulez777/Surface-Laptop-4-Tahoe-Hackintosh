@@ -1,0 +1,12 @@
+START bounded GPU load
+t=1.0 submitted=206 completed=202 pending=4
+t=2.0 submitted=442 completed=438 pending=4
+t=3.0 submitted=678 completed=674 pending=4
+t=4.0 submitted=905 completed=901 pending=4
+t=5.0 submitted=1151 completed=1147 pending=4
+t=6.0 submitted=1366 completed=1362 pending=4
+t=7.0 submitted=1600 completed=1596 pending=4
+t=8.0 submitted=1834 completed=1830 pending=4
+t=9.0 submitted=2072 completed=2068 pending=4
+t=10.0 submitted=2296 completed=2292 pending=4
+RESULT submitted=2296 completed=2296 pending=0 errors=0 peak=4 p50_ms=18.12760999996499 p95_ms=33.19183899998279 max_ms=54.52858500007096 gpu_p50_ms=0.511353999968378
