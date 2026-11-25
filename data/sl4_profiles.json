@@ -72,6 +72,14 @@
       "kind": "native_speaker_static_correction",
       "auto_apply_on_exact_supported_mac": true,
       "macos_tcc_approval_required": true
+    },
+    "SL4-Reference-20261125": {
+      "path": "packages/SL4-Reference-20261125-beta.zip",
+      "sha256": "c5c9674b9e138d9493c9dcef18f73d58d9ad06e9586364cd66eee6460267e8c1",
+      "kind": "opt_in_reference_beta",
+      "do_not_auto_install": true,
+      "macos": "26.7.1",
+      "gpu": "8086:9a49"
     }
   }
 }

@@ -34,6 +34,8 @@ RELEASE_SHA="dd793ab5ce18079ae75484daae8a37766ccd466b181f40df79df74bdf34f30dd"
 RCS_URL="https://raw.githubusercontent.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/graphics-fixes-v017/packages/SL4-Graphics-Performance-0.1.7-beta.zip"
 RCS_SHA="bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d"
 RCS_FILENAME="SL4-Graphics-Performance-0.1.7-beta.zip"
+REFERENCE_FILENAME="SL4-Reference-20261125-beta.zip"
+REFERENCE_SHA="c5c9674b9e138d9493c9dcef18f73d58d9ad06e9586364cd66eee6460267e8c1"
 DOLBY_FILENAME="SL4-Dolby-APOMac-Profiles-20261123.zip"
 DOLBY_SHA="ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013"
 APOMAC_URL="https://github.com/mkroplewski/APOMac/releases/download/v0.1.0/APOMac-0.1.0.dmg"
@@ -209,6 +211,10 @@ def prepare(args):
         shutil.copy2(graphics,data/graphics.name)
         shutil.copy2(input_pack,data/input_pack.name)
         shutil.copy2(rcs,data/RCS_FILENAME)
+        ref=ROOT/"packages"/REFERENCE_FILENAME
+        require(ref.is_file() and sha(ref)==REFERENCE_SHA,"Reference graphics package mismatch")
+        shutil.copy2(ref,data/REFERENCE_FILENAME)
+        shutil.copy2(ROOT/"scripts/install_reference_20261125.py",data/"install_reference_20261125.py")
         shutil.copy2(apomac,data/APOMAC_FILENAME)
         shutil.copy2(dolby,data/DOLBY_FILENAME)
         shutil.copy2(ROOT/"scripts/install_dolby_macos.py",data/"install_dolby_macos.py")
@@ -302,6 +308,10 @@ def repair_only(args):
         shutil.copy2(drivers,out/drivers.name)
         shutil.copy2(inp,out/inp.name)
         shutil.copy2(rcs,out/RCS_FILENAME)
+        ref=ROOT/"packages"/REFERENCE_FILENAME
+        require(ref.is_file() and sha(ref)==REFERENCE_SHA,"Reference graphics package mismatch")
+        shutil.copy2(ref,out/REFERENCE_FILENAME)
+        shutil.copy2(ROOT/"scripts/install_reference_20261125.py",out/"install_reference_20261125.py")
         shutil.copy2(apomac,out/APOMAC_FILENAME)
         shutil.copy2(dolby,out/DOLBY_FILENAME)
         files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",

@@ -42,6 +42,9 @@ FILES=(
  "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip",
  "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
  "packages/SL4-Graphics-Performance-0.1.7-beta.zip",
+ "packages/SL4-Reference-20261125-beta.zip",
+ "scripts/install_reference_20261125.py",
+ "docs/REFERENCE-20261125.md",
  "experiments/sl4-input/build-bigsurface-sl4.py",
  "experiments/sl4-input/build-bigsurface-sl4-sleepwake.py",
  "experiments/sl4-input/patches/sl4-sleepwake-production.patch",
@@ -107,7 +110,8 @@ def build(out):
         raise RuntimeError("Surface Dolby speaker correction ZIP SHA-256 changed")
     if sha(files["packages/SL4-TGL-Input-SleepWake-v2-beta.zip"])!=INPUT_SHA:
         raise RuntimeError("Surface input/sleep-wake driver ZIP SHA-256 changed")
-    manifest={"format":1,"distribution":"Windows-first Tahoe installation toolkit",
+    if sha(files["packages/SL4-Reference-20261125-beta.zip"])!="c5c9674b9e138d9493c9dcef18f73d58d9ad06e9586364cd66eee6460267e8c1":raise RuntimeError("Reference archive mismatch")
+    manifest={"format":1,"reference_20261125_opt_in_included":True,"distribution":"Windows-first Tahoe installation toolkit",
               "private_efi_included":False,"installer_image_included":False,
               "intel_rcs_payload_included":True,"rcs_trial_enabled_by_default":False,
               "surface_input_sleepwake_profile_included":True,

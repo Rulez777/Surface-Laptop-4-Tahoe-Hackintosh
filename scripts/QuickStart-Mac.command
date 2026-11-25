@@ -236,11 +236,16 @@ inspect_automatic_action() {
     fi
     print "INSPECTION_ONLY: no EFI, power policy, audio or app changes."
 }
+reference_profile() {
+    sudo python3 "$base/install_reference_20261125.py" "$1" --bundle "$base/SL4-Reference-20261125-beta.zip" --ocvalidate "$base/ocvalidate"
+}
 show_advanced_menu() {
     print "Surface Laptop 4 Intel — advanced macOS setup"
     print "  1) First Tahoe installation"
     print "  2) Already installed Tahoe — repair input/sleep-wake / audio"
     print "  3) Read-only audio and brightness inspection"
+    print "  8) Opt in: Nov 25 reference graphics + AC GPU priority beta"
+    print "  9) Roll back Nov 25 reference beta"
     print "  7) Read-only RCS GPU reset audit (no EFI or driver changes)"
     print "  0) Exit"
     read "choice?Choose: "
@@ -256,6 +261,8 @@ show_advanced_menu() {
             sudo python3 "$audio" inspect --esp "$esp"
             sudo python3 "$brightness" inspect --esp "$esp"
             ;;
+        8) reference_profile apply ;;
+        9) reference_profile rollback ;;
         7) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
         0) exit 0 ;;
         *) print -u2 "Unknown option"; exit 4 ;;
@@ -267,6 +274,9 @@ case "${1:---auto}" in
     --auto-first) install_from_usb; arm_postboot_check ;;
     --auto-repair) repair_existing ;;
     --menu) show_advanced_menu ;;
+    --reference-20261125) reference_profile apply ;;
+    --reference-check) reference_profile check ;;
+    --reference-rollback) reference_profile rollback ;;
     --rcs-audit) python3 "$base/audit_rcs_gpu_resets_macos.py" --since-hours 24 ;;
-    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--rcs-audit]"; exit 3 ;;
+    *) print -u2 "Usage: QuickStart-Mac.command [--auto|--auto-first|--auto-repair|--menu|--rcs-audit|--reference-20261125|--reference-check|--reference-rollback]"; exit 3 ;;
 esac

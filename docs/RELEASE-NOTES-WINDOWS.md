@@ -1,3 +1,7 @@
+# v0.5.4 reference beta — November 25, 2026
+
+Includes the v0.5.3 wireless baseline plus the exact boot-tested WhateverXe 0.8.5 reference package and opt-in AC GPU-priority profile. Use option 8 after accelerated internal boot, option 9 to roll back. See docs/REFERENCE-20261125.md. Fresh-install and long-duration gaming validation remain open.
+
 # v0.5.3 wireless beta — November 25, 2026
 
 - New-install All-in-One stages and enables the reference Surface AX201 wireless profile: ForbiddenItlwm 0.7.0-alpha.3 (Tahoe), BTLEAdvFixup 0.9.7 (Tahoe), IntelBluetoothFirmware 2.5.3 and BlueToolFixup 2.7.2. Downloads are pinned by SHA-256.
