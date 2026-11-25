@@ -22,7 +22,7 @@ AGENT="com.sl4.autoverify"
 RCS_FILE="WhateverXe-SL4-RCS-V017-TRIAL.kext/Contents/MacOS/WhateverXe"
 RCS_SHA="94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3"
 READY_FILE="SL4-AUTO-READY.json"
-FLAGS=("SL4RCSNativeQueueTrialReady","SL4HeapDepthTrialReady","SL4DMCLocalInitVerified","TGLEDPKeepReady",
+FLAGS=("SL4HeapDepthTrialReady","SL4DMCLocalInitVerified","TGLEDPKeepReady",
        "TGLSoftSleepReady","IOPMDeepIdleSupported")
 
 def insist(ok,message):
@@ -60,7 +60,7 @@ def inspected(source):
     insist(enabled.count("WhateverXe-SL4-RCS-V017-TRIAL.kext")==1 and
            enabled.count("S0ixStandby.kext")==1,"missing tested RCS+S0ix combination in EFI")
     args=" ".join(v.get("boot-args","") for v in config["NVRAM"]["Add"].values())
-    for flag in ("-wex-sl4-rcs-singleport","-wex-sl4-rcs-nativequeue-trial","-wex-sl4-heap-depth-trial","-wex-tgl-edp-softsleep"):
+    for flag in ("-wex-sl4-heap-depth-trial","-wex-tgl-edp-softsleep"):
         insist(flag in args,"boot-arg missing "+flag)
     props=run("/usr/sbin/ioreg","-p","IOService","-l","-w0")
     for f in FLAGS:
@@ -94,7 +94,9 @@ def inspected(source):
         "stage":"verified_accelerated_tahoe_boot",
         "profile":"Surface Laptop 4 Intel i7-1185G7 Iris Xe 8086:9A49",
         "macos":"26.7.1",
-        "integrated_rcs_sha256":RCS_SHA,
+        "rcs_payload_sha256":RCS_SHA,
+        "rcs_trial_enabled":("-wex-sl4-rcs-singleport" in args.split() and
+                             "-wex-sl4-rcs-nativequeue-trial" in args.split()),
         "heap_depth_patch_ready":True,
         "compute_hint_patch_ready":True,
         "usb_oc_config_sha256":sha(oc/"config.plist"),
@@ -157,7 +159,7 @@ def install(source):
     else:
         path.write_bytes(data)
     print("VERIFICATION_AGENT_INSTALLED",path)
-    print("At next macOS login the agent verifies active RCS + sleep hooks + video + Dolby; only then it writes a readiness marker.")
+    print("At next macOS login the agent verifies graphics, DMC, heap-depth, eDP, video and Dolby. Experimental RCS trial hooks are not required and remain opt-in.")
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)

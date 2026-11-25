@@ -1,6 +1,14 @@
-# v0.5.1 graphics beta — November 24, 2026
+# 2026-11-25 — Surface input and sleep/wake profile
 
-Includes exact physical Surface-tested v0.1.7 graphics kext (native RCS queue trial, heap-depth resolve) and automatic local Unity compute-hint adapter fix. Both fixes have hardware regression evidence. See GRAPHICS-PERFORMANCE-V017.md. No power-limit or sleep-policy changes. Fresh installation and prolonged stability still require hardware validation. Previous beta remains available.
+- Added the pinned SL4-TGL-Input-SleepWake-v2-beta.zip to Windows-first staging and new-install EFI generation.
+- Added a guarded macOS repair installer with full EFI/OC backup, Windows-visible config rollback, OpenCore 1.0.8 validation, and exact package hashes.
+- Production input profile: VoodooGPIO 1.2.5, BigSurface 1.2.1, existing VoodooSerial/VoodooInput/HID stack, and SSDT-SL4-LIDWAKE.aml.
+- Removed temporary GPIO probe telemetry and the optional eDP trace argument from default installation. Existing graphics boot arguments and power policy are otherwise preserved.
+- Automated package and installer tests pass. VoodooGPIO 1.2.5 and SAM keyboard/trackpad wake still require physical regression; the package is beta and must not be represented as universally validated.
+
+# v0.5.2 sleep/wake beta — November 25, 2026
+
+Includes exact physical Surface-tested v0.1.7 graphics payload, the heap-depth resolve and automatic local Unity compute-hint adapter fix. RCS single-port/native-queue trial boot flags are disabled by default and remain opt-in. See GRAPHICS-PERFORMANCE-V017.md. No power-limit or sleep-policy changes. Fresh installation and prolonged stability still require hardware validation. Previous beta remains available.
 
 # Surface Laptop 4 — Windows Quick Start v0.5.0 beta
 
@@ -22,9 +30,9 @@ Already running Tahoe? Open **QuickStart-Advanced.cmd** and choose **2** for rep
 
 ## v0.5.0 beta — automatic Windows-first installer orchestration
 
-- `QuickStart.cmd` runs **Auto** by default; no Windows menu step. It prepares Recovery, personal EFI and pinned RCS + eDP/DMC/S0ix + Dolby as a single dependency-checked workflow; automatically selects a uniquely eligible USB disk, but requires explicit `ERASE USB N` plus administrator confirmation before any erase.
+- `QuickStart.cmd` runs **Auto** by default; no Windows menu step. It prepares Recovery, personal EFI and pinned graphics/RCS payload + input/sleep-wake + eDP/DMC/S0ix + Dolby as a single dependency-checked workflow. The RCS single-port/native-queue trial flags remain disabled by default. It automatically selects a uniquely eligible USB disk, but requires explicit `ERASE USB N` plus administrator confirmation before any erase.
 - The macOS helper now **autodetects first install / already-running accelerated Tahoe**, keeps advanced manual modes behind `--menu`, installs APOMac and Clear Speech without separate driver selections.
-- A user-owned `com.sl4.autoverify` LaunchAgent checks actual accelerated RCS, DMC, eDP/Softsleep, S0ix, Metal 2, CoreMedia and the static Dolby speaker correction after the next reboot. It writes a ready marker to the USB **only when the real first boot passes**. Never runs as root or changes power settings.
+- A user-owned `com.sl4.autoverify` LaunchAgent checks actual accelerated Metal, DMC, eDP/Softsleep, heap-depth, S0ix, CoreMedia and the static Dolby speaker correction after the next reboot. RCS trial hooks are optional. It writes a ready marker to the USB **only when the real first boot passes**. Never runs as root or changes power settings.
 - Starting the same Windows CMD again with the verified USB detects the stage, independently verifies EFI configuration and exact RCS binary SHA-256, and directs the existing internal OpenCore/BCD backup workflow. Privileged EFI work and new boot-entry selection still require explicit approval.
 - Still mandatory: choose Surface UEFI USB boot; use Apple's Recovery GUI to safely choose the macOS target partition and set up a user; approve macOS administrator prompts and protected APOMac System Audio Recording. **This does not perform silent/unattended macOS installation or bypass Apple TCC.**
 - Adds automated workflow tests and a new `docs/AUTOPILOT.md` guide. The accelerated driver and Dolby binary hashes remain unchanged, as does the default non-mutating macOS `pmset` behavior. Real fresh USB/Recovery-to-Tahoe installation not yet certified.
@@ -52,7 +60,7 @@ Already running Tahoe? Open **QuickStart-Advanced.cmd** and choose **2** for rep
 - Windows wizard obtains the official APOMac 0.1.0 DMG pinned to SHA-256 and stages it alongside the official Graphics donor, original DMC/S0ix release and RCS-verified binary.
 - **QuickStart-Mac option 1** stages the RCS single-port WhateverXe (rather than the old DMC-only kext) into the first Metal-accelerated USB EFI with validated donor and hardware ID; applies the `-wex-sl4-rcs-singleport` flag and stores full OC backups.
 - The **same option 1** installs APOMac, binds the exact Windows Dolby derived Clear Speech profile to the built-in Surface output, leaves its reported preferred −3 dB preamp unchanged and registers a login item.
-- **QuickStart-Mac option 2** repairs an already installed system: check active RCS first, otherwise use the guarded existing installer and full backup, then install the sound profile. All assets are SHA-256-checked; wrong hardware/OS fails closed.
+- **QuickStart-Mac option 2** repairs an already installed system: preserves any existing RCS trial if already active, otherwise leaves trial flags disabled, then repairs input/sleep-wake and installs the sound profile. All assets are SHA-256-checked; wrong hardware/OS fails closed.
 - The user must manually approve the first **System Audio Recording** macOS privacy prompt. No automated TCC circumvention.
 - Windows and macOS recovery environments are still independent; private SMBIOS, Windows EFI, Steam and boot order are never shipped as public assets.
 - Tested individual Intel RCS fix and audio profile on one reference Surface; a fresh complete v0.4.0 installation has not yet been verified, so release remains **beta**. Full guide: [AUDIO-ALL-IN-ONE.md](AUDIO-ALL-IN-ONE.md).

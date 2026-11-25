@@ -1,0 +1,5 @@
+{
+  "Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.cpp": "5fbfacff2a6b78085495bc9983177b5b71069390645e0199734e1d564da28e1e",
+  "Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.hpp": "3593e4a1f182d04880a3a5beb33b0b80a336b3255b58faf0bfc7623f79d96cf6",
+  "BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp": "eb07ee98ebbb919877d736340c0cef634445f72d9cb4112d994db2fa9f4c994d"
+}

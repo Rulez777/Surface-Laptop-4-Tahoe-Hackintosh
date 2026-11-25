@@ -26,7 +26,7 @@ DONOR = Path("/Library/Extensions/AppleIntelTGLGraphicsFramebuffer.kext/Contents
 APPLE_GUID = "7C436110-AB2A-4BBB-A880-FE41995C9F82"
 FLAGS = ("-wex-tgl-no-posh", "-wex-tgl-gpurec", "-wex-tgl-stampfix",
          "-nodisplaysleepDC6", "-noDC9", "dc6config=0",
-         "-wex-edp-wake-trace", "-wex-tgl-edp-keep", "-wex-tgl-edp-softsleep")
+         "-wex-tgl-edp-keep", "-wex-tgl-edp-softsleep")
 MIN_ESP = 100 * 1024 * 1024
 MAX_ESP = 2 * 1024 * 1024 * 1024
 

@@ -1,0 +1,53 @@
+# Surface Laptop 4 Intel SAM keyboard/trackpad wake patch for Xiashangning/BigSurface.
+# GPIO 0x12A edge-rising wake is enabled only when the SL4-specific Info.plist property is present.
+# Temporary per-event diagnostic logging is excluded.
+
+diff --git a/BigSurface/BigSurface/Info.plist b/BigSurface/BigSurface/Info.plist
+index ec67461..6827db0 100644
+--- a/BigSurface/BigSurface/Info.plist
++++ b/BigSurface/BigSurface/Info.plist
+@@ -96,6 +96,8 @@
+ 			<integer>600</integer>
+ 			<key>IOProviderClass</key>
+ 			<string>IOACPIPlatformDevice</string>
++			<key>SL4SAMWakeEnabled</key>
++			<true/>
+ 		</dict>
+ 	</dict>
+ 	<key>NSHumanReadableCopyright</key>
+diff --git a/BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp b/BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp
+index 54d2648..d5b0d76 100644
+--- a/BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp
++++ b/BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp
+@@ -7,6 +7,7 @@
+ //
+ 
+ #include "SurfaceSerialHubDriver.hpp"
++#include <libkern/c++/OSBoolean.h>
+ #include "../../../Dependencies/VoodooSerial/VoodooSerial/ACPIParser/VoodooACPIResourcesParser.hpp"
+ #include "../SurfaceSerialHubDevices/SurfaceBatteryNub.hpp"
+ #include "../SurfaceSerialHubDevices/SurfaceHIDNub.hpp"
+@@ -673,6 +674,15 @@ IOReturn SurfaceSerialHubDriver::setPowerState(unsigned long whichState, IOServi
+                 DBG_LOG("Unexpected response from display-off notification");
+             if (getResponse(SSH_TC_SAM, SSH_TID_PRIMARY, 0, SSH_CID_SAM_D0_EXIT, nullptr, 0, true, &ret, 1) != kIOReturnSuccess || ret != 0)
+                 DBG_LOG("Unexpected response from d0-exit notification");
++
++            if (getProperty("SL4SAMWakeEnabled") == kOSBooleanTrue) {
++                if (gpio_controller && gpio_pin == 0x012A && gpio_irq == 0x00000001) {
++                    IOReturn wake_status = gpio_controller->setWakeForPin(gpio_pin, true);
++                    if (wake_status != kIOReturnSuccess)
++                        LOG("Failed to arm SAM wake GPIO 0x%03x: 0x%x", gpio_pin, wake_status);
++                }
++            }
++
+             uart_interrupt->disable();
+             awake = false;
+             command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &SurfaceSerialHubDriver::flushCacheGated));
+@@ -869,7 +879,6 @@ void SurfaceSerialHubDriver::delayedPublishingNubs(IOTimerEventSource *sender) {
+ }
+ 
+ void SurfaceSerialHubDriver::gpioWakeUp(IOInterruptEventSource *sender, int count) {
+-    LOG("GPIO wake up event happened!");
+ }
+ 
+ IOReturn SurfaceSerialHubDriver::enableInterrupt(int source) {

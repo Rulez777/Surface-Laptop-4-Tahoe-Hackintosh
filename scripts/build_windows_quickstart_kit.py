@@ -32,20 +32,29 @@ FILES=(
  "docs/DRIVERS.md",
  "docs/UNIVERSAL-SETUP.md",
  "docs/INPUT-KEYBOARD-TRACKPAD.md",
+ "docs/SLEEP.md",
+ "docs/EDP-WAKE.md",
+ "docs/UPSTREAM-DRIVER-REPORTS.md",
  "docs/VALIDATED-METAL-SL4.md",
  "data/seed.lzma.b64",
  "data/sl4_profiles.json",
- "packages/SL4-TGL-Input-Working-v1.zip",
+ "packages/SL4-TGL-Input-SleepWake-v2-beta.zip",
  "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip",
  "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
  "packages/SL4-Graphics-Performance-0.1.7-beta.zip",
  "experiments/sl4-input/build-bigsurface-sl4.py",
- "scripts/build_sl4_input_pack.py",
+ "experiments/sl4-input/build-bigsurface-sl4-sleepwake.py",
+ "experiments/sl4-input/patches/sl4-sleepwake-production.patch",
+ "experiments/sl4-input/patches/base-source-hashes.json",
+ "research/SSDT-SL4-LIDWAKE.dsl",
+ "research/SSDT-SL4-LIDWAKE.aml",
+ "scripts/build_sl4_input_sleepwake_pack.py",
  "scripts/build_efi.py",
  "scripts/dvmt60.py",
  "scripts/quiet_boot.py",
  "scripts/prepare_sl4_peripherals.py",
  "scripts/enable_xe_macos.py",
+ "scripts/install_sl4_sleepwake_macos.py",
  "scripts/find_internal_esp.py",
  "scripts/audit_rcs_gpu_resets_macos.py",
  "scripts/install_dolby_macos.py",
@@ -57,6 +66,10 @@ FILES=(
  "scripts/auto_verify_first_boot_macos.py",
  "scripts/install_sl4_rcs_stability.py",
  "research/wex-sl4-rcs-singleport.patch",
+ "research/wex-sl4-rcs-clean-production.patch",
+ "research/upstream/voodoogpio-sl4-tgl-lp-sleepwake.patch",
+ "research/upstream/bigsurface-sl4-sam-wake.patch",
+ "research/upstream/voodooserial-sl4-tgl-uart.patch",
  "scripts/xe_acceleration.py",
  "scripts/windows_prepare_tahoe.py",
  "scripts/QuickStart-Windows.ps1",
@@ -71,7 +84,7 @@ FILES=(
  "scripts/configure_surface_trackpad.sh",
 )
 PRIVATE_TOKENS=("SystemSerialNumber","private-eFi-OC","bootmgfw.efi")
-INPUT_SHA="446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
+INPUT_SHA="11744d792a6c5ec9bc5f77dac4f020b095991c4eb604d7e232d9cab560896018"
 DOLBY_SHA="ff029e860aec93763dc5fac3032c154a82fc571deb5cc08b5a9ad005907cc013"
 RCS_SHA="bdbb6aad67ebcfc2185281c5ea8dca267cdd6e3c2aad3371bd701e3b5417880d"
 
@@ -92,11 +105,19 @@ def build(out):
         raise RuntimeError("Surface RCS driver archive SHA-256 changed")
     if sha(files["packages/SL4-Dolby-APOMac-Profiles-20261123.zip"])!=DOLBY_SHA:
         raise RuntimeError("Surface Dolby speaker correction ZIP SHA-256 changed")
-    if sha(files["packages/SL4-TGL-Input-Working-v1.zip"])!=INPUT_SHA:
-        raise RuntimeError("Working Surface input driver ZIP SHA-256 changed")
+    if sha(files["packages/SL4-TGL-Input-SleepWake-v2-beta.zip"])!=INPUT_SHA:
+        raise RuntimeError("Surface input/sleep-wake driver ZIP SHA-256 changed")
     manifest={"format":1,"distribution":"Windows-first Tahoe installation toolkit",
               "private_efi_included":False,"installer_image_included":False,
-              "intel_rcs_integrated":True,"heap_depth_and_compute_hint_integrated":True,"speaker_dolby_profile_included":True,
+              "intel_rcs_payload_included":True,"rcs_trial_enabled_by_default":False,
+              "surface_input_sleepwake_profile_included":True,
+              "input_kexts_release":"SL4-TGL-Input-SleepWake-v2-beta",
+              "input_kexts_sha256":INPUT_SHA,
+              "temporary_gpio_diagnostics_included":False,
+              "edp_trace_boot_arg_enabled":False,
+              "lid_wake_gpe_physically_verified":False,
+              "sam_keyboard_trackpad_wake_physically_verified":False,
+              "heap_depth_and_compute_hint_integrated":True,"speaker_dolby_profile_included":True,
               "first_use_macos_audio_capture_consent_required":True,
               "automatic_windows_usb_preparation":True,
               "auto_macos_hardware_mode":True,

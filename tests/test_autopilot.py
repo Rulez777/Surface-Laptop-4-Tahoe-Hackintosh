@@ -32,7 +32,7 @@ class AutoFlowTests(unittest.TestCase):
     def test_macos_helper_selects_hardware_mode_without_manual_menu(self):
         script=(ROOT/"scripts/QuickStart-Mac.command").read_text()
         for name in ("choose_automatic_action","repair_existing","install_from_usb",
-                     "graphics_loaded","rcs_ready","usb_efi_ready","arm_postboot_check",
+                     "graphics_loaded","rcs_trial_ready","usb_efi_ready","arm_postboot_check",
                      "sudo -v","--menu) show_advanced_menu","verify_coremedia_h264"):
             self.assertIn(name,script)
         self.assertNotIn("sudo /usr/bin/pmset -a",script)
@@ -40,7 +40,7 @@ class AutoFlowTests(unittest.TestCase):
 
     def test_login_verifier_requires_actual_acceleration_and_leaves_efi_alone(self):
         s=(ROOT/"scripts/auto_verify_first_boot_macos.py").read_text()
-        for name in ("SL4RCSNativeQueueTrialReady","SL4HeapDepthTrialReady","SL4DMCLocalInitVerified",
+        for name in ("SL4HeapDepthTrialReady","SL4DMCLocalInitVerified",
                      "TGLEDPKeepReady","TGLSoftSleepReady","IOPMDeepIdleSupported",
                      "Metal Support: Metal 2","com.labrouss.S0ixStandby",
                      "AllowOnePassMetalScaling","Surface Laptop 4 - Clear Speech",

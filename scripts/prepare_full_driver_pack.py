@@ -109,7 +109,7 @@ def main():
     # Ship the locally versioned SL4 eDP Keep + Softsleep addon with this
     # existing-install driver pack. Never install/enable it automatically.
     edp_source = Path(__file__).resolve().parent.parent / "packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip"
-    edp_sha = "42664cbf1ebd3a4a169daa1adceb4e470adcdeddf691ff557e0ca06b83efa301"
+    edp_sha = "bbb7a30a7b9a42b36f15b00466ff4751b6beb0f58ad54b5998fdddee582354fb"
     require(edp_source.is_file() and hashlib.sha256(edp_source.read_bytes()).hexdigest() == edp_sha,
             "Missing or modified versioned SL4 eDP addon; update/repair your repository checkout")
     edp_target = graphics_dir / edp_source.name

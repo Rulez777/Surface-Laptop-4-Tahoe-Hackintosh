@@ -15,6 +15,7 @@ spec.loader.exec_module(edp)
 
 class EdpPackageTests(unittest.TestCase):
     def test_zip_integrity(self):
+        self.assertNotIn("-wex-edp-wake-trace",edp.FLAGS)
         z=REPO/"packages"/edp.ZIP_NAME
         self.assertTrue(z.is_file())
         with zipfile.ZipFile(z) as archive:

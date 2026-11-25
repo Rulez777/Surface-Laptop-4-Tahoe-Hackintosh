@@ -14,9 +14,36 @@ on:
       - 'docs/AUTOPILOT.md'
       - 'docs/RELEASE-NOTES-RCS.md'
       - 'docs/RELEASE-NOTES-WINDOWS.md'
+      - 'docs/SLEEP.md'
+      - 'docs/EDP-WAKE.md'
+      - 'docs/INPUT-KEYBOARD-TRACKPAD.md'
+      - 'docs/DRIVERS.md'
+      - 'docs/GRAPHICS-PERFORMANCE-V017.md'
+      - 'docs/UPSTREAM-DRIVER-REPORTS.md'
+      - 'scripts/install_edp_keep_macos.py'
+      - 'scripts/auto_verify_first_boot_macos.py'
+      - 'scripts/build_sl4_input_sleepwake_pack.py'
+      - 'scripts/build_efi.py'
+      - 'scripts/enable_xe_macos.py'
+      - 'research/SSDT-SL4-LIDWAKE.dsl'
+      - 'research/wex-sl4-rcs-clean-production.patch'
+      - 'research/upstream/voodoogpio-sl4-tgl-lp-sleepwake.patch'
+      - 'research/upstream/bigsurface-sl4-sam-wake.patch'
+      - 'research/upstream/voodooserial-sl4-tgl-uart.patch'
+      - 'experiments/sl4-input/patches/base-source-hashes.json'
+      - 'packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip'
+      - 'tests/test_sl4_lidwake_research.py'
+      - 'tests/test_edp_keep_macos.py'
+      - 'tests/test_sleep_audit_macos.py'
+      - 'tests/test_s0ix_release.py'
       - 'scripts/windows_prepare_tahoe.py'
       - 'scripts/QuickStart-Windows.ps1'
       - 'scripts/QuickStart-Mac.command'
+      - 'scripts/install_sl4_sleepwake_macos.py'
+      - 'experiments/sl4-input/build-bigsurface-sl4-sleepwake.py'
+      - 'experiments/sl4-input/patches/sl4-sleepwake-production.patch'
+      - 'research/SSDT-SL4-LIDWAKE.aml'
+      - 'packages/SL4-TGL-Input-SleepWake-v2-beta.zip'
       - 'scripts/prepare_sl4_peripherals.py'
       - 'scripts/enable_xe_macos.py'
       - 'scripts/install_sl4_rcs_stability.py'
@@ -34,9 +61,8 @@ on:
       - 'research/wex-sl4-rcs-singleport.patch'
       - 'scripts/build_efi.py'
       - 'data/sl4_profiles.json'
-      - 'scripts/build_sl4_input_pack.py'
       - 'scripts/build_windows_quickstart_kit.py'
-      - 'packages/SL4-TGL-Input-Working-v1.zip'
+      - 'packages/SL4-TGL-Input-SleepWake-v2-beta.zip'
       - 'tests/test_windows_quickstart.py'
   pull_request:
     branches: [main]
@@ -66,17 +92,21 @@ jobs:
           python -m unittest discover -s tests -p test_windows_quickstart.py -q
           python -m unittest discover -s tests -p test_all_in_one.py -q
           python -m unittest discover -s tests -p test_autopilot.py -q
+          python -m unittest discover -s tests -p test_sl4_lidwake_research.py -q
+          python -m unittest discover -s tests -p test_edp_keep_macos.py -q
+          python -m unittest discover -s tests -p test_sleep_audit_macos.py -q
+          python -m unittest discover -s tests -p test_s0ix_release.py -q
       - name: Validate macOS helper syntax with Python and UTF-8
         run: |
-          python -m py_compile scripts/auto_verify_first_boot_macos.py scripts/install_dolby_macos.py scripts/find_internal_esp.py scripts/windows_prepare_tahoe.py scripts/enable_xe_macos.py
+          python -m py_compile scripts/auto_verify_first_boot_macos.py scripts/install_dolby_macos.py scripts/find_internal_esp.py scripts/windows_prepare_tahoe.py scripts/enable_xe_macos.py scripts/install_edp_keep_macos.py scripts/install_sl4_sleepwake_macos.py scripts/build_sl4_input_sleepwake_pack.py scripts/build_efi.py
       - name: Build and verify Windows distribution
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
           name: Windows-QuickStart-Test
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
           retention-days: 14
 
   release:
@@ -92,18 +122,18 @@ jobs:
         run: python -m unittest discover -s tests -q
       - name: Build signed-off source-only zip
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
-          name: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip
+          name: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
           if-no-files-found: error
       - name: Publish GitHub beta release
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: sl4-tahoe-v0.5.1-graphics-beta
+          TAG: sl4-tahoe-v0.5.2-sleepwake-beta
         shell: bash
         run: |
           set -euo pipefail
@@ -111,8 +141,8 @@ jobs:
             echo "Release exists, refuse to silently overwrite"
             exit 1
           fi
-          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.1-graphics-beta.zip \
+          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.1 graphics beta" \
+            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.2 sleep/wake beta" \
             --notes-file docs/RELEASE-NOTES-WINDOWS.md --prerelease
 # Validate native Windows build and publish the installer archive.

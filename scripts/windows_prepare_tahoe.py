@@ -41,7 +41,7 @@ APOMAC_FILENAME="APOMac-0.1.0.dmg"
 APOMAC_SHA="525a6adef1cbad76906d620656c93d7b1da1b3c8d6189b3f12648cfb221006fd"
 GRAPHICS_URL="https://github.com/b00t0x/WhateverXe-Graphics/releases/download/v0.4.4/WhateverXe-Graphics-0.4.4.pkg"
 GRAPHICS_SHA="f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec"
-INPUT_SHA="446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
+INPUT_SHA="11744d792a6c5ec9bc5f77dac4f020b095991c4eb604d7e232d9cab560896018"
 BOARD="Mac-CFF7D910A743CAAF"
 MLB_FOR_RECOVERY="00000000000000000"
 PROFILE="surface-laptop-4-intel-i7-1185g7-13"
@@ -159,7 +159,7 @@ def prepare(args):
     oc=fetch(OC_URL,cache/"OpenCore-1.0.8-RELEASE.zip",OC_SHA)
     require(zipfile.is_zipfile(oc),"Official OpenCore ZIP not valid")
     graphics=fetch(GRAPHICS_URL,cache/"WhateverXe-Graphics-0.4.4.pkg",GRAPHICS_SHA)
-    input_pack=ROOT/"packages/SL4-TGL-Input-Working-v1.zip"
+    input_pack=ROOT/"packages/SL4-TGL-Input-SleepWake-v2-beta.zip"
     require(input_pack.is_file() and sha(input_pack)==INPUT_SHA,
             "Working Surface keyboard/trackpad package missing or differs")
     drivers=fetch(RELEASE_URL,cache/"SL4-S0ix-DMC-0.2.0-beta.zip",RELEASE_SHA)
@@ -222,6 +222,7 @@ def prepare(args):
         (data/"ocvalidate").chmod(0o755)
         shutil.copy2(ROOT/"scripts/enable_xe_macos.py",data/"enable_xe_macos.py")
         shutil.copy2(ROOT/"scripts/find_internal_esp.py",data/"find_internal_esp.py")
+        shutil.copy2(ROOT/"scripts/install_sl4_sleepwake_macos.py",data/"install_sl4_sleepwake_macos.py")
         shutil.copy2(ROOT/"scripts/install_brightness_macos.py",data/"install_brightness_macos.py")
         # Postinstall helper and scripts: portable and non-personal.
         shutil.copy2(ROOT/"scripts/QuickStart-Mac.command",data/"QuickStart-Mac.command")
@@ -249,11 +250,18 @@ def prepare(args):
             "rcs_stability_sha256":RCS_SHA,
             "speaker_correction_sha256":DOLBY_SHA,
             "apomac_dmg_sha256":APOMAC_SHA,
-            "main_graphics_path":"RCS-integrated on first Metal activation",
+            "main_graphics_path":"Metal + DMC + eDP + heap-depth; RCS trial hooks disabled by default",
             "macos_audio_permission_must_be_approved_by_user":True,
             "macos_autopilot_first_boot_check":True,
             "manual_os_recovery_install_still_required":True,
             "input_kexts_sha256":INPUT_SHA,
+            "input_kexts_release":"SL4-TGL-Input-SleepWake-v2-beta",
+            "surface_input_sleepwake_profile_included":True,
+            "temporary_gpio_diagnostics_included":False,
+            "edp_trace_boot_arg_enabled":False,
+            "lid_wake_gpe_physically_verified":False,
+            "sam_keyboard_trackpad_wake_physically_verified":False,
+            "rcs_trial_enabled_by_default":False,
             "graphics_installer_sha256":GRAPHICS_SHA}
         (stage/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n",encoding="utf-8")
         print("WINDOWS PREPARE FINISHED",stage)
@@ -285,7 +293,7 @@ def repair_only(args):
     dolby=ROOT/"packages"/DOLBY_FILENAME
     require(dolby.is_file() and sha(dolby)==DOLBY_SHA,
             "Bundled Surface Dolby correction differs from user-tested version")
-    inp=ROOT/"packages/SL4-TGL-Input-Working-v1.zip"
+    inp=ROOT/"packages/SL4-TGL-Input-SleepWake-v2-beta.zip"
     require(inp.is_file() and sha(inp)==INPUT_SHA,"Working keyboard/trackpad package missing")
     out=target/"SL4DATA"
     out.mkdir(parents=True,mode=0o700)
@@ -310,9 +318,16 @@ def repair_only(args):
         (out/"ocvalidate").chmod(0o755)
         manifest={"format":1,"mode":"existing_tahoe_driver_repair",
                   "downloads":{"graphics":GRAPHICS_SHA,"dmc_s0ix":RELEASE_SHA,
-                               "native_input":INPUT_SHA,"rcs_stability":RCS_SHA,
+                               "native_input":INPUT_SHA,
+                               "input_kexts_release":"SL4-TGL-Input-SleepWake-v2-beta","rcs_stability":RCS_SHA,
                                "speaker_correction":DOLBY_SHA,"apomac_dmg":APOMAC_SHA},
                   "windows_disk_modified":False,
+                  "input_kexts_sha256":INPUT_SHA,
+                  "surface_input_sleepwake_profile_included":True,
+                  "temporary_gpio_diagnostics_included":False,
+                  "lid_wake_gpe_physically_verified":False,
+                  "sam_keyboard_trackpad_wake_physically_verified":False,
+                  "rcs_trial_enabled_by_default":False,
                   "requires_mac_host_validation":True}
         (target/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
         print("EXISTING TAHOE DRIVER REPAIR READY:",out)

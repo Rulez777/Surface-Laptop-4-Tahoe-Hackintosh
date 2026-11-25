@@ -7,10 +7,16 @@ Physical reference: Surface Laptop 4 Intel i7-1185G7, Iris Xe 8086:9A49, Tahoe 2
 - RCS: native queue experiment retained from v0.1.5, render-local preemption suppression retained, no shared scheduler bit writes. Bounded load completed 2296/2296 commands, no pending commands/errors. Not a guarantee against future GPU resets. Earlier v0.1.0 reset remains documented.
 - Real display link measured 59.98 Hz. GPU requests 1350 MHz, sampled 1100 MHz, power/current limits observed. No power-limit changes; FPS uplift not quantified.
 
+
+
+## Default All-in-One profile status — 2026-11-25
+
+The v0.1.7 RCS payload remains SHA-pinned and included for reproducibility, but the default Windows-first profile no longer adds -wex-sl4-rcs-singleport or -wex-sl4-rcs-nativequeue-trial. Those trial hooks were absent from the reference Surface's active boot arguments and are kept opt-in for deliberate testing. The tested heap-depth trial, DMC and eDP Keep/Softsleep profile remains enabled. The byte-pinned v0.1.7 binary still contains dormant RCS telemetry code; it is not activated in the default profile. The clean source patch is available, but no replacement binary is shipped until hardware regression. The optional RCS installer remains available for deliberate testing only after that validation.
+
 ## Source and tests
 Full exact build delta: research/wex-sl4-graphics-v0.1.7-complete.patch (against upstream f26a368). Standalone depth delta against v0.1.5 baseline: research/wex-sl4-heap-depth-v0.1.7.patch. Compiler transformation: scripts/install_compute_hint_macos.py. Reproducers under research/graphics-v017-tests; numeric logs under docs/reports/graphics-v017. No personal EFI, game content, proprietary adapter binary or donor files published.
 
 ## Install / rollback
-Use Windows-first QuickStart on graphics-fixes-v017 beta branch. Fresh install: standard donor installation, local signed compute-hint transformation, one graphics/EFI transition including the new kext, DMC/S0ix, eDP and audio. Repair path preserves existing active kext and Windows loader, stages new kext alongside the prior one. Administrator approval and reboot required. Adapter patch refuses unknown donor bytes and retains original adapter in a root-only backup; run install_compute_hint_macos.py rollback with sudo to restore it. EFI recovery config and private OC backup are recorded by the installer; retain earlier bootable USB. Old v0.1.0 package remains historical recovery option.
+Use Windows-first QuickStart on graphics-fixes-v017 beta branch. Fresh install: standard donor installation, local signed compute-hint transformation, one graphics/EFI transition including the RCS payload, DMC/S0ix, eDP and audio. RCS single-port/native-queue trial flags are intentionally not enabled by default. Repair path preserves existing active kext and Windows loader, stages new kext alongside the prior one. Administrator approval and reboot required. Adapter patch refuses unknown donor bytes and retains original adapter in a root-only backup; run install_compute_hint_macos.py rollback with sudo to restore it. EFI recovery config and private OC backup are recorded by the installer; retain earlier bootable USB. Old v0.1.0 package remains historical recovery option.
 
 No clean fresh install, long-term GPU stability, all sleep/wake combinations, or other hardware verified for this beta yet.

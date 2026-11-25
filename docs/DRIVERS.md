@@ -1,4 +1,4 @@
-> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+ > **Current Windows-first profile:** the pinned RCS payload and Dolby Clear Speech are included in QuickStart. RCS single-port/native-queue trial boot flags remain opt-in and are disabled by default; the reference heap-depth, DMC and eDP profile is retained. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md).
 
 # Surface Laptop 4 Intel — driver status
 
@@ -13,13 +13,17 @@ Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8)
 | Browser video | Same graphics stack; CoreMedia scaling flag disabled | **Safari YouTube H.264 1080p playback working** |
 | Wi-Fi | AirportItlwm 2.4.0 | Intel AX201 wireless |
 | Bluetooth | Intel Bluetooth stack | Working |
-| Keyboard / trackpad | BigSurface 1.2.0, BigSurfaceHIDDriver 1.0.0, VoodooGPIO 1.2.0, VoodooSerial 1.2, VoodooInput 1.1.3 | Keyboard, taps, clicks and multitouch |
+| Keyboard / trackpad | BigSurface 1.2.1, BigSurfaceHIDDriver 1.0.0, VoodooGPIO 1.2.5, VoodooSerial 1.2, VoodooInput 1.1.3 | Existing input stack retained; clean production rebuild packaged. VoodooGPIO 1.2.5 lid-wake regression and SAM GPIO keyboard/trackpad wake still require physical validation. |
 | Battery | BigSurface | Battery percentage |
 | Audio output | Lilu 1.7.2, AppleALC 1.9.8, SimpleHDA 1.0.2; ALC274 layout 35 | **Built-in speakers working** |
 | Audio input | Same audio stack | **Built-in microphone working** |
 | Brightness | WhateverXe 0.8.3 + AppleBacklight + SSDT-PNLF UID 19 | **Built-in backlight controls working after reboot** |
 | Temperature | SMCProcessor 1.3.8 | CPU die temperature |
 | Cooling | Surface performance profile | Fan operation and profiles |
+
+## Input and lid-wake profile
+
+The All-in-One now pins SL4-TGL-Input-SleepWake-v2-beta.zip, including VoodooGPIO 1.2.5, BigSurface 1.2.1 and SSDT-SL4-LIDWAKE.aml. Temporary GPIO probe telemetry and the optional eDP trace boot argument are excluded. See INPUT-KEYBOARD-TRACKPAD.md for the guarded installer and validation limits.
 
 ## Audio installation
 
@@ -71,4 +75,4 @@ See [installation and verified hardware](../README.md), [graphics](VALIDATED-MET
 
 ## RCS Stability update (2026-11-23)
 
-For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon fixes a tested render-queue / preemption hang, and is installed **after** the graphics package and working Tahoe/DMC. Windows QuickStart 0.3.3 downloads and stages it for the Mac-side optional installer. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.
+For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon contains the experimental render-queue / preemption hook. The byte-pinned binary is included in the Windows-first payload, but the single-port/native-queue trial flags are **not enabled by default** because the reference EFI has them disabled. The binary still contains dormant RCS telemetry; a source cleanup patch is prepared, but a replacement binary is withheld pending hardware regression. The optional installer remains available for deliberate, supervised testing after graphics and Tahoe/DMC are working. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.

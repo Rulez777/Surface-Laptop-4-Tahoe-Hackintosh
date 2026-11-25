@@ -8,7 +8,7 @@ For the new Windows/Mac automatic mode and unavoidable Apple recovery/permission
 
 ## What happens without separate patches
 
-1. On Windows, the QuickStart ZIP already contains the exact Surface-tested RCS single-port WhateverXe and the generated Dolby speaker-correction WAVs and APOMac profiles. The Windows preparer verifies their SHA-256, downloads the pinned official OpenCore/Apple Recovery/WhateverXe Graphics 0.4.4 and upstream APOMac v0.1.0, then stages all components together on the USB. No pre-existing macOS installation is needed.
+1. On Windows, the QuickStart ZIP already contains the exact Surface-tested RCS payload (the experimental single-port/native-queue trial flags remain disabled by default) and the generated Dolby speaker-correction WAVs and APOMac profiles. The Windows preparer verifies their SHA-256, downloads the pinned official OpenCore/Apple Recovery/WhateverXe Graphics 0.4.4 and upstream APOMac v0.1.0, then stages all components together on the USB. No pre-existing macOS installation is needed.
 2. Boot and install macOS Tahoe using the **MACOS-OC** Recovery USB while preserving Windows.
 3. In Tahoe, run `QuickStart-Mac.command` from **SL4DATA**, choose **1**. It installs the verified graphics donor, replaces the first accelerated WhateverXe with the integrated RCS+eDP+DMC driver in the same transaction, enables original Surface input/Wi-Fi/Bluetooth/audio/brightness stages, backs up the user's personal OpenCore config, and installs the Dolby-derived `Clear Speech` correction and APOMac. No second separate RCS installer.
 4. Reboot using the prepared OpenCore USB to activate hardware drivers and confirm macOS Metal, input, display and audio.
@@ -41,7 +41,7 @@ Toggle APOMac bypass with **Cmd+B**. Quit APOMac to return to native audio. For 
 
 - All new accelerated-kext installation is **qualified by exact Intel CPU, PCI ID, macOS 26.7.1 and donor SHA-256**. On other machines it stops without applying an unverified graphics driver.
 - The original installer USB EFI is retained. An OpenCore config backup is written on USB and an entire OC copy in the user's Downloads.
-- When repairing an already booting macOS, choose **2**. The installer checks whether `SL4RCSSinglePortReady` is active; if not, it finds exactly one internal Windows/macOS EFI and uses the reversible RCS installer with a full backup. It never blindly overwrites the Windows boot manager.
+- When repairing an already booting macOS, QuickStart-Mac automatically selects the repair path from the live Metal and EFI state. The repair path preserves an already-active RCS trial, but does not enable the single-port/native-queue hooks when they are absent. It repairs the pinned input/lid-wake profile and sound profile using the guarded installers and full backups. The optional RCS installer remains available for deliberate testing. It never blindly overwrites the Windows boot manager.
 - Other systems, unsupported firmwares and versions of macOS are not automatically certified. This integration has been tested by offline package/unit checks, but **a newly assembled v0.4.1 USB full clean install remains to be tested**.
 - Synthetic 400,000 Metal command buffers succeeded on the reference Surface with no new GPU resets in the subsequent session. Owner's FPS increase 14→30 after several minutes is anecdotal; the mechanism is unconfirmed.
 - New audio permission may require user interaction and reapproval on fresh installations. Sound enhancement is tied to login; graphical driver is tied to OpenCore boot.

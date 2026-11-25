@@ -1,4 +1,4 @@
-"""Safety constraints for the source-only SL4 lid GPE research prototype."""
+"""Safety constraints for the SL4 lid GPE research and production profile."""
 import importlib.util
 from pathlib import Path
 import re
@@ -25,6 +25,19 @@ class LidWakeResearchTests(unittest.TestCase):
         self.assertNotIn("research/SSDT-SL4-LIDWAKE.dsl",candidates)
         self.assertTrue(all(not path.endswith(".dsl") for path in candidates))
         self.assertIn("docs/LINUX-SURFACE-SLEEP-PORT.md",candidates)
+
+    def test_production_gpio_patch_saves_only_supported_pins_and_f11(self):
+        patch=(ROOT/"experiments/sl4-input/patches/sl4-sleepwake-production.patch").read_text()
+        self.assertIn("if (!shouldSavePin && desc->number != kSurfaceLidWakePin)",patch)
+        self.assertIn("if (!intel_pinctrl_should_save(desc->number) && desc->number != kSurfaceLidWakePin)",patch)
+        self.assertIn("constexpr unsigned int kSurfaceLidWakePin = 206;",patch)
+        self.assertNotIn("if (desc->number == 206)\\n+        if (!shouldSavePin)",patch)
+        additions="\\n".join(line[1:] for line in patch.splitlines()
+                              if line.startswith("+") and not line.startswith("+++"))
+        for token in ("SL4LidGPIOProbe","SL4LidGPEArmStatus","SL4SAMWakeArmed",
+                      "GPIO wake up event happened!","SL4SAMWakeGPIO",
+                      "Armed SAM wake","Disarmed SAM wake"):
+            self.assertNotIn(token,additions)
 
     def test_sleep_still_marked_unverified_in_public_hardware_profile(self):
         import json

@@ -14,21 +14,37 @@ import enable_xe_macos as graphics
 import install_dolby_macos as audio
 import windows_prepare_tahoe as windows
 import build_windows_quickstart_kit as builder
+import install_sl4_sleepwake_macos as sleepwake
 
 class AllInOneTests(unittest.TestCase):
     def setUp(self):
         self.rcs=ROOT/"packages/SL4-Graphics-Performance-0.1.7-beta.zip"
         self.dolby=ROOT/"packages/SL4-Dolby-APOMac-Profiles-20261123.zip"
+        self.input=ROOT/"packages/SL4-TGL-Input-SleepWake-v2-beta.zip"
 
     def test_runtimes_are_bundled_and_exactly_pinned(self):
         self.assertEqual(windows.sha(self.rcs),windows.RCS_SHA)
         self.assertEqual(windows.sha(self.dolby),windows.DOLBY_SHA)
         self.assertEqual(builder.sha(self.rcs.read_bytes()),builder.RCS_SHA)
         self.assertEqual(builder.sha(self.dolby.read_bytes()),builder.DOLBY_SHA)
+        self.assertEqual(windows.sha(self.input),windows.INPUT_SHA)
+        self.assertEqual(builder.sha(self.input.read_bytes()),builder.INPUT_SHA)
+        input_files=sleepwake.validate_archive(self.input)
+        self.assertIn("ACPI/SSDT-SL4-LIDWAKE.aml",input_files)
         self.assertTrue(windows.checked_rcs_addon(self.rcs).is_file())
+        self.assertNotIn("scripts/build_sl4_input_pack.py",builder.FILES)
+        self.assertIn("scripts/build_sl4_input_sleepwake_pack.py",builder.FILES)
+        for patch in ("research/upstream/voodoogpio-sl4-tgl-lp-sleepwake.patch",
+                      "research/upstream/bigsurface-sl4-sam-wake.patch",
+                      "research/upstream/voodooserial-sl4-tgl-uart.patch",
+                      "research/wex-sl4-rcs-clean-production.patch",
+                      "docs/UPSTREAM-DRIVER-REPORTS.md"):
+            self.assertIn(patch,builder.FILES)
         self.assertTrue(audio.read_zip(self.dolby))
         for name in ("packages/SL4-Graphics-Performance-0.1.7-beta.zip",
                      "packages/SL4-Dolby-APOMac-Profiles-20261123.zip",
+                     "packages/SL4-TGL-Input-SleepWake-v2-beta.zip",
+                     "scripts/install_sl4_sleepwake_macos.py",
                      "scripts/install_dolby_macos.py",
                      "scripts/find_internal_esp.py",
                      "docs/AUDIO-ALL-IN-ONE.md"):
@@ -38,7 +54,9 @@ class AllInOneTests(unittest.TestCase):
         self.assertEqual(graphics.DMC_PATH,"WhateverXe-SL4-RCS-V017-TRIAL.kext")
         self.assertEqual(graphics.RCS_EXE_SHA,
                          "94669172f4c2a52937b587c5eb3fdb73ff030963397aa094e575d9c4b54863d3")
-        self.assertIn("-wex-sl4-rcs-singleport",graphics.STARTUP_ARGS)
+        self.assertNotIn("-wex-sl4-rcs-singleport",graphics.STARTUP_ARGS)
+        self.assertNotIn("-wex-sl4-rcs-nativequeue-trial",graphics.STARTUP_ARGS)
+        self.assertIn("-wex-sl4-heap-depth-trial",graphics.STARTUP_ARGS)
         with tempfile.TemporaryDirectory() as tmp:
             t=Path(tmp)
             s0ix=t/"mock-s0ix.zip"
@@ -106,8 +124,13 @@ class AllInOneTests(unittest.TestCase):
         self.assertIn("S0ixStandby.kext",boot)
         self.assertIn("SSDT-DEEPIDLE.aml",boot)
         for flag in ("-wex-tgl-edp-keep","-wex-tgl-edp-softsleep",
-                     "-wex-sl4-tgl-dmc","-wex-sl4-rcs-singleport"):
+                     "-wex-sl4-tgl-dmc","-wex-sl4-heap-depth-trial"):
             self.assertIn(flag,graphics.STARTUP_ARGS)
+        self.assertNotIn("-wex-edp-wake-trace",graphics.STARTUP_ARGS)
+        self.assertNotIn("-wex-sl4-rcs-singleport",graphics.STARTUP_ARGS)
+        self.assertNotIn("-wex-sl4-rcs-nativequeue-trial",graphics.STARTUP_ARGS)
+        edp=(ROOT/"scripts/install_edp_keep_macos.py").read_text()
+        self.assertNotIn("-wex-edp-wake-trace",edp)
 
     def test_no_power_setting_writes_anywhere_in_core_install_path(self):
         # These run automatically from the CMD-created USB. A new developer

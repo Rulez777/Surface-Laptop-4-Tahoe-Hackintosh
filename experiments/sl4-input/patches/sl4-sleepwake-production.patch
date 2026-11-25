@@ -1,0 +1,382 @@
+--- Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.cpp
++++ Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.cpp
+@@ -8,6 +8,9 @@
+ 
+ #include "VoodooGPIO.hpp"
+ #include <libkern/c++/OSBoolean.h>
++
++// Surface Laptop 4 Intel F11 lid-wake input on Tiger Lake-LP GPIO.
++constexpr unsigned int kSurfaceLidWakePin = 206;
+ 
+ OSDefineMetaClassAndStructors(VoodooGPIO, IOService);
+ 
+@@ -478,7 +481,8 @@
+         IOVirtualAddress padcfg;
+         UInt32 val;
+         
+-        if (!intel_pinctrl_should_save(desc->number))
++        const bool shouldSavePin = intel_pinctrl_should_save(desc->number);
++        if (!shouldSavePin && desc->number != kSurfaceLidWakePin)
+             continue;
+ 
+         padcfg = intel_get_padcfg(desc->number, PADCFG0);
+@@ -569,7 +573,7 @@
+         IOVirtualAddress padcfg;
+         UInt32 val;
+         
+-        if (!intel_pinctrl_should_save(desc->number))
++        if (!intel_pinctrl_should_save(desc->number) && desc->number != kSurfaceLidWakePin)
+             continue;
+         
+         padcfg = intel_get_padcfg(desc->number, PADCFG0);
+@@ -577,8 +581,15 @@
+             continue;
+ 
+         val = readl(padcfg) & ~PADCFG0_GPIORXSTATE;
+-        if (val != pads[i].padcfg0)
+-            writel(pads[i].padcfg0, padcfg);
++        UInt32 restorePadCfg0 = pads[i].padcfg0;
++        if (desc->number == kSurfaceLidWakePin) {
++            // OEM DSDT _L4B/SGII owns F11 RXINV and updates it to match the
++            // physical lid input. Preserve that live polarity across resume.
++            const UInt32 firmwareRxInvert = val & PADCFG0_RXINV;
++            restorePadCfg0 = (restorePadCfg0 & ~PADCFG0_RXINV) | firmwareRxInvert;
++        }
++        if (val != restorePadCfg0)
++            writel(restorePadCfg0, padcfg);
+ 
+         padcfg = intel_get_padcfg(desc->number, PADCFG1);
+         if (!padcfg)
+@@ -619,19 +630,11 @@
+ 
+             requested = intel_gpio_is_requested(padgrp->gpio_base, padgrp->size);
+             value = intel_gpio_update_pad_mode(base + gpp * 4, requested, saved);
+-            if ((value ^ saved) & requested) {
+-                IOLog("%s::restore hostown %d/%u %#8x->%#8x\n", getName(), i, gpp, value, saved);
+-            }
+-        }
+-    }
+-
+-    if (wake_gpio_armed) {
+-        UInt32 pin = wake_gpio_pin;
+-        IOReturn wake_status = setWakeForPin(static_cast<int>(pin), false);
+-        if (wake_status != kIOReturnSuccess)
+-            IOLog("%s::Failed to disarm SAM wake GPIO 0x%03x after resume: 0x%x\n",
+-                  getName(), pin, wake_status);
+-    }
++        }
++    }
++
++    if (wake_gpio_armed)
++        (void)setWakeForPin(static_cast<int>(wake_gpio_pin), false);
+ }
+ 
+ bool VoodooGPIO::init(OSDictionary* properties) {
+@@ -743,6 +746,30 @@
+     controllerIsAwake = true;
+     
+     registerService();
++
++    (void)armSurfaceLidWakeGPE();
++
++    struct intel_community *lidCommunity = nullptr;
++    struct intel_padgroup *lidPadGroup = nullptr;
++    const SInt32 lidHwPin = intel_gpio_to_pin(0x12B, &lidCommunity, &lidPadGroup);
++    const UInt64 lidCommunityBase =
++        (lidCommunity && lidCommunity->mmap) ? lidCommunity->mmap->getPhysicalAddress() : 0;
++    const bool isSurfaceLaptop4 =
++        lidHwPin == 206 && lidCommunity && lidPadGroup &&
++        (static_cast<unsigned>(lidHwPin) - lidPadGroup->base) == 11 &&
++        (static_cast<unsigned>(lidHwPin) - lidCommunity->pin_base) == 35 &&
++        lidPadGroup->reg_num == 1 &&
++        lidCommunity->gpe_sts_offset == 0x140 &&
++        lidCommunity->gpe_en_offset == 0x160 &&
++        (lidCommunityBase & 0x00FFFFFFULL) == 0x006A0000ULL;
++    if (isSurfaceLaptop4) {
++        lidGPEWatchdogTimer = IOTimerEventSource::timerEventSource(
++            this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &VoodooGPIO::lidGPEWatchdogTimerFired));
++        if (lidGPEWatchdogTimer && workLoop->addEventSource(lidGPEWatchdogTimer) == kIOReturnSuccess)
++            lidGPEWatchdogTimer->setTimeoutMS(1000);
++        else
++            OSSafeReleaseNULL(lidGPEWatchdogTimer);
++    }
+ 
+     // Declare an array of two IOPMPowerState structures (kMyNumberOfStates = 2).
+     
+@@ -773,6 +800,13 @@
+ void VoodooGPIO::stop(IOService *provider) {
+     IOLog("%s::VoodooGPIO stop!\n", getName());
+ 
++    if (lidGPEWatchdogTimer) {
++        lidGPEWatchdogTimer->cancelTimeout();
++        if (workLoop)
++            workLoop->removeEventSource(lidGPEWatchdogTimer);
++        OSSafeReleaseNULL(lidGPEWatchdogTimer);
++    }
++
+     if (command_gate) {
+         workLoop->removeEventSource(command_gate);
+         OSSafeReleaseNULL(command_gate);
+@@ -815,12 +849,21 @@
+         controllerIsAwake = false;
+         
+         intel_pinctrl_suspend();
++        IOReturn lidWakeStatus = armSurfaceLidWakeGPE();
++        if (lidWakeStatus != kIOReturnSuccess)
++            IOLog("%s::Pre-sleep SL4 lid GPE arm failed: 0x%x\\n", getName(), lidWakeStatus);
+         IOLog("%s::Going to Sleep!\n", getName());
+     } else {
+         if (!controllerIsAwake) {
+             controllerIsAwake = true;
+             
+             intel_pinctrl_resume();
++            lidGPERecoveryLastRaw = 0xFFFFFFFF;
++            lidGPERecoveryStableSamples = 0;
++            lidGPERecoveryAttempted = false;
++            IOReturn lidWakeStatus = armSurfaceLidWakeGPE();
++            if (lidWakeStatus != kIOReturnSuccess)
++                IOLog("%s::Post-resume SL4 lid GPE arm failed: 0x%x\\n", getName(), lidWakeStatus);
+             IOLog("%s::Woke up from Sleep!\n", getName());
+         } else {
+             IOLog("%s::GPIO Controller is already awake! Not reinitializing.\n", getName());
+@@ -1074,46 +1117,98 @@
+     else
+         value &= ~bit;
+     writel(value, enable_reg);
+-    IOLog("%s::SAM GPIO wake %s: HW pin %u GPE_STS=0x%03x GPE_EN=0x%03x bit=%u\n",
+-          getName(), enabled ? "armed" : "disarmed", pin,
+-          status_offset, enable_offset, gpp_offset);
+ 
+     return kIOReturnSuccess;
++}
++
++IOReturn VoodooGPIO::armSurfaceLidWakeGPE() {
++    // Surface Laptop 4 / Tiger Lake-LP OEM DSDT: GPIO 0x090C000B -> GPP_F11.
++    constexpr UInt32 lidSoftwarePin = 0x12B;
++    constexpr unsigned lidHardwarePin = 206;
++    struct intel_community *community = nullptr;
++    struct intel_padgroup *padgrp = nullptr;
++    SInt32 mappedPin = intel_gpio_to_pin(lidSoftwarePin, &community, &padgrp);
++    if (mappedPin != static_cast<SInt32>(lidHardwarePin) || !community || !padgrp) {
++        return kIOReturnNoInterrupt;
++    }
++
++    const unsigned groupIndex = lidHardwarePin - padgrp->base;
++    const unsigned communityIndex = lidHardwarePin - community->pin_base;
++    const UInt64 physicalBase = community->mmap ? community->mmap->getPhysicalAddress() : 0;
++    const bool mapValid =
++        groupIndex == 11 &&
++        communityIndex == 35 &&
++        padgrp->reg_num == 1 &&
++        community->gpe_sts_offset == 0x140 &&
++        community->gpe_en_offset == 0x160 &&
++        (physicalBase & 0x00FFFFFFULL) == 0x006A0000ULL;
++    if (!mapValid) {
++        return kIOReturnUnsupported;
++    }
++
++    IOVirtualAddress padcfg = intel_get_padcfg(lidHardwarePin, PADCFG0);
++    if (!padcfg) {
++        return kIOReturnNoResources;
++    }
++    UInt32 padcfg0 = readl(padcfg);
++    const UInt32 rxDisabled = (padcfg0 & PADCFG0_GPIORXDIS) ? 1 : 0;
++    const UInt32 pinMode = (padcfg0 & PADCFG0_PMODE_MASK) >> PADCFG0_PMODE_SHIFT;
++    const UInt32 sciRoute = (padcfg0 & PADCFG0_GPIROUTSCI) ? 1 : 0;
++    const UInt32 rxEvent = (padcfg0 & PADCFG0_RXEVCFG_MASK) >> PADCFG0_RXEVCFG_SHIFT;
++    // RXINV is deliberately not constrained or changed: OEM _L4B/SGII toggles it
++    // to prepare the opposite lid transition.
++    if (rxDisabled || pinMode != 0 || !sciRoute || rxEvent != PADCFG0_RXEVCFG_LEVEL) {
++        return kIOReturnNotReady;
++    }
++
++    const UInt32 rawInput = (padcfg0 & PADCFG0_GPIORXSTATE) ? 1 : 0;
++    const UInt32 rxInvertBefore = (padcfg0 & PADCFG0_RXINV) ? 1 : 0;
++    const UInt32 desiredRxInvert = rawInput;
++    if (rxInvertBefore != desiredRxInvert) {
++        // Exact OEM DSDT equivalent: SGII(0x090C000B, GGIV(0x090C000B)).
++        // Clear the read-only RXSTATE bit in the write value; preserve every other PADCFG0 bit.
++        UInt32 updatedPadCfg0 = (padcfg0 & ~(PADCFG0_RXINV | PADCFG0_GPIORXSTATE)) |
++                                (desiredRxInvert ? PADCFG0_RXINV : 0);
++        writel(updatedPadCfg0, padcfg);
++        padcfg0 = readl(padcfg);
++    }
++    const UInt32 rxInvertAfter = (padcfg0 & PADCFG0_RXINV) ? 1 : 0;
++    if (rxInvertAfter != desiredRxInvert) {
++        return kIOReturnNotReady;
++    }
++
++    const UInt32 bit = static_cast<UInt32>(1U << groupIndex);
++    const UInt32 statusOffset = community->gpe_sts_offset + padgrp->reg_num * 4;
++    const UInt32 enableOffset = community->gpe_en_offset + padgrp->reg_num * 4;
++    const UInt32 statusBefore = readl(community->regs + statusOffset);
++    const UInt32 enableBefore = readl(community->regs + enableOffset);
++    // setWakeForHardwarePin clears only this GPE_STS bit (W1C), then enables
++    // only this GPE_EN bit with a read-modify-write, preserving neighbouring pads.
++    const IOReturn result = setWakeForHardwarePin(lidHardwarePin, true);
++    const UInt32 statusAfter = readl(community->regs + statusOffset);
++    const UInt32 enableAfter = readl(community->regs + enableOffset);
++    const bool armed = result == kIOReturnSuccess && (enableAfter & bit);
++    return armed ? kIOReturnSuccess : (result == kIOReturnSuccess ? kIOReturnError : result);
+ }
+ 
+ IOReturn VoodooGPIO::setWakeForPin(int pin, bool enabled) {
+     SInt32 hw_pin = intel_gpio_to_pin(static_cast<UInt32>(pin), nullptr, nullptr);
+     if (hw_pin < 0)
+         return kIOReturnNoInterrupt;
+-
+     if (enabled && wake_gpio_armed && wake_gpio_pin != static_cast<UInt32>(pin))
+         return kIOReturnBusy;
+-
+     if (!enabled && (!wake_gpio_armed || wake_gpio_pin != static_cast<UInt32>(pin)))
+         return kIOReturnSuccess;
+-
+     IOReturn status = setWakeForHardwarePin(static_cast<unsigned>(hw_pin), enabled);
+     if (status != kIOReturnSuccess)
+         return status;
+-
+     if (enabled) {
+         wake_gpio_pin = static_cast<UInt32>(pin);
+         wake_gpio_armed = true;
+-        OSNumber *pin_number = OSNumber::withNumber(wake_gpio_pin, 32);
+-        if (pin_number) {
+-            setProperty("SL4SAMWakeGPIO", pin_number);
+-            pin_number->release();
+-        }
+-        setProperty("SL4SAMWakeArmed", kOSBooleanTrue);
+-        IOLog("%s::Armed SAM wake GPIO 0x%03x (HW pin %u)\n",
+-              getName(), wake_gpio_pin, static_cast<unsigned>(hw_pin));
+     } else {
+-        IOLog("%s::Disarmed SAM wake GPIO 0x%03x\n", getName(), wake_gpio_pin);
+         wake_gpio_pin = 0;
+         wake_gpio_armed = false;
+-        setProperty("SL4SAMWakeArmed", kOSBooleanFalse);
+-    }
+-
++    }
+     return kIOReturnSuccess;
+ }
+ 
+@@ -1143,6 +1238,69 @@
+     return kIOReturnSuccess;
+ }
+ 
++void VoodooGPIO::lidGPEWatchdogTimerFired(IOTimerEventSource *sender) {
++    if (sender != lidGPEWatchdogTimer)
++        return;
++    if (!controllerIsAwake) {
++        sender->setTimeoutMS(1000);
++        return;
++    }
++
++    constexpr UInt32 softwarePin = 0x12B;
++    constexpr unsigned hardwarePin = 206;
++    struct intel_community *community = nullptr;
++    struct intel_padgroup *padgrp = nullptr;
++    const SInt32 hwPin = intel_gpio_to_pin(softwarePin, &community, &padgrp);
++    if (hwPin == static_cast<SInt32>(hardwarePin) && community && padgrp &&
++        community->regs && community->pad_regs) {
++        const UInt32 groupIndex = hardwarePin - padgrp->base;
++        const UInt32 communityIndex = hardwarePin - community->pin_base;
++        const UInt64 physicalBase = community->mmap ? community->mmap->getPhysicalAddress() : 0;
++        const UInt32 nregs = (community->features & PINCTRL_FEATURE_DEBOUNCE) ? 4 : 2;
++        const UInt32 padbar = readl(community->regs + PADBAR);
++        const UInt32 padOffset = padbar + communityIndex * nregs * 4;
++        const bool mapValid =
++            groupIndex == 11 && communityIndex == 35 && padgrp->reg_num == 1 &&
++            (physicalBase & 0x00FFFFFFULL) == 0x006A0000ULL && padOffset == 0x930 &&
++            community->gpe_sts_offset == 0x140 && community->gpe_en_offset == 0x160;
++        IOVirtualAddress padcfg = mapValid ? intel_get_padcfg(hardwarePin, PADCFG0) : 0;
++        if (padcfg) {
++            const UInt32 padcfg0 = readl(padcfg);
++            const UInt32 rawInput = (padcfg0 & PADCFG0_GPIORXSTATE) ? 1 : 0;
++            const UInt32 rxDisabled = (padcfg0 & PADCFG0_GPIORXDIS) ? 1 : 0;
++            const UInt32 pinMode = (padcfg0 & PADCFG0_PMODE_MASK) >> PADCFG0_PMODE_SHIFT;
++            const UInt32 sciRoute = (padcfg0 & PADCFG0_GPIROUTSCI) ? 1 : 0;
++            const UInt32 rxEvent = (padcfg0 & PADCFG0_RXEVCFG_MASK) >> PADCFG0_RXEVCFG_SHIFT;
++            const bool safe = !rxDisabled && !pinMode && sciRoute &&
++                rxEvent == PADCFG0_RXEVCFG_LEVEL &&
++                intel_pad_owned_by_host(hardwarePin) && intel_pad_acpi_mode(hardwarePin);
++
++            if (rawInput != lidGPERecoveryLastRaw) {
++                lidGPERecoveryLastRaw = rawInput;
++                lidGPERecoveryStableSamples = 1;
++                lidGPERecoveryAttempted = false;
++            } else if (lidGPERecoveryStableSamples < 2) {
++                ++lidGPERecoveryStableSamples;
++            }
++
++            if (safe && lidGPERecoveryStableSamples >= 2 && !lidGPERecoveryAttempted) {
++                const UInt32 bit = static_cast<UInt32>(1U << groupIndex);
++                const UInt32 enableOffset = community->gpe_en_offset + padgrp->reg_num * 4;
++                IOVirtualAddress enableReg = community->regs + enableOffset;
++                const UInt32 before = readl(enableReg);
++                if (!(before & bit)) {
++                    lidGPERecoveryAttempted = true;
++                    // Preserve pending GPE_STS; the OEM _L4B handler owns acknowledgement.
++                    writel(before | bit, enableReg);
++                    if (!(readl(enableReg) & bit))
++                        lidGPERecoveryAttempted = false;
++                }
++            }
++        }
++    }
++    sender->setTimeoutMS(1000);
++}
++
+ /*
+  return whether the pin is activated(pressed for buttons etc.)
+  */
+--- Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.hpp
++++ Dependencies/VoodooGPIO/VoodooGPIO/VoodooGPIO.hpp
+@@ -13,6 +13,7 @@
+ #include <IOKit/IOInterruptEventSource.h>
+ #include <IOKit/IOLocks.h>
+ #include <IOKit/IOCommandGate.h>
++#include <IOKit/IOTimerEventSource.h>
+ #include "linuxirq.h"
+ 
+ #ifndef VoodooGPIO_h
+@@ -219,6 +220,12 @@
+     bool isInterruptBusy;
+     UInt32 nInactiveCommunities;
+ 
++    IOTimerEventSource *lidGPEWatchdogTimer {nullptr};
++    UInt32 lidGPERecoveryLastRaw {0xFFFFFFFF};
++    UInt32 lidGPERecoveryStableSamples {0};
++    bool lidGPERecoveryAttempted {false};
++    void lidGPEWatchdogTimerFired(IOTimerEventSource *sender);
++
+     UInt32 readl(IOVirtualAddress addr);
+     void writel(UInt32 b, IOVirtualAddress addr);
+ 
+@@ -238,6 +245,7 @@
+                              struct intel_padgroup **padgrp);
+     void intel_gpio_irq_mask_unmask(unsigned pin, bool mask);
+     IOReturn setWakeForHardwarePin(unsigned pin, bool enabled);
++    IOReturn armSurfaceLidWakeGPE();
+     bool intel_gpio_irq_set_type(unsigned pin, unsigned type);
+ 
+     bool intel_pinctrl_add_padgroups(intel_community *community);
+--- BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp
++++ BigSurface/BigSurface/SurfaceSerialHub/SurfaceSerialHubDriver.cpp
+@@ -680,11 +680,6 @@
+                     IOReturn wake_status = gpio_controller->setWakeForPin(gpio_pin, true);
+                     if (wake_status != kIOReturnSuccess)
+                         LOG("Failed to arm SAM wake GPIO 0x%03x: 0x%x", gpio_pin, wake_status);
+-                    else
+-                        LOG("Armed SAM wake GPIO 0x%03x for built-in keyboard/trackpad", gpio_pin);
+-                } else {
+-                    LOG("SAM wake not armed: expected GPIO 0x012A edge-rising, got GPIO 0x%03x irq 0x%08x",
+-                        gpio_pin, gpio_irq);
+                 }
+             }
+ 
+@@ -884,7 +879,6 @@
+ }
+ 
+ void SurfaceSerialHubDriver::gpioWakeUp(IOInterruptEventSource *sender, int count) {
+-    LOG("SAM wake GPIO event on pin 0x%03x (count=%d)", gpio_pin, count);
+ }
+ 
+ IOReturn SurfaceSerialHubDriver::enableInterrupt(int source) {

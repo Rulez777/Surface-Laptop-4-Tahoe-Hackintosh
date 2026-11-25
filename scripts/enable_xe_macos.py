@@ -38,9 +38,9 @@ SLEEP_AML="SSDT-DEEPIDLE.aml"
 PNLF_AML="SSDT-PNLF.aml"
 STARTUP_ARGS=("-wex-tgl-no-posh","-wex-tgl-gpurec","-wex-tgl-stampfix",
               "-nodisplaysleepDC6","-noDC9","dc6config=0",
-              "-wex-edp-wake-trace","-wex-tgl-edp-keep",
+              "-wex-tgl-edp-keep",
               "-wex-tgl-edp-softsleep","-wex-sl4-tgl-dmc",
-              "-wex-sl4-rcs-singleport","-wex-sl4-rcs-nativequeue-trial","-wex-sl4-heap-depth-trial")
+              "-wex-sl4-heap-depth-trial")
 EXTRA_DRIVERS=("AppleALC.kext","SimpleHDA.kext","AirportItlwm.kext",
                "IntelBluetoothFirmware.kext","IntelBTPatcher.kext",
                "BlueToolFixup.kext","SMCProcessor.kext")

@@ -48,11 +48,11 @@ This will:
 - Preserve your existing OpenCore directory in a private backup under `~/Downloads/SL4-EDP-BACKUPS`.
 - Preserve the active WhateverXe kext and create a *new* `WhateverXe-SL4-EDP-KeepSoftSleep.kext`.
 - Verify the new kext checksum and existing graphics requirements.
-- Enable the three additional optional mechanisms (`-wex-edp-wake-trace`, `-wex-tgl-edp-keep`, `-wex-tgl-edp-softsleep`) plus the known tested TGL GPU recovery/power boot flags, without duplicating existing flags.
+- Enable the two functional eDP mechanisms (`-wex-edp-wake-trace`, `-wex-tgl-edp-keep`, `-wex-tgl-edp-softsleep`) plus the known tested TGL GPU recovery/power boot flags, without duplicating existing flags. Do not enable -wex-edp-wake-trace in the production profile: it is an optional read-only diagnostic hook, excluded from the All-in-One default and removed by the sleep/wake repair installer.
 - Validate OpenCore before and after applying the change, and store a separate recovery config in `EFI/OC`.
 - **Never** touch `EFI/Microsoft`, partitions, firmware boot order, personal SMBIOS identity or macOS system files.
 
-Restart macOS. Confirm the screen works before testing wake:
+Restart macOS. Confirm the screen works before testing wake. The production profile should not contain -wex-edp-wake-trace:
 
 ```bash
 nvram boot-args

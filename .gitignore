@@ -6,6 +6,8 @@ EFI-output/
 *.zip
 # Ship only the explicitly verified public SL4 eDP add-on archive.
 !packages/SL4-WEX-0.8.3-EDP-KeepSoftSleep.zip
+!packages/SL4-Graphics-Performance-0.1.7-beta.zip
+!packages/SL4-TGL-Input-SleepWake-v2-beta.zip
 *.log
 .DS_Store
 __pycache__/

@@ -160,8 +160,16 @@ function Assert-Stage([string]$folder) {
   if ($manifest.mode -ne 'windows_new_macos_setup' -or -not $manifest.private_efi -or -not $manifest.windows_untouched) {
     throw 'Unrecognized prepared installer manifest'
   }
+  if ($manifest.input_kexts_release -ne 'SL4-TGL-Input-SleepWake-v2-beta' -or
+      $manifest.surface_input_sleepwake_profile_included -ne $true -or
+      $manifest.temporary_gpio_diagnostics_included -ne $false -or
+      $manifest.edp_trace_boot_arg_enabled -ne $false -or
+      $manifest.rcs_trial_enabled_by_default -ne $false) {
+    throw 'Input/sleep-wake production profile manifest mismatch'
+  }
   foreach ($name in @('personal-boot\EFI\BOOT\BOOTx64.efi','personal-boot\EFI\OC\config.plist',
                       'com.apple.recovery.boot','SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip',
+                      'SL4DATA\SL4-TGL-Input-SleepWake-v2-beta.zip',
                       'SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',
                       'SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',
                       'SL4DATA\APOMac-0.1.0.dmg',
@@ -174,7 +182,8 @@ function Assert-Stage([string]$folder) {
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'SL4DATA\SL4-S0ix-DMC-0.2.0-beta.zip') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.driver_release_sha256) {
     throw 'Driver release checksum changed after staging'
   }
-  foreach ($artifact in @(@('SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',$manifest.rcs_stability_sha256),
+  foreach ($artifact in @(@('SL4DATA\SL4-TGL-Input-SleepWake-v2-beta.zip',$manifest.input_kexts_sha256),
+                             @('SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',$manifest.rcs_stability_sha256),
                              @('SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',$manifest.speaker_correction_sha256),
                              @('SL4DATA\APOMac-0.1.0.dmg',$manifest.apomac_dmg_sha256))) {
     $f=Join-Path $abs $artifact[0]
@@ -244,6 +253,8 @@ function Write-USB([string]$folder,[int]$number) {
     if (-not (Test-Path -LiteralPath (Join-Path $bootLetter $name))) { throw "USB verification failed: $name" }
   }
   if (-not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-S0ix-DMC-0.2.0-beta.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-TGL-Input-SleepWake-v2-beta.zip')) -or
+      -not (Test-Path -LiteralPath (Join-Path $dataLetter 'install_sl4_sleepwake_macos.py')) -or
       -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-Graphics-Performance-0.1.7-beta.zip')) -or
       -not (Test-Path -LiteralPath (Join-Path $dataLetter 'SL4-Dolby-APOMac-Profiles-20261123.zip')) -or
       -not (Test-Path -LiteralPath (Join-Path $dataLetter 'APOMac-0.1.0.dmg'))) {

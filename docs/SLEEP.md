@@ -1,4 +1,4 @@
-# Sleep and wake — two S0ix / RTC wake cycles confirmed; extended reliability unverified
+# Sleep and wake — four short Deep Idle / RTC wake cycles confirmed; physical wake and extended reliability unverified
 
 **Hardware:** Surface Laptop 4 Intel 13.5-inch, i7-1185G7, Intel Iris Xe `8086:9A49`, macOS Tahoe 26.7.1, OpenCore 1.0.8.
 
@@ -36,8 +36,20 @@ On macOS, from a repository clone, run `python3 scripts/audit_sleep_macos.py --o
 
 See [deep sleep investigation and evidence](SYSTEM-SLEEP-RESEARCH.md), the [now booted but still experimental TGL DMC firmware loader](DMC-SLEEP-TRIAL.md), the [two confirmed Deep Idle RTC wakes](S0IX-INITIAL-RTC-WAKE-20261123.md), and the [Linux-surface sleep implementation comparison](LINUX-SURFACE-SLEEP-PORT.md) for the exact SL4 Intel lid GPE `0x4B`, the existing Surface Aggregator driver logic, and the required supervised recovery gate.
 
+## Production input/wake profile assembled — 2026-11-25
+
+A clean, pinned Surface input package is now included in the All-in-One workflow: VoodooGPIO 1.2.5, BigSurface 1.2.1, the existing VoodooSerial/VoodooInput/HID stack, and SSDT-SL4-LIDWAKE.aml. It preserves the OEM RXINV state across GPIO resume and includes a bounded, hardware-fingerprint-gated F11 lid-GPE watchdog/re-arm path. Temporary probe timers, sample counters, diagnostic IORegistry properties, and per-event wake logs are excluded. The optional -wex-edp-wake-trace argument is no longer part of the default graphics profile.
+
+The clean package, EFI staging logic, and Windows QuickStart integration pass automated archive/configuration checks. **This is not yet a physical regression result for VoodooGPIO 1.2.5.** The last live-system audit still showed VoodooGPIO 1.2.4 and the old diagnostic properties loaded. The new build must be staged, rebooted, and tested for repeated lid close/open, power-button wake, keyboard/trackpad behavior, and recovery after multiple cycles. SAM GPIO 0x12A wake remains experimental until physical validation. Keep the current full EFI backup and Windows recovery route.
+
 ## Open work
 
 Confirm repeatable display-only wake across multiple short and extended cycles, docked/undocked, AC/battery, lid close/open and power button. Qualify the observed real S0ix transition over repeated longer tests on AC and battery, separately from lid and power-button wake, with persistent logs and tested fallback.
 
 Upstream research: [S0ixStandby](https://github.com/labrouss/S0ixStandby), [WhateverXe issue #86](https://github.com/b00t0x/WhateverXe/issues/86), [WhateverXe issue #141](https://github.com/b00t0x/WhateverXe/issues/141).
+
+## Follow-up: two additional RTC Deep Idle cycles — 2026-11-24
+
+After the failed RCS completion-flush candidate was rolled back, the restored WhateverXe 0.8.3 baseline completed two additional 75-second system Deep Idle → RTC wake cycles on the same boot (16:49:15→16:50:30 and 16:55:30→16:56:45 CET). machdep.xcpm.deep_idle_count=2; DMC wake readback/verification remained Yes; Metal 2 and the internal display remained enumerated online; no WhateverXe GPU recovery resets or thermal/performance warnings were recorded. Full details and limitations: [24 November follow-up](S0IX-RTC-FOLLOWUP-20261124.md).
+
+**Still not a complete sleep fix:** physical display light-up has not yet been confirmed by the owner for these cycles; lid and power-button wake, long-duration and battery-only tests remain unverified. S0ixStandby still reports EC wake unavailable, CNVI as the last SLP_S0 blocker, PC10=0 and LPIT residency 0 μs. Automatic sleep remains disabled (sleep=0, displaysleep=0) on AC and battery. Do not enable automatic sleep or use the laptop in a bag.

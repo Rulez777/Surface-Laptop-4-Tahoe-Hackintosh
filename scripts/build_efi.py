@@ -29,7 +29,7 @@ RELEASES = {
     "USBToolBox.kext": "https://github.com/USBToolBox/kext/releases/download/1.2.0/USBToolBox-1.2.0-RELEASE.zip",
 }
 HFSPLUS = "https://raw.githubusercontent.com/acidanthera/OcBinaryData/master/Drivers/HfsPlus.efi"
-INPUT_PACKAGE_SHA = "446441745f6c782ddc3d3915bc3d138e9e5f046ff545feba394994810051f8b3"
+INPUT_PACKAGE_SHA = "11744d792a6c5ec9bc5f77dac4f020b095991c4eb604d7e232d9cab560896018"
 INPUT_KEXTS = ("VoodooGPIO", "VoodooSerial", "VoodooInput", "BigSurface", "BigSurfaceHIDDriver")
 GUID = "7C436110-AB2A-4BBB-A880-FE41995C9F82"
 
@@ -81,36 +81,82 @@ def unpack_kext(archive, name, root):
 
 
 def add_surface_input_pack(efi_root, config, archive_file):
-    """Add only byte-pinned tested Tiger Lake Surface input kexts to new EFI."""
+    """Add the pinned SL4 input + lid/SAM wake profile to a new private EFI."""
     import hashlib
-    raw=archive_file.read_bytes()
-    require(hashlib.sha256(raw).hexdigest()==INPUT_PACKAGE_SHA,
-            "Surface input pack differs from known source-built version")
-    existing=[x["BundlePath"] for x in config["Kernel"]["Add"]]
-    require(not any(name+".kext" in existing for name in INPUT_KEXTS),
+    raw = archive_file.read_bytes()
+    require(hashlib.sha256(raw).hexdigest() == INPUT_PACKAGE_SHA,
+            "Surface input/sleep-wake pack differs from the pinned release")
+    existing = [x.get("BundlePath") for x in config["Kernel"]["Add"]]
+    require(not any(name + ".kext" in existing for name in INPUT_KEXTS),
             "Input drivers already present in EFI config")
     with zipfile.ZipFile(io.BytesIO(raw)) as z:
-        manifest=__import__("json").loads(z.read("MANIFEST.json"))
+        manifest = __import__("json").loads(z.read("MANIFEST.json"))
+        require(manifest.get("release") == "SL4-TGL-Input-SleepWake-v2-beta",
+                "Unexpected input/sleep-wake archive identity")
         require(manifest.get("private_efi_included") is False,
                 "Unexpected input archive metadata")
-        for file,expected in manifest["sha256"].items():
-            require(hashlib.sha256(z.read(file)).hexdigest()==expected,
-                    "Input archive content mismatch "+file)
+        features = manifest.get("features", {})
+        require(features.get("diagnostic_probe_timer") is False and
+                features.get("diagnostic_ioregistry_telemetry") is False,
+                "Refusing an input package containing temporary diagnostics")
+        for file, expected in manifest["sha256"].items():
+            require(hashlib.sha256(z.read(file)).hexdigest() == expected,
+                    "Input archive content mismatch " + file)
         for name in INPUT_KEXTS:
-            prefix="Kexts/"+name+".kext/"
-            source=[x for x in z.namelist() if x.startswith(prefix)]
-            require(len(source)==2, "Expected paired binary/Info.plist for "+name)
+            prefix = "Kexts/" + name + ".kext/"
+            source = [x for x in z.namelist() if x.startswith(prefix) and not x.endswith("/")]
+            require(len(source) == 2, "Expected paired binary/Info.plist for " + name)
+            info_raw = z.read(prefix + "Contents/Info.plist")
+            info = plistlib.loads(info_raw)
+            if name == "VoodooGPIO":
+                require(info.get("CFBundleVersion") == "1.2.5", "Wrong production VoodooGPIO version")
+            if name == "BigSurface":
+                require(info.get("CFBundleVersion") == "1.2.1", "Wrong BigSurface version")
+                require(info["IOKitPersonalities"]["Surface Serial Hub"].get("SL4SAMWakeEnabled") is True,
+                        "SAM wake personality is not enabled")
             for item in source:
-                rel=item[len("Kexts/"):]
-                dest=efi_root/"OC/Kexts"/pathlib.PurePosixPath(rel)
-                dest.parent.mkdir(parents=True,exist_ok=True)
+                rel = item[len("Kexts/"):]
+                dest = efi_root / "OC/Kexts" / pathlib.PurePosixPath(rel)
+                dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(z.read(item))
             config["Kernel"]["Add"].append({
-                "Arch":"x86_64","BundlePath":name+".kext",
-                "Comment":"Surface Laptop 4 Intel native input",
-                "Enabled":True,"ExecutablePath":"Contents/MacOS/"+name,
-                "PlistPath":"Contents/Info.plist","MinKernel":"","MaxKernel":""})
-    print("INPUT: VoodooGPIO + VoodooSerial + VoodooInput + BigSurface + BigSurfaceHIDDriver enabled")
+                "Arch": "x86_64", "BundlePath": name + ".kext",
+                "Comment": "Surface Laptop 4 Intel input and sleep/wake",
+                "Enabled": True, "ExecutablePath": "Contents/MacOS/" + name,
+                "PlistPath": "Contents/Info.plist", "MinKernel": "", "MaxKernel": ""
+            })
+        aml_name = "SSDT-SL4-LIDWAKE.aml"
+        aml_path = "ACPI/" + aml_name
+        aml = z.read(aml_path)
+        require(len(aml) == 100 and sum(aml) % 256 == 0 and
+                hashlib.sha256(aml).hexdigest() ==
+                "96efe9f179bbf62b9d30c2742f6d5be303d0c78b5f569b31c562e0035903aefb",
+                "Invalid Surface lid-wake SSDT")
+        acpi_entries = config["ACPI"]["Add"]
+        require(not any(x.get("Path") == aml_name for x in acpi_entries),
+                "Surface lid-wake SSDT already exists in ACPI/Add")
+        aml_dest = efi_root / "OC/ACPI" / aml_name
+        require(not aml_dest.exists(), "Surface lid-wake SSDT already exists on EFI")
+        aml_dest.parent.mkdir(parents=True, exist_ok=True)
+        aml_dest.write_bytes(aml)
+        acpi_entries.append({
+            "Enabled": True,
+            "Comment": "Surface Laptop 4 lid wake GPE 0x4B",
+            "Path": aml_name
+        })
+    config.setdefault("Misc", {}).setdefault("Debug", {})["SysReport"] = False
+    boot = config.get("NVRAM", {}).get("Add", {}).get("7C436110-AB2A-4BBB-A880-FE41995C9F82", {})
+    boot_args = boot.get("boot-args", "")
+    if isinstance(boot_args, bytes):
+        disabled_flags = {"-wex-edp-wake-trace", "-wex-sl4-rcs-singleport", "-wex-sl4-rcs-nativequeue-trial"}
+        boot["boot-args"] = " ".join(x for x in boot_args.decode("utf-8").split()
+                                      if x not in disabled_flags).encode("utf-8")
+    elif isinstance(boot_args, str):
+        disabled_flags = {"-wex-edp-wake-trace", "-wex-sl4-rcs-singleport", "-wex-sl4-rcs-nativequeue-trial"}
+        boot["boot-args"] = " ".join(x for x in boot_args.split() if x not in disabled_flags)
+    elif boot_args:
+        require(False, "Unsupported NVRAM boot-args type")
+    print("INPUT/SLEEP-WAKE: five kexts + lid-wake SSDT enabled; temporary diagnostics, eDP trace and RCS trial flags excluded")
 
 
 def restore_seed(root):

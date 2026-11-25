@@ -1,4 +1,4 @@
-> **Current release v0.4.0 beta:** RCS and Dolby Clear Speech are now integrated into the standard Windows-first QuickStart. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md). Earlier separate RCS/S0ix procedures below remain for advanced troubleshooting only.
+ > **Current default profile:** the pinned RCS payload is included in Windows-first QuickStart, but the experimental single-port/native-queue trial flags are disabled by default and remain opt-in. The normal installer preserves the user's active graphics configuration. [See one-step install and recovery](AUDIO-ALL-IN-ONE.md).
 
 # Surface Laptop 4 Intel — WhateverXe RCS Stability 0.1.0 beta
 
