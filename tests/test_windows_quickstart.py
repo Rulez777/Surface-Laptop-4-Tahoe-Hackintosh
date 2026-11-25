@@ -116,7 +116,7 @@ class WindowsQuickStartTests(unittest.TestCase):
         self.assertTrue(any("diagnostic boot argument" in x for x in changes))
 
     def test_peripherals_restricted_to_supported_upstreams(self):
-        self.assertEqual(len(prepare_sl4_peripherals.RELEASES),6)
+        self.assertEqual(len(prepare_sl4_peripherals.RELEASES),8)
         self.assertTrue(all(url.startswith("https://github.com/")
                             and len(sha)==64
                             for url,sha in prepare_sl4_peripherals.RELEASES.values()))
@@ -145,7 +145,7 @@ class WindowsQuickStartTests(unittest.TestCase):
             for disabled_flag in ("-wex-edp-wake-trace","-wex-sl4-rcs-singleport","-wex-sl4-rcs-nativequeue-trial"):
                 self.assertNotIn(disabled_flag,staged_boot_args)
             self.assertEqual(plistlib.loads((efi/"OC/Kexts/VoodooGPIO.kext/Contents/Info.plist").read_bytes())["CFBundleVersion"],"1.2.5")
-            for item in enable_xe_macos.EXTRA_DRIVERS:
+            for item in enable_xe_macos.EXTRA_DRIVERS + enable_xe_macos.LEGACY_WIRELESS:
                 config["Kernel"]["Add"].append({
                     "Arch":"x86_64","BundlePath":item,"Enabled":False,
                     "ExecutablePath":"Contents/MacOS/"+item[:-5],
@@ -167,6 +167,12 @@ class WindowsQuickStartTests(unittest.TestCase):
             self.assertTrue(all(next(x for x in staged["Kernel"]["Add"]
                                       if x["BundlePath"]==name)["Enabled"]
                                 for name in enable_xe_macos.EXTRA_DRIVERS))
+            self.assertTrue(all(not next(x for x in staged["Kernel"]["Add"]
+                                      if x["BundlePath"]==name)["Enabled"]
+                                for name in enable_xe_macos.LEGACY_WIRELESS))
+            for flag in ("-btleadv","-btleadvnodupfilter"):
+                self.assertIn(flag,staged["NVRAM"]["Add"][enable_xe_macos.GUID]["boot-args"].split())
+                self.assertNotIn(flag,before["NVRAM"]["Add"][enable_xe_macos.GUID]["boot-args"].split())
             self.assertIn("SSDT-DEEPIDLE.aml",[x["Path"] for x in staged["ACPI"]["Add"]])
             self.assertIn("SSDT-PNLF.aml",[x["Path"] for x in staged["ACPI"]["Add"]])
             self.assertNotIn("-wex-noaccel",staged["NVRAM"]["Add"][enable_xe_macos.GUID]["boot-args"])

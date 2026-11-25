@@ -15,6 +15,8 @@ import urllib.request
 import zipfile
 
 RELEASES = {
+ "ForbiddenItlwm.kext": ("https://github.com/retropineaple/ForbiddenItlwm/releases/download/v0.7.0-alpha.3/ForbiddenItlwm-0.7.0-alpha.3-Tahoe.zip","f1c2bd5e99ab94fff4c11eae8dd31f2269bb782a8b961d561e6a1c648d5bce4a"),
+ "BTLEAdvFixup.kext": ("https://github.com/retropineaple/ForbiddenItlwm/releases/download/v0.7.0-alpha.3/BTLEAdvFixup-0.9.7-Tahoe.zip","aea22f311c7b60c16186e938870a0ce960aac24bf456ac4657edff08baef935e"),
  "AppleALC.kext": ("https://github.com/acidanthera/AppleALC/releases/download/1.9.8/AppleALC-1.9.8-RELEASE.zip","d4d36cd2da7863cf7cbfcb0892d45c08457f4f4ddd065a073dd010e46bd63bcb"),
  "SimpleHDA.kext": ("https://github.com/laobamac/SimpleHDA/releases/download/v1.0.2/SimpleHDA-Tahoe-v1.0.2-RELEASE.zip","4e24a54ea58bc8196c517bd415b263313512832b6e28c455b97e18490a6230f0"),
  "AirportItlwm.kext": ("https://github.com/laobamac/itlwm/releases/download/v2.4.0-alpha/AirportItlwm-Tahoe-v2.4.0-RELEASE-alpha-7204c69.zip","a5d098e6752592435c021aa6e8d08c64ee6aab9f2786660a6c72d7af1218fcf9"),
@@ -69,7 +71,7 @@ def add(efi,config,cache,virtual_smc):
     names=[x.get("BundlePath") for x in config["Kernel"]["Add"]]
     order=["AppleALC.kext","SimpleHDA.kext","AirportItlwm.kext",
            "IntelBluetoothFirmware.kext","IntelBTPatcher.kext","BlueToolFixup.kext",
-           "SMCProcessor.kext"]
+           "BTLEAdvFixup.kext","ForbiddenItlwm.kext","SMCProcessor.kext"]
     require(not any(x in names for x in order),"Peripherals already present")
     for name in order:
         if name=="SMCProcessor.kext":
@@ -82,6 +84,10 @@ def add(efi,config,cache,virtual_smc):
                "Comment":"SL4 Tahoe working peripheral driver (enable after install)",
                "Enabled":False,"ExecutablePath":"Contents/MacOS/"+name[:-5],
                "MaxKernel":"","MinKernel":"","PlistPath":"Contents/Info.plist"}
+        if name in ("AirportItlwm.kext","BTLEAdvFixup.kext","ForbiddenItlwm.kext"):
+            entry.update(MinKernel="25.0.0",MaxKernel="25.99.99")
+        elif name=="BlueToolFixup.kext":
+            entry["MinKernel"]="21.0.0"
         config["Kernel"]["Add"].append(entry)
     print("PERIPHERALS STAGED:",", ".join(order)," (initially disabled for Recovery)")
     return order

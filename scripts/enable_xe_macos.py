@@ -40,10 +40,11 @@ STARTUP_ARGS=("-wex-tgl-no-posh","-wex-tgl-gpurec","-wex-tgl-stampfix",
               "-nodisplaysleepDC6","-noDC9","dc6config=0",
               "-wex-tgl-edp-keep",
               "-wex-tgl-edp-softsleep","-wex-sl4-tgl-dmc",
-              "-wex-sl4-heap-depth-trial")
-EXTRA_DRIVERS=("AppleALC.kext","SimpleHDA.kext","AirportItlwm.kext",
-               "IntelBluetoothFirmware.kext","IntelBTPatcher.kext",
-               "BlueToolFixup.kext","SMCProcessor.kext")
+              "-wex-sl4-heap-depth-trial","-btleadv","-btleadvnodupfilter")
+EXTRA_DRIVERS=("AppleALC.kext","SimpleHDA.kext",
+               "IntelBluetoothFirmware.kext","BlueToolFixup.kext",
+               "BTLEAdvFixup.kext","ForbiddenItlwm.kext","SMCProcessor.kext")
+LEGACY_WIRELESS=("AirportItlwm.kext","IntelBTPatcher.kext")
 
 def require(ok,why):
     if not ok:raise RuntimeError(why)
@@ -80,7 +81,7 @@ def config_preflight(raw,efi):
     for item in ("Lilu.kext","WhateverXe.kext","AMFIAnchor.kext","AMFIAnchorInjector.kext"):
         require(names.count(item)==1,"Missing or duplicate initial kext: "+item)
     require(names.index("Lilu.kext")<names.index("WhateverXe.kext"),"Lilu must load first")
-    for item in EXTRA_DRIVERS:
+    for item in EXTRA_DRIVERS + LEGACY_WIRELESS:
         matches=[x for x in entries if x.get("BundlePath")==item]
         require(len(matches)==1 and not matches[0].get("Enabled"),
                 "Expected staged-inactive driver on installer USB: "+item)

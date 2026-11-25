@@ -6,7 +6,7 @@
 
 ## Graphics performance v0.1.7 beta
 
-[Integrated beta and GPU test results](docs/GRAPHICS-PERFORMANCE-V017.md). The Windows-first build includes the exact Surface-tested v0.1.7 graphics payload and local compute-hint fix. It corrects missing Unity compute pipelines and stale MTLHeap depth sampling. The RCS single-port/native-queue trial flags are deliberately disabled in the default profile; they remain opt-in because the user-approved reference EFI has them disabled. The v0.5.0 download below is the historical recovery build; use the v0.5.2 sleep/wake beta distribution for the updated All-in-One after CI publishes it. Until then use the graphics-fixes-v017 branch snapshot and QuickStart.cmd. Long-term stability and clean-install validation remain open.
+[Integrated beta and GPU test results](docs/GRAPHICS-PERFORMANCE-V017.md). The Windows-first build includes the exact Surface-tested v0.1.7 graphics payload and local compute-hint fix. It corrects missing Unity compute pipelines and stale MTLHeap depth sampling. The RCS single-port/native-queue trial flags are deliberately disabled in the default profile; they remain opt-in because the user-approved reference EFI has them disabled. The v0.5.0 download below is the historical recovery build; use the v0.5.3 wireless beta distribution for the updated All-in-One after CI publishes it. Until then use the graphics-fixes-v017 branch snapshot and QuickStart.cmd. Long-term stability and clean-install validation remain open.
 
 ## Surface input and lid-wake profile
 
@@ -16,7 +16,7 @@ The Windows-first All-in-One now stages the pinned Surface Laptop 4 Intel keyboa
 
 **Start on Windows. You do not need macOS installed.**
 
-1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.2-sleepwake-beta/SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip) and click **Extract All**.
+1. [**Download Quick Start for Windows**](https://github.com/Rulez777/Surface-Laptop-4-Tahoe-Hackintosh/releases/download/sl4-tahoe-v0.5.3-wireless-beta/SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip) and click **Extract All**.
 2. Open the extracted folder and double-click **`QuickStart.cmd`**.
 3. The automatic assistant builds OpenCore, downloads Apple Recovery and all verified drivers, then detects the eligible **USB drive**; erasing it still requires confirmation.
 4. On the Surface, disable **Secure Boot** in UEFI (keep your Windows BitLocker recovery key), plug in the USB, hold **Volume Down**, press **Power**. At the **OpenCore boot menu**, use the arrow keys and **Enter** to select **macOS Base System (External)** (sometimes shown as **Recovery**). This is Apple's Recovery installer, **not** Windows Boot Manager or your existing macOS volume. New USBs show Recovery immediately, with 15 seconds to choose; on an older USB press **Space** to reveal hidden auxiliary entries.
@@ -71,7 +71,8 @@ Open **QuickStart-Advanced.cmd** and select **3 — Advanced / Experiments** to 
 | Intel Iris Xe / Metal 2 | **Working** |
 | Built-in HiDPI display and brightness | **Working** |
 | Keyboard / trackpad / multitouch | **Working** |
-| Intel Wi-Fi / Bluetooth | **Working** |
+| Intel AX201 Wi-Fi / AWDL | **Working** (ForbiddenItlwm; AWDL traffic observed) |
+| Bluetooth discovery | **Working** (BLE L2CAP / iPhone Mirroring not working) |
 | Speakers / microphone | **Working** |
 | Battery status | **Working** |
 | CPU temperature / thermal monitoring | **Working** |

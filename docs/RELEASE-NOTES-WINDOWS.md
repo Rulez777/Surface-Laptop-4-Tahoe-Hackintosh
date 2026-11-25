@@ -1,3 +1,10 @@
+# v0.5.3 wireless beta — November 25, 2026
+
+- New-install All-in-One stages and enables the reference Surface AX201 wireless profile: ForbiddenItlwm 0.7.0-alpha.3 (Tahoe), BTLEAdvFixup 0.9.7 (Tahoe), IntelBluetoothFirmware 2.5.3 and BlueToolFixup 2.7.2. Downloads are pinned by SHA-256.
+- Retains AirportItlwm and IntelBTPatcher disabled, adds `-btleadv -btleadvnodupfilter` after Recovery.
+- Verified on the reference machine: loaded drivers, Wi-Fi, active AWDL and packet traffic, Bluetooth discovery. BLE L2CAP, iPhone Mirroring, and complete AirDrop/Handoff functionality are not verified working. No claim of T2 emulation.
+- Existing-install repair does not migrate wireless. Independent fresh installation remains untested. Graphics, USB and sleep/power settings are unchanged by this wireless update.
+
 # 2026-11-25 — Surface input and sleep/wake profile
 
 - Added the pinned SL4-TGL-Input-SleepWake-v2-beta.zip to Windows-first staging and new-install EFI generation.

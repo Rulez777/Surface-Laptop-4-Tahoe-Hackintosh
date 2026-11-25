@@ -11,8 +11,8 @@ Tested on Surface Laptop 4 Intel (i7-1185G7, macOS Tahoe 26.7.1, OpenCore 1.0.8)
 | Graphics | WhateverXe 0.8.3 + Graphics 0.4.4; DVMT 60 MB | Intel Iris Xe Metal 2; internal HiDPI and external DisplayPort |
 | **Display-only wake** | Custom WhateverXe 0.8.3 eDP Keep + Softsleep | **Verified**: internal panel visually woke on sleep/power button and lid close/open on tested SL4; full S3 unverified |
 | Browser video | Same graphics stack; CoreMedia scaling flag disabled | **Safari YouTube H.264 1080p playback working** |
-| Wi-Fi | AirportItlwm 2.4.0 | Intel AX201 wireless |
-| Bluetooth | Intel Bluetooth stack | Working |
+| Wi-Fi / AWDL | ForbiddenItlwm 0.7.0-alpha.3 (Tahoe) | Intel AX201; AWDL traffic observed on reference Surface |
+| Bluetooth | IntelBluetoothFirmware 2.5.3 + BlueToolFixup 2.7.2 + BTLEAdvFixup 0.9.7 | Controller and discovery verified; BLE L2CAP / iPhone Mirroring not working |
 | Keyboard / trackpad | BigSurface 1.2.1, BigSurfaceHIDDriver 1.0.0, VoodooGPIO 1.2.5, VoodooSerial 1.2, VoodooInput 1.1.3 | Existing input stack retained; clean production rebuild packaged. VoodooGPIO 1.2.5 lid-wake regression and SAM GPIO keyboard/trackpad wake still require physical validation. |
 | Battery | BigSurface | Battery percentage |
 | Audio output | Lilu 1.7.2, AppleALC 1.9.8, SimpleHDA 1.0.2; ALC274 layout 35 | **Built-in speakers working** |
@@ -76,3 +76,7 @@ See [installation and verified hardware](../README.md), [graphics](VALIDATED-MET
 ## RCS Stability update (2026-11-23)
 
 For Intel Surface Laptop 4 i7-1185G7 / Iris Xe 9A49 on **Tahoe 26.7.1**, see [RCS Stability 0.1.0 beta](QUICKSTART-RCS.md). The addon contains the experimental render-queue / preemption hook. The byte-pinned binary is included in the Windows-first payload, but the single-port/native-queue trial flags are **not enabled by default** because the reference EFI has them disabled. The binary still contains dormant RCS telemetry; a source cleanup patch is prepared, but a replacement binary is withheld pending hardware regression. The optional installer remains available for deliberate, supervised testing after graphics and Tahoe/DMC are working. It is not a fix for AV1/VP9 decoding; its preflight and private OpenCore rollback are mandatory. Do not install this kext on an unknown donor or the Windows installer USB.
+
+### Wireless beta profile
+
+Quick Start stages the SHA-256-pinned Tahoe releases during Windows USB preparation and enables them after installation. AirportItlwm and IntelBTPatcher are retained inactive. The active boot arguments are `-btleadv -btleadvnodupfilter`. AWDL is up and carries traffic on the reference Surface; AirDrop and Handoff are not yet verified end to end. iPhone Mirroring remains unsupported (BLE timeout and unavailable hardware attestation). Recovery drivers remain inactive; the existing-install repair route does not migrate wireless automatically.

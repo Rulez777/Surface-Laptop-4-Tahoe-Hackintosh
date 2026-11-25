@@ -99,12 +99,12 @@ jobs:
           python -m py_compile scripts/auto_verify_first_boot_macos.py scripts/install_dolby_macos.py scripts/find_internal_esp.py scripts/windows_prepare_tahoe.py scripts/enable_xe_macos.py scripts/install_edp_keep_macos.py scripts/install_sl4_sleepwake_macos.py scripts/build_sl4_input_sleepwake_pack.py scripts/build_efi.py
       - name: Build and verify Windows distribution
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
           name: Windows-QuickStart-Test
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip
           retention-days: 14
 
   release:
@@ -120,18 +120,18 @@ jobs:
         run: python -m unittest discover -s tests -q
       - name: Build signed-off source-only zip
         run: |
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
-          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip --verify-only
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip
+          python scripts/build_windows_quickstart_kit.py --out SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip --verify-only
       - uses: actions/upload-artifact@v4
         with:
-          name: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta
-          path: SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip
+          name: SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta
+          path: SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip
           if-no-files-found: error
       - name: Publish GitHub beta release
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: sl4-tahoe-v0.5.2-sleepwake-beta
+          TAG: sl4-tahoe-v0.5.3-wireless-beta
         shell: bash
         run: |
           set -euo pipefail
@@ -139,8 +139,8 @@ jobs:
             echo "Release exists, refuse to silently overwrite"
             exit 1
           fi
-          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.2-sleepwake-beta.zip \
+          gh release create "$TAG" SL4-Tahoe-Windows-QuickStart-v0.5.3-wireless-beta.zip \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.2 sleep/wake beta" \
+            --title "Surface Laptop 4 - Windows-first Tahoe Quick Start v0.5.3 wireless beta" \
             --notes-file docs/RELEASE-NOTES-WINDOWS.md --prerelease
 # Validate native Windows build and publish the installer archive.
