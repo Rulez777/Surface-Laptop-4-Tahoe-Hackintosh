@@ -71,8 +71,10 @@ def inspected(source):
     insist("org.b00t0x.WhateverXe" in kexts and "com.labrouss.S0ixStandby" in kexts,
            "GPU/S0ix not both loaded")
     adapter=Path("/Library/GPUBundles/XeCompilerAdapter.bundle/Contents/MacOS/adapter.dylib")
-    insist(adapter.is_file() and sha(adapter)=="50cc0fb84ffc8af995c35fe05e94e0543b8b8e7973edfd541710db93ff5e3b22",
-           "compute hint patch not installed")
+    igc=adapter.with_name("libigc-tgl.dylib")
+    insist(adapter.is_file() and sha(adapter)=="bf8839038760980476676fa0bab0246819ea0484eb27aa69a9459ad1cc1dbbfd" and
+           igc.is_file() and sha(igc)=="2956cf797bf8caebdd62eee75a8644734620576c47c647ae6151d6c284af93ca",
+           "HDRP compiler pair not installed")
     insist("1DAD98CE-CD44-3CA8-9BEE-CE65F3B47DBF" in kexts,"wrong active v0.1.7 UUID")
     core=Path("/Library/Preferences/FeatureFlags/Domain/CoreMedia.plist")
     insist(core.is_file() and
@@ -95,10 +97,12 @@ def inspected(source):
         "profile":"Surface Laptop 4 Intel i7-1185G7 Iris Xe 8086:9A49",
         "macos":"26.7.1",
         "rcs_payload_sha256":RCS_SHA,
+        "integrated_rcs_sha256":RCS_SHA,
         "rcs_trial_enabled":("-wex-sl4-rcs-singleport" in args.split() and
                              "-wex-sl4-rcs-nativequeue-trial" in args.split()),
         "heap_depth_patch_ready":True,
         "compute_hint_patch_ready":True,
+        "hdrp_swsb_patch_ready":True,
         "usb_oc_config_sha256":sha(oc/"config.plist"),
         "macos_metal2":True,
         "s0ix_deep_idle_driver_loaded":True,

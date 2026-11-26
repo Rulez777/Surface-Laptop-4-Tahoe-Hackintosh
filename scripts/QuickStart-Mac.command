@@ -37,6 +37,7 @@ check_assets() {
     [[ -f "$base/ocvalidate" && -f "$base/enable_xe_macos.py" &&
        -f "$base/install_dolby_macos.py" &&
        -f "$base/install_compute_hint_macos.py" &&
+       -f "$base/install_hdrp_swsb_macos.py" &&
        -f "$base/install_sl4_sleepwake_macos.py" &&
        -f "$base/auto_verify_first_boot_macos.py" ]] || {
         print -u2 "Incomplete all-in-one hardware installer on SL4DATA."
@@ -144,7 +145,7 @@ install_from_usb() {
     print "Staging Metal + DMC + eDP + the reference heap-depth profile in ONE OpenCore transition..."
     print "Experimental RCS single-port/native-queue trial hooks remain disabled by default."
     sudo python3 "$base/enable_xe_macos.py" check --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
-    sudo python3 "$base/install_compute_hint_macos.py" apply
+    sudo python3 "$base/install_hdrp_swsb_macos.py" apply
     sudo python3 "$base/enable_xe_macos.py" apply --efi "$boot" --release "$base/$DMC" --rcs "$base/$RCS" --ocvalidate "$tools/ocvalidate"
     report_sleep_policy_unchanged
     install_audio
@@ -157,7 +158,7 @@ repair_existing() {
     esp="$(python3 "$base/find_internal_esp.py")"
     print "Ensuring the pinned SL4 input + lid-wake profile in the INTERNAL EFI..."
     install_sleepwake_internal "$esp"
-    sudo python3 "$base/install_compute_hint_macos.py" check
+    sudo python3 "$base/install_hdrp_swsb_macos.py" check
     if rcs_trial_ready; then
         print "An existing RCS trial is already active; leaving its boot arguments and driver untouched."
         print "WARNING: this remains a beta trial; Loaded/Ready is not proof of long-term stability."
@@ -165,7 +166,7 @@ repair_existing() {
         print "RCS single-port/native-queue trial hooks are disabled in the default profile."
         print "The pinned RCS payload remains available for deliberate opt-in; no experimental flags are added."
     fi
-    sudo python3 "$base/install_compute_hint_macos.py" apply
+    sudo python3 "$base/install_hdrp_swsb_macos.py" apply
     install_audio
     print "ONE-CLICK REPAIR READY. Existing graphics and power settings are preserved."
 }

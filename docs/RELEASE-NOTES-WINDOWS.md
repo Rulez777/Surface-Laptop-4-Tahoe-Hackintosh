@@ -1,3 +1,7 @@
+## v0.5.6 HDRP beta
+
+Local Tiger Lake IGC SWSB bounds fix and matching adapter SHA-256 pins integrated into new installation and repair. Reference HDRP startup passed without new compiler errors. Visual correctness and fresh installation are not yet verified. No new GPU diagnostics or power changes. See docs/HDRP-SWSB-FIX.md.
+
 ## v0.5.5 USB beta
 
 Native Tahoe USB map for Intel A0ED; USBToolBox/UTBMap restricted to Darwin 22–24. HS10 and SS01 marked internal. Reference test: iPhone via dock and Samsung direct, 14 minutes without spontaneous disconnects or transaction errors. Longer validation pending. AC power settings unchanged.

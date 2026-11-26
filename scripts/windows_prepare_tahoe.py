@@ -219,6 +219,7 @@ def prepare(args):
         shutil.copy2(dolby,data/DOLBY_FILENAME)
         shutil.copy2(ROOT/"scripts/install_dolby_macos.py",data/"install_dolby_macos.py")
         shutil.copy2(ROOT/"scripts/install_compute_hint_macos.py",data/"install_compute_hint_macos.py")
+        shutil.copy2(ROOT/"scripts/install_hdrp_swsb_macos.py",data/"install_hdrp_swsb_macos.py")
         shutil.copy2(ROOT/"scripts/auto_verify_first_boot_macos.py",data/"auto_verify_first_boot_macos.py")
         shutil.copy2(ROOT/"scripts/audit_rcs_gpu_resets_macos.py",data/"audit_rcs_gpu_resets_macos.py")
         # Official matching macOS ocvalidate and one-click graphics transition.
@@ -316,7 +317,7 @@ def repair_only(args):
         shutil.copy2(dolby,out/DOLBY_FILENAME)
         files=("QuickStart-Mac.command","enable_xe_macos.py","find_internal_esp.py",
                "install_sl4_rcs_stability.py","install_dolby_macos.py","install_compute_hint_macos.py",
-               "auto_verify_first_boot_macos.py",
+               "install_hdrp_swsb_macos.py","auto_verify_first_boot_macos.py",
                "audit_rcs_gpu_resets_macos.py",
                "install_brightness_macos.py","install_audio_macos.py",
                "install_edp_keep_macos.py","configure_surface_trackpad.sh")

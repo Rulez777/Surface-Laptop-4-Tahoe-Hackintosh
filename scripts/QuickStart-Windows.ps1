@@ -173,7 +173,7 @@ function Assert-Stage([string]$folder) {
                       'SL4DATA\SL4-Graphics-Performance-0.1.7-beta.zip',
                       'SL4DATA\SL4-Dolby-APOMac-Profiles-20261123.zip',
                       'SL4DATA\APOMac-0.1.0.dmg',
-                      'SL4DATA\install_dolby_macos.py','SL4DATA\install_compute_hint_macos.py')) {
+                      'SL4DATA\install_dolby_macos.py','SL4DATA\install_compute_hint_macos.py','SL4DATA\install_hdrp_swsb_macos.py')) {
     if (-not (Test-Path -LiteralPath (Join-Path $abs $name))) { throw "Missing installer component: $name" }
   }
   if ((Get-FileHash -LiteralPath (Join-Path $abs 'personal-boot\EFI\OC\OpenCore.efi') -Algorithm SHA256).Hash.ToLowerInvariant() -ne $manifest.bootloader_sha256) {
@@ -292,6 +292,7 @@ function Find-Verified-MacReadyUSB {
       -not $info.coremedia_h264_hevc_fix -or
       -not $info.heap_depth_patch_ready -or
       -not $info.compute_hint_patch_ready -or
+      -not $info.hdrp_swsb_patch_ready -or
       -not $info.dolby_clear_speech_installed -or
       $info.power_policy_modified -ne $false -or
       $info.windows_efi_modified -ne $false -or
