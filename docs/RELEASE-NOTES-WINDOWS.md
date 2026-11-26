@@ -1,3 +1,7 @@
+## v0.5.5 USB beta
+
+Native Tahoe USB map for Intel A0ED; USBToolBox/UTBMap restricted to Darwin 22–24. HS10 and SS01 marked internal. Reference test: iPhone via dock and Samsung direct, 14 minutes without spontaneous disconnects or transaction errors. Longer validation pending. AC power settings unchanged.
+
 # v0.5.4 reference beta — November 25, 2026
 
 Includes the v0.5.3 wireless baseline plus the exact boot-tested WhateverXe 0.8.5 reference package and opt-in AC GPU-priority profile. Use option 8 after accelerated internal boot, option 9 to roll back. See docs/REFERENCE-20261125.md. Fresh-install and long-duration gaming validation remain open.

@@ -212,6 +212,41 @@ def validate_tree(root, config):
             require((bundle / item["ExecutablePath"]).is_file(), "Missing kext executable: " + item["BundlePath"])
 
 
+def configure_native_tahoe_usb(root, settings):
+    import copy
+    kexts = root / "OC/Kexts"
+    path = kexts / "UTBMap.kext/Contents/Info.plist"
+    utb = plistlib.loads(path.read_bytes())
+    personality = utb["IOKitPersonalities"]["SL4 Intel XHCI A0ED"]
+    require(personality["IOPCIPrimaryMatch"] == "0xa0ed8086", "Unexpected USB controller")
+    merge = copy.deepcopy(personality["IOProviderMergeProperties"])
+    ports = merge["ports"]
+    require(len(ports) == 14 and merge["port-count"] == bytes([16,0,0,0]), "Unexpected USB map")
+    for name in ("HS10", "SS01"):
+        ports[name]["UsbConnector"] = ports[name]["usb-port-type"] = 255
+    native = copy.deepcopy(utb)
+    native.update(CFBundleIdentifier="org.sl4.USBMap.Tahoe", CFBundleName="SL4-USBMap-Tahoe", CFBundleVersion="1.0.0", CFBundleShortVersionString="1.0.0")
+    native.pop("OSBundleLibraries", None)
+    native["IOKitPersonalities"] = {"SL4-A0ED-Tahoe-Native": {
+        "CFBundleIdentifier": "com.apple.driver.AppleUSBHostMergeProperties",
+        "IOClass": "AppleUSBHostMergeProperties", "IOProviderClass": "AppleUSBXHCIPCI",
+        "IOParentMatch": {"IOPCIPrimaryMatch": "0xa0ed8086"},
+        "IOProviderMergeProperties": merge, "model": "MacBookPro16,2"}}
+    require(settings["PlatformInfo"]["Generic"]["SystemProductName"] == "MacBookPro16,2", "Unexpected SMBIOS")
+    require(not settings["Kernel"]["Quirks"]["XhciPortLimit"], "USB port limit quirk must remain disabled")
+    dest = kexts / "SL4-USBMap-Tahoe.kext/Contents/Info.plist"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(plistlib.dumps(native, sort_keys=False))
+    entries = settings["Kernel"]["Add"]
+    for name in ("USBToolBox.kext", "UTBMap.kext"):
+        matches = [e for e in entries if e["BundlePath"] == name]
+        require(len(matches) == 1, "Unexpected USB entry: " + name)
+        matches[0].update(MinKernel="22.0.0", MaxKernel="24.99.99")
+    entry = copy.deepcopy(matches[0])
+    entry.update(BundlePath="SL4-USBMap-Tahoe.kext", MinKernel="25.0.0", MaxKernel="", Comment="SL4 native Tahoe USB map (14 ports)")
+    entries.insert(entries.index(matches[0])+1, entry)
+
+
 def configure_installer_picker(settings):
     """Expose Apple Recovery in a fresh installation USB OpenCore picker.
 
@@ -298,6 +333,7 @@ def main():
         from quiet_boot import edit as quiet_profile
         quiet_profile(settings)
         print("Quiet boot: no verbose diagnostics; installer picker overrides auxiliary visibility and timeout")
+    configure_native_tahoe_usb(root, settings)
     configure_installer_picker(settings)
     print("INSTALLER PICKER: macOS Base System (Recovery) visible without Space; 15 seconds to select with arrows + Enter")
     cfg.write_bytes(plistlib.dumps(settings, sort_keys=False))
