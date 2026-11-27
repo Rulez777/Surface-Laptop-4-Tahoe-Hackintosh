@@ -42,7 +42,7 @@ Open **QuickStart-Advanced.cmd** and select **3 — Advanced / Experiments** to 
 | CPU temperature / thermal monitoring | **Working** |
 | Surface Dock | **Working** |
 | Display sleep / wake | **Working** |
-| System S0ix sleep / wake | **Working** |
+| System S0ix sleep / wake | **Experimental** — full system sleep and reliable wake remain unvalidated; see [sleep validation](docs/SLEEP.md) |
 
 **Development-build display note (2026-11-27):** A low-brightness blackout was observed during local driver testing. Raising brightness alone did not restore the panel; a display-only sleep/wake cycle did. If affected, run `pmset displaysleepnow; sleep 3; caffeinate -u -t 3` from Terminal or an existing remote session. This is a temporary workaround, not a verified driver fix. The experimental CCTL v4 diagnostic build is not a validated performance upgrade and is not included by this documentation change.
 
