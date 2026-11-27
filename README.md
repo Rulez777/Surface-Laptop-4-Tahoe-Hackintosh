@@ -33,7 +33,7 @@ Open **QuickStart-Advanced.cmd** and select **3 — Advanced / Experiments** to 
 | Tahoe on internal SSD | **Working** |
 | Windows + macOS dual boot | **Working** |
 | Intel Iris Xe / Metal 2 | **Working** |
-| Built-in HiDPI display and brightness | **Working** |
+| Built-in HiDPI display and brightness | **Working** (low-brightness blackout observed on a development build; see note below) |
 | Keyboard / trackpad / multitouch | **Working** |
 | Intel AX201 Wi-Fi / AWDL | **Working** (ForbiddenItlwm; AWDL traffic observed) |
 | Bluetooth discovery | **Working** (BLE L2CAP / iPhone Mirroring not working) |
@@ -43,6 +43,8 @@ Open **QuickStart-Advanced.cmd** and select **3 — Advanced / Experiments** to 
 | Surface Dock | **Working** |
 | Display sleep / wake | **Working** |
 | System S0ix sleep / wake | **Working** |
+
+**Development-build display note (2026-11-27):** A low-brightness blackout was observed during local driver testing. Raising brightness alone did not restore the panel; a display-only sleep/wake cycle did. If affected, run `pmset displaysleepnow; sleep 3; caffeinate -u -t 3` from Terminal or an existing remote session. This is a temporary workaround, not a verified driver fix. The experimental CCTL v4 diagnostic build is not a validated performance upgrade and is not included by this documentation change.
 
 **Primary ready-made profile:** Surface Laptop 4 Intel 13.5-inch, Core i7-1185G7, Iris Xe 8086:9A49, macOS Tahoe 26.7.1, OpenCore 1.0.8. Windows Quick Start can prepare installation files on **any Windows computer**; hardware-specific EFI support on a different target must be selected explicitly.
 
